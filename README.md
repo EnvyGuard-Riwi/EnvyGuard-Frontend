@@ -1,1 +1,1 @@
-# InvidiaBot-Frontend-IntegerProject
+# EnvyGuard-Frontend
