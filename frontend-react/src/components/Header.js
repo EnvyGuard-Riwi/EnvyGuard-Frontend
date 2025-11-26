@@ -8,6 +8,7 @@ const Header = ({ onLogout }) => {
   const navigate = useNavigate();
 
   return (
+    
     <>
       {/* Logo - Esquina Superior Izquierda */}
       <Box
