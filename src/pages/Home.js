@@ -573,7 +573,7 @@ export default function Home() {
       <nav className="fixed top-0 w-full z-50 border-b border-white/5 bg-black/80 backdrop-blur-xl">
         <div className="max-w-7xl mx-auto px-6 h-16 flex items-center justify-between">
           <div className="flex items-center gap-3 group cursor-none">
-            <img src={iconLogo} alt="EnvyGuard" className="w-14 h-14 object-contain group-hover:scale-110 transition-transform" />
+            <img src={iconLogo} alt="EnvyGuard" className="w-9 h-9 object-contain group-hover:scale-110 transition-transform" />
             <span className="font-bold text-lg tracking-wider font-mono text-transparent bg-clip-text bg-gradient-to-r from-white to-gray-400">EnvyGuard</span>
           </div>
           <div className="hidden md:flex items-center gap-8 text-sm font-medium text-gray-400">
