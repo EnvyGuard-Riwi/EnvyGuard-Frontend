@@ -15,7 +15,7 @@ const Header = ({ onLogout }) => {
         sx={{
           position: 'fixed',
           top: -20,
-          left: -20,
+          left: -200,
           zIndex: 9999,
           cursor: 'pointer',
           display: 'flex',
