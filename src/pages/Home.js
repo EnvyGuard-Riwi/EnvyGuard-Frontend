@@ -10,7 +10,9 @@ import {
   Download,
   Lock,
   LayoutGrid,
-  ChevronRight
+  ChevronRight,
+  Mail,
+  Key
 } from 'lucide-react';
 
 // --- UTILS & HOOKS ---
@@ -320,90 +322,98 @@ const LoginModal = ({ isOpen, onClose, buttonRef }) => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
 
-  // Obtener posición del botón para la animación de origen
+  // 1. Calcular la posición del botón para la animación de origen/destino
   const getButtonPosition = () => {
     if (buttonRef && buttonRef.current) {
-      return buttonRef.current.getBoundingClientRect();
+      // Usamos getBoundingClientRect() para obtener las coordenadas relativas al viewport
+      const rect = buttonRef.current.getBoundingClientRect();
+      return { top: rect.top, right: window.innerWidth - rect.right, width: rect.width, height: rect.height };
     }
-    return { top: 0, right: 0, width: 120, height: 40 };
+    // Valores por defecto si no se encuentra la referencia (para que no falle)
+    return { top: 20, right: 20, width: 120, height: 40 };
   };
 
   const buttonPos = getButtonPosition();
+
+  // Animación del contenedor del modal
+  const modalVariants = {
+    hidden: { 
+      opacity: 0,
+      scale: 0.3,
+      // Usamos el punto superior derecho del botón como origen de la transformación
+      transformOrigin: `${window.innerWidth - buttonPos.right}px ${buttonPos.top + (buttonPos.height / 2)}px`,
+      x: 0,
+      y: 0
+    },
+    visible: { 
+      opacity: 1,
+      scale: 1,
+      x: 0,
+      y: 0,
+      transition: { 
+        delay: 0.05, 
+        duration: 0.4, 
+        ease: [0.22, 1, 0.36, 1] // Curva de aceleración suave
+      }
+    },
+    exit: { 
+      opacity: 0,
+      scale: 0.3,
+      // De nuevo, volvemos al origen del botón para la animación de cierre
+      transformOrigin: `${window.innerWidth - buttonPos.right}px ${buttonPos.top + (buttonPos.height / 2)}px`,
+      transition: { duration: 0.3, ease: "easeIn" }
+    }
+  };
+
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    // Lógica de inicio de sesión aquí
+    console.log(`Intentando iniciar sesión con: ${email}`);
+    onClose();
+  };
 
   return (
     <AnimatePresence>
       {isOpen && (
         <>
-          {/* Backdrop con efecto de contracción hacia el botón */}
+          {/* Backdrop */}
           <motion.div
-            initial={{ 
-              scale: 1, 
-              opacity: 0,
-              originX: 1,
-              originY: 0
-            }}
-            animate={{ 
-              scale: 1, 
-              opacity: 0.5,
-              originX: 1,
-              originY: 0
-            }}
-            exit={{ 
-              scale: 1, 
-              opacity: 0,
-              originX: 1,
-              originY: 0,
-              transition: { duration: 0.4, delay: 0.2 }
-            }}
-            transition={{ duration: 0.5 }}
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 0.8 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.3 }}
             onClick={onClose}
             className="fixed inset-0 bg-black z-[200] cursor-pointer"
           />
 
-          {/* Contenedor del modal con animación */}
+          {/* Contenedor del modal */}
           <motion.div
-            initial={{ 
-              opacity: 0,
-              x: 0,
-              originX: 1,
-              originY: 0,
-              scale: 0.3,
-              transformOrigin: `${buttonPos.right}px ${buttonPos.top}px`
-            }}
-            animate={{ 
-              opacity: 1,
-              x: 0,
-              scale: 1,
-              transition: { delay: 0.05, duration: 0.35, ease: "easeOut" }
-            }}
-            exit={{ 
-              opacity: 0,
-              x: 600,
-              scale: 0.3,
-              transformOrigin: `${buttonPos.right}px ${buttonPos.top}px`,
-              transition: { duration: 0.2, ease: "easeIn" }
-            }}
-            className="fixed top-0 right-0 h-screen w-full md:w-[500px] z-[300]"
+            variants={modalVariants}
+            initial="hidden"
+            animate="visible"
+            exit="exit"
+            className="fixed top-0 right-0 h-screen w-full md:w-[450px] z-[300]"
           >
             {/* Panel del modal */}
-            <div className="w-full h-full bg-gradient-to-br from-black via-black to-cyan-950/20 border-l border-cyan-500/50 backdrop-blur-2xl flex flex-col p-8 relative overflow-hidden shadow-2xl shadow-cyan-500/20">
+            <div className="w-full h-full bg-[#050505]/95 border-l border-cyan-500/50 backdrop-blur-xl flex flex-col p-8 relative overflow-hidden shadow-2xl shadow-cyan-500/20">
               
-              {/* Efecto de línea de escaneo */}
-              <div className="absolute inset-0 bg-[linear-gradient(rgba(18,16,16,0)_50%,rgba(0,0,0,0.25)_50%),linear-gradient(90deg,rgba(255,0,0,0.06),rgba(0,255,0,0.02),rgba(0,0,255,0.06))] z-0 bg-[length:100%_4px,3px_100%] pointer-events-none" />
+              {/* Efecto de escaneo de línea (Simulación CRT) */}
+              <div className="absolute inset-0 bg-[linear-gradient(rgba(18,16,16,0)_50%,rgba(0,0,0,0.25)_50%),linear-gradient(90deg,rgba(255,0,0,0.06),rgba(0,255,0,0.02),rgba(0,0,255,0.06))] z-0 bg-[length:100%_4px,3px_100%] pointer-events-none opacity-50" />
               
-              {/* Glow effects - Mejorados */}
-              <div className="absolute top-0 right-0 w-96 h-96 bg-cyan-500/15 blur-[140px] pointer-events-none" />
-              <div className="absolute bottom-0 left-0 w-80 h-80 bg-blue-500/10 blur-[120px] pointer-events-none" />
+              {/* Glow effects */}
+              <div className="absolute top-0 right-0 w-80 h-80 bg-cyan-500/10 blur-[100px] pointer-events-none" />
+              <div className="absolute bottom-0 left-0 w-72 h-72 bg-purple-500/10 blur-[100px] pointer-events-none" />
               
-              {/* Borde luminoso animado */}
+              {/* Borde superior animado */}
               <motion.div 
                 className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-cyan-500 to-transparent"
                 animate={{ opacity: [0.3, 0.8, 0.3] }}
                 transition={{ repeat: Infinity, duration: 3 }}
               />
 
-              {/* Contenido */}
+              {/* Contenido principal */}
               <div className="relative z-10 flex flex-col h-full">
+                
                 {/* Header */}
                 <div className="flex items-center justify-between mb-8">
                   <motion.div
@@ -411,19 +421,19 @@ const LoginModal = ({ isOpen, onClose, buttonRef }) => {
                     animate={{ opacity: 1, x: 0 }}
                     transition={{ delay: 0.15, duration: 0.3 }}
                   >
-                    <h2 className="text-4xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-cyan-300 to-blue-400 drop-shadow-lg">
-                      Acceso Seguro
+                    <h2 className="text-4xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-cyan-300 to-purple-400 drop-shadow-lg font-sans">
+                      Acceso de Root
                     </h2>
                     <p className="text-xs text-cyan-500/80 font-mono mt-2 flex items-center gap-2">
                       <span className="inline-block w-2 h-2 bg-cyan-500 rounded-full animate-pulse"></span>
-                      Sistema Restringido
+                      Terminal Restringida - Ingrese Credenciales
                     </p>
                   </motion.div>
                   <motion.button
-                    whileHover={{ rotate: 90, scale: 1.2 }}
+                    whileHover={{ rotate: 90, scale: 1.1 }}
                     whileTap={{ scale: 0.9 }}
                     onClick={onClose}
-                    className="text-gray-400 hover:text-cyan-300 transition-colors flex-shrink-0 hover:shadow-lg hover:shadow-cyan-500/50"
+                    className="text-gray-400 hover:text-red-500 transition-colors flex-shrink-0"
                   >
                     <svg className="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
@@ -436,36 +446,29 @@ const LoginModal = ({ isOpen, onClose, buttonRef }) => {
                   initial={{ scaleX: 0 }}
                   animate={{ scaleX: 1 }}
                   transition={{ delay: 0.2, duration: 0.4 }}
-                  className="h-px bg-gradient-to-r from-cyan-500/30 via-cyan-500/60 to-transparent mb-8 origin-left shadow-lg shadow-cyan-500/30"
+                  className="h-px bg-gradient-to-r from-cyan-500/50 via-cyan-500/90 to-transparent mb-8 origin-left shadow-lg shadow-cyan-500/30"
                 />
 
-                {/* Form */}
+                {/* Formulario */}
                 <motion.form 
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  transition={{ delay: 0.1, duration: 0.3 }}
+                  onSubmit={handleSubmit}
                   className="flex-1 flex flex-col gap-6"
                 >
                   {/* Email Input */}
                   <motion.div
                     initial={{ opacity: 0, y: 10 }}
                     animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: 0.2, duration: 0.3 }}
+                    transition={{ delay: 0.3, duration: 0.4 }}
                   >
                     <label className="block text-sm font-mono text-cyan-300 mb-2 flex items-center gap-2">
-                      <span className="text-cyan-400 font-bold">#</span> Correo Electrónico
+                      <Mail size={16} className="text-cyan-400" /> Correo/Usuario
                     </label>
-                    <motion.input
-                      whileFocus={{ 
-                        borderColor: "rgb(34, 211, 238)", 
-                        boxShadow: "0 0 30px rgba(34, 211, 238, 0.5), inset 0 0 10px rgba(34, 211, 238, 0.1)",
-                        scale: 1.02
-                      }}
-                      type="email"
+                    <input
+                      type="text"
                       value={email}
                       onChange={(e) => setEmail(e.target.value)}
-                      placeholder="admin@envyguard.com"
-                      className="w-full bg-black/60 border-2 border-cyan-500/30 rounded-lg px-4 py-3 text-white placeholder-gray-500 focus:outline-none transition-all font-mono text-sm hover:border-cyan-500/50"
+                      placeholder="root@envyguard"
+                      className="w-full bg-black/60 border-2 border-cyan-500/30 rounded-lg px-4 py-3 text-white placeholder-gray-500 focus:outline-none focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500 transition-all font-mono text-sm"
                     />
                   </motion.div>
 
@@ -473,70 +476,49 @@ const LoginModal = ({ isOpen, onClose, buttonRef }) => {
                   <motion.div
                     initial={{ opacity: 0, y: 10 }}
                     animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: 0.25, duration: 0.3 }}
+                    transition={{ delay: 0.4, duration: 0.4 }}
                   >
                     <label className="block text-sm font-mono text-cyan-300 mb-2 flex items-center gap-2">
-                      <span className="text-cyan-400 font-bold">#</span> Contraseña
+                      <Key size={16} className="text-cyan-400" /> Contraseña de Orquestador
                     </label>
-                    <motion.input
-                      whileFocus={{ 
-                        borderColor: "rgb(34, 211, 238)", 
-                        boxShadow: "0 0 30px rgba(34, 211, 238, 0.5), inset 0 0 10px rgba(34, 211, 238, 0.1)",
-                        scale: 1.02
-                      }}
+                    <input
                       type="password"
                       value={password}
                       onChange={(e) => setPassword(e.target.value)}
                       placeholder="••••••••••"
-                      className="w-full bg-black/60 border-2 border-cyan-500/30 rounded-lg px-4 py-3 text-white placeholder-gray-500 focus:outline-none transition-all font-mono text-sm hover:border-cyan-500/50"
+                      className="w-full bg-black/60 border-2 border-cyan-500/30 rounded-lg px-4 py-3 text-white placeholder-gray-500 focus:outline-none focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500 transition-all font-mono text-sm"
                     />
-                  </motion.div>
-
-                  {/* Remember Me */}
-                  <motion.div
-                    initial={{ opacity: 0, y: 10 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: 0.3, duration: 0.3 }}
-                    className="flex items-center gap-3 p-3 bg-cyan-950/20 rounded-lg border border-cyan-500/20 hover:border-cyan-500/40 transition-all"
-                  >
-                    <input
-                      type="checkbox"
-                      id="remember"
-                      className="w-5 h-5 accent-cyan-500 cursor-pointer rounded"
-                    />
-                    <label htmlFor="remember" className="text-sm text-cyan-300 cursor-pointer font-mono flex-1">
-                      Recuérdame en este dispositivo
-                    </label>
                   </motion.div>
 
                   {/* Login Button */}
                   <motion.button
                     initial={{ opacity: 0, y: 10 }}
                     animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: 0.35, duration: 0.3 }}
+                    transition={{ delay: 0.5, duration: 0.4 }}
                     whileHover={{ 
                       scale: 1.03, 
-                      boxShadow: "0 0 40px rgba(34, 211, 238, 0.8), 0 0 60px rgba(59, 130, 246, 0.4)",
+                      boxShadow: "0 0 40px rgba(34, 211, 238, 0.8)",
                       y: -2
                     }}
                     whileTap={{ scale: 0.97 }}
-                    type="button"
-                    className="w-full bg-gradient-to-r from-cyan-500 via-cyan-400 to-blue-600 text-black font-bold py-3 rounded-lg hover:shadow-2xl transition-all flex items-center justify-center gap-2 mt-4 hover:from-cyan-400 hover:to-blue-500"
+                    type="submit"
+                    className="w-full bg-gradient-to-r from-cyan-500 via-cyan-400 to-purple-600 text-black font-bold py-3 rounded-lg hover:shadow-2xl transition-all flex items-center justify-center gap-2 mt-8 font-sans text-lg tracking-wider"
                   >
                     <Lock size={18} />
                     INICIAR SESIÓN
                   </motion.button>
+
                 </motion.form>
 
-                {/* Footer mejorado */}
+                {/* Footer de seguridad */}
                 <motion.div 
                   initial={{ opacity: 0, y: 10 }}
                   animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: 0.4, duration: 0.3 }}
-                  className="text-center text-xs text-cyan-500/80 pt-6 border-t border-cyan-500/20 mt-8 font-mono space-y-2"
+                  transition={{ delay: 0.6, duration: 0.4 }}
+                  className="text-center text-xs text-cyan-500/80 pt-6 border-t border-cyan-500/20 mt-auto font-mono space-y-2"
                 >
-                  <p className="font-bold tracking-widest">█ SISTEMA SEGURO █</p>
-                  <p>Acceso restringido a usuarios autorizados</p>
+                  <p className="font-bold tracking-widest">█ ENVYGUARD SECURE GATEWAY █</p>
+                  <p>Acceso restringido a usuarios con nivel de privilegio Root o superior.</p>
                 </motion.div>
               </div>
             </div>
@@ -566,7 +548,7 @@ export default function Home() {
       
       {/* Noise Texture Overlay */}
       <div className="fixed inset-0 z-[60] pointer-events-none opacity-[0.04] mix-blend-overlay" 
-           style={{ backgroundImage: `url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E")` }} 
+          style={{ backgroundImage: `url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E")` }} 
       />
 
       {/* Navigation */}
