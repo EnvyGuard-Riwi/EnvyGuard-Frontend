@@ -1,7 +1,13 @@
-import React, { createContext, useContext, useState } from 'react';
+import React, { createContext, useState } from 'react';
 
 const DeviceContext = createContext();
 
+/**
+ * DeviceProvider - Proporciona contexto global de dispositivos
+ * Envuelve la aplicación para acceder al estado global desde cualquier componente
+ * @param {object} props
+ * @param {JSX.Element} props.children - Componentes hijos
+ */
 export const DeviceProvider = ({ children }) => {
   const [devices, setDevices] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -40,14 +46,6 @@ export const DeviceProvider = ({ children }) => {
       {children}
     </DeviceContext.Provider>
   );
-};
-
-export const useDevices = () => {
-  const context = useContext(DeviceContext);
-  if (!context) {
-    throw new Error('useDevices debe ser usado dentro de un DeviceProvider');
-  }
-  return context;
 };
 
 export default DeviceContext;

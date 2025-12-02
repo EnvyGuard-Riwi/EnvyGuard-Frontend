@@ -4,6 +4,7 @@
   "description": "Frontend de EnvyGuard - Control y monitoreo de dispositivos en tiempo real",
   "private": true,
   "dependencies": {
+    "@dicebear/collection": "^9.2.4",
     "@emotion/react": "^11.11.0",
     "@emotion/styled": "^11.11.0",
     "@mui/icons-material": "^5.14.0",
