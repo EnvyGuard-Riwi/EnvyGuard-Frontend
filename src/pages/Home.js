@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import iconLogo from '../assets/icons/icon.png';
 import { 
@@ -15,60 +15,9 @@ import {
   Key
 } from 'lucide-react';
 
-// --- UTILS & HOOKS ---
-
-function useMousePosition() {
-  const [mousePosition, setMousePosition] = useState({ x: 0, y: 0 });
-
-  useEffect(() => {
-    const updateMousePosition = (ev) => {
-      setMousePosition({ x: ev.clientX, y: ev.clientY });
-    };
-    window.addEventListener("mousemove", updateMousePosition);
-    return () => window.removeEventListener("mousemove", updateMousePosition);
-  }, []);
-
-  return mousePosition;
-}
-
-// Hook para efecto de texto "Matrix/Desencriptado"
-const useScrambleText = (text) => {
-  const [displayText, setDisplayText] = useState(text);
-  const [isHovering, setIsHovering] = useState(false);
-  const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789@#$%&";
-
-  useEffect(() => {
-    let interval;
-    if (isHovering) {
-      let iteration = 0;
-      interval = setInterval(() => {
-        setDisplayText(prev => 
-          text
-            .split("")
-            .map((letter, index) => {
-              if (index < iteration) {
-                return text[index];
-              }
-              return chars[Math.floor(Math.random() * chars.length)];
-            })
-            .join("")
-        );
-
-        if (iteration >= text.length) {
-          clearInterval(interval);
-        }
-
-        iteration += 1 / 3;
-      }, 30);
-    } else {
-      setDisplayText(text);
-    }
-
-    return () => clearInterval(interval);
-  }, [isHovering, text]);
-
-  return { displayText, setIsHovering };
-};
+// Importar hooks desde la carpeta correcta
+import { useMousePosition } from '../hooks/useMousePosition';
+import { useScrambleText } from '../hooks/useScrambleText';
 
 // --- VISUAL COMPONENTS ---
 
@@ -150,13 +99,13 @@ const BootSequence = ({ onComplete }) => {
 const GlitchTitle = ({ text }) => {
   return (
     <div className="relative inline-block group">
-      <h1 className="text-5xl md:text-7xl font-bold leading-tight mb-6 tracking-tight relative z-10">
+      <h1 className="text-3xl sm:text-5xl md:text-6xl lg:text-7xl font-bold leading-tight mb-6 tracking-tight relative z-10 break-words">
         {text}
       </h1>
-      <h1 className="text-5xl md:text-7xl font-bold leading-tight mb-6 tracking-tight absolute top-0 left-0 -z-10 text-red-500 opacity-0 group-hover:opacity-70 group-hover:animate-pulse translate-x-[2px]">
+      <h1 className="text-3xl sm:text-5xl md:text-6xl lg:text-7xl font-bold leading-tight mb-6 tracking-tight absolute top-0 left-0 -z-10 text-red-500 opacity-0 group-hover:opacity-70 group-hover:animate-pulse translate-x-[2px] break-words">
         {text}
       </h1>
-      <h1 className="text-5xl md:text-7xl font-bold leading-tight mb-6 tracking-tight absolute top-0 left-0 -z-10 text-cyan-500 opacity-0 group-hover:opacity-70 group-hover:animate-pulse -translate-x-[2px]">
+      <h1 className="text-3xl sm:text-5xl md:text-6xl lg:text-7xl font-bold leading-tight mb-6 tracking-tight absolute top-0 left-0 -z-10 text-cyan-500 opacity-0 group-hover:opacity-70 group-hover:animate-pulse -translate-x-[2px] break-words">
         {text}
       </h1>
     </div>
@@ -271,7 +220,7 @@ const TerminalPreview = () => {
   }, []);
 
   return (
-    <div className="relative w-full max-w-md rounded-lg overflow-hidden border border-white/10 shadow-2xl bg-[#050505] group">
+    <div className="relative w-full max-w-lg sm:max-w-md rounded-lg overflow-hidden border border-white/10 shadow-2xl bg-[#050505] group">
       
       {/* CRT Screen Glow */}
       <div className="absolute inset-0 bg-cyan-500/5 opacity-0 group-hover:opacity-100 transition-opacity duration-700 pointer-events-none z-0" />
@@ -287,7 +236,7 @@ const TerminalPreview = () => {
       </div>
 
       {/* Content */}
-      <div className="p-5 h-64 flex flex-col justify-end font-mono text-xs relative overflow-hidden">
+      <div className="p-3 sm:p-5 h-48 sm:h-64 flex flex-col justify-end font-mono text-xs relative overflow-hidden">
         {/* Scanline Effect */}
         <div className="absolute inset-0 bg-[linear-gradient(rgba(18,16,16,0)_50%,rgba(0,0,0,0.25)_50%),linear-gradient(90deg,rgba(255,0,0,0.06),rgba(0,255,0,0.02),rgba(0,0,255,0.06))] z-20 bg-[length:100%_4px,3px_100%] pointer-events-none" />
         <div className="absolute inset-0 bg-cyan-500/5 blur-[0.5px] z-10 pointer-events-none" />
@@ -321,15 +270,14 @@ const TerminalPreview = () => {
 const LoginModal = ({ isOpen, onClose, buttonRef }) => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const mouse = useMousePosition();
 
   // 1. Calcular la posición del botón para la animación de origen/destino
   const getButtonPosition = () => {
     if (buttonRef && buttonRef.current) {
-      // Usamos getBoundingClientRect() para obtener las coordenadas relativas al viewport
       const rect = buttonRef.current.getBoundingClientRect();
       return { top: rect.top, right: window.innerWidth - rect.right, width: rect.width, height: rect.height };
     }
-    // Valores por defecto si no se encuentra la referencia (para que no falle)
     return { top: 20, right: 20, width: 120, height: 40 };
   };
 
@@ -340,7 +288,6 @@ const LoginModal = ({ isOpen, onClose, buttonRef }) => {
     hidden: { 
       opacity: 0,
       scale: 0.3,
-      // Usamos el punto superior derecho del botón como origen de la transformación
       transformOrigin: `${window.innerWidth - buttonPos.right}px ${buttonPos.top + (buttonPos.height / 2)}px`,
       x: 0,
       y: 0
@@ -353,13 +300,12 @@ const LoginModal = ({ isOpen, onClose, buttonRef }) => {
       transition: { 
         delay: 0.05, 
         duration: 0.4, 
-        ease: [0.22, 1, 0.36, 1] // Curva de aceleración suave
+        ease: [0.22, 1, 0.36, 1]
       }
     },
     exit: { 
       opacity: 0,
       scale: 0.3,
-      // De nuevo, volvemos al origen del botón para la animación de cierre
       transformOrigin: `${window.innerWidth - buttonPos.right}px ${buttonPos.top + (buttonPos.height / 2)}px`,
       transition: { duration: 0.3, ease: "easeIn" }
     }
@@ -367,7 +313,6 @@ const LoginModal = ({ isOpen, onClose, buttonRef }) => {
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    // Lógica de inicio de sesión aquí
     console.log(`Intentando iniciar sesión con: ${email}`);
     onClose();
   };
@@ -376,14 +321,14 @@ const LoginModal = ({ isOpen, onClose, buttonRef }) => {
     <AnimatePresence>
       {isOpen && (
         <>
-          {/* Backdrop */}
+          {/* Backdrop mejorado */}
           <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 0.8 }}
-            exit={{ opacity: 0 }}
-            transition={{ duration: 0.3 }}
+            initial={{ opacity: 0, backdropFilter: "blur(0px)" }}
+            animate={{ opacity: 0.7, backdropFilter: "blur(8px)" }}
+            exit={{ opacity: 0, backdropFilter: "blur(0px)" }}
+            transition={{ duration: 0.4 }}
             onClick={onClose}
-            className="fixed inset-0 bg-black z-[200] cursor-pointer"
+            className="fixed inset-0 bg-black/60 z-[200] cursor-pointer"
           />
 
           {/* Contenedor del modal */}
@@ -392,50 +337,88 @@ const LoginModal = ({ isOpen, onClose, buttonRef }) => {
             initial="hidden"
             animate="visible"
             exit="exit"
-            className="fixed top-0 right-0 h-screen w-full md:w-[450px] z-[300]"
+            className="fixed inset-0 sm:top-0 sm:right-0 sm:h-screen sm:w-96 md:w-[500px] z-[300] overflow-y-auto sm:overflow-y-visible"
           >
             {/* Panel del modal */}
-            <div className="w-full h-full bg-[#050505]/95 border-l border-cyan-500/50 backdrop-blur-xl flex flex-col p-8 relative overflow-hidden shadow-2xl shadow-cyan-500/20">
+            <div className="w-full h-full bg-gradient-to-br from-gray-950 via-gray-900 to-gray-950 border-0 sm:border-l border-gray-700/50 backdrop-blur-2xl flex flex-col p-6 sm:p-10 relative overflow-hidden shadow-2xl shadow-gray-600/10">
               
-              {/* Efecto de escaneo de línea (Simulación CRT) */}
-              <div className="absolute inset-0 bg-[linear-gradient(rgba(18,16,16,0)_50%,rgba(0,0,0,0.25)_50%),linear-gradient(90deg,rgba(255,0,0,0.06),rgba(0,255,0,0.02),rgba(0,0,255,0.06))] z-0 bg-[length:100%_4px,3px_100%] pointer-events-none opacity-50" />
-              
-              {/* Glow effects */}
-              <div className="absolute top-0 right-0 w-80 h-80 bg-cyan-500/10 blur-[100px] pointer-events-none" />
-              <div className="absolute bottom-0 left-0 w-72 h-72 bg-purple-500/10 blur-[100px] pointer-events-none" />
-              
-              {/* Borde superior animado */}
-              <motion.div 
-                className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-cyan-500 to-transparent"
-                animate={{ opacity: [0.3, 0.8, 0.3] }}
-                transition={{ repeat: Infinity, duration: 3 }}
+              {/* Cuadrícula de fondo animada - ACORDE CON EL DISEÑO DE LA PÁGINA */}
+              <div 
+                className="absolute inset-0 opacity-20 pointer-events-none"
+                style={{
+                  backgroundImage: `linear-gradient(to right, rgba(107, 114, 128, 0.15) 1px, transparent 1px), linear-gradient(to bottom, rgba(107, 114, 128, 0.15) 1px, transparent 1px)`,
+                  backgroundSize: '50px 50px',
+                  backgroundPosition: `${(mouse.x % 50)}px ${(mouse.y % 50)}px`,
+                  transition: 'background-position 0.1s linear'
+                }}
               />
+
+              {/* Líneas de escaneo CRT */}
+              <div className="absolute inset-0 bg-[linear-gradient(rgba(18,16,16,0)_50%,rgba(0,0,0,0.25)_50%),linear-gradient(90deg,rgba(107,114,128,0.03),rgba(107,114,128,0.02),rgba(107,114,128,0.03))] z-0 bg-[length:100%_4px,3px_100%] pointer-events-none opacity-60" />
+              
+              {/* Glow effects mejorados */}
+              <div className="absolute top-0 right-0 w-96 h-96 bg-gray-600/8 blur-[120px] pointer-events-none rounded-full" />
+              <div className="absolute bottom-0 left-0 w-96 h-96 bg-gray-500/8 blur-[120px] pointer-events-none rounded-full" />
+              
+              {/* Borde superior animado con más intensidad */}
+              <motion.div 
+                className="absolute top-0 left-0 right-0 h-0.5 bg-gradient-to-r from-transparent via-gray-600 to-transparent"
+                animate={{ opacity: [0.4, 1, 0.4], boxShadow: ["0 0 10px rgba(107, 114, 128, 0.5)", "0 0 30px rgba(107, 114, 128, 1)", "0 0 10px rgba(107, 114, 128, 0.5)"] }}
+                transition={{ repeat: Infinity, duration: 4 }}
+              />
+
+                {/* Partículas decorativas */}
+                <div className="absolute inset-0 pointer-events-none">
+                  {[...Array(5)].map((_, i) => (
+                    <motion.div
+                      key={i}
+                      className="absolute w-1 h-1 bg-gray-500 rounded-full"
+                      initial={{ x: Math.random() * 100 + "%", y: Math.random() * 100 + "%" }}
+                      animate={{ 
+                        x: [null, Math.random() * 100 + "%"],
+                        y: [null, Math.random() * 100 + "%"],
+                        opacity: [0.5, 0.8, 0.5]
+                      }}
+                      transition={{ 
+                        duration: Math.random() * 8 + 6, 
+                        repeat: Infinity, 
+                        ease: "linear" 
+                      }}
+                    />
+                  ))}
+                </div>
 
               {/* Contenido principal */}
               <div className="relative z-10 flex flex-col h-full">
                 
                 {/* Header */}
-                <div className="flex items-center justify-between mb-8">
+                <div className="flex items-center justify-between mb-8 sm:mb-10 flex-col sm:flex-row gap-4">
                   <motion.div
-                    initial={{ opacity: 0, x: -20 }}
+                    initial={{ opacity: 0, x: -30 }}
                     animate={{ opacity: 1, x: 0 }}
-                    transition={{ delay: 0.15, duration: 0.3 }}
+                    transition={{ delay: 0.15, duration: 0.4 }}
+                    className="flex-1"
                   >
-                    <h2 className="text-4xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-cyan-300 to-purple-400 drop-shadow-lg font-sans">
+                    <h2 className="text-2xl sm:text-4xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-cyan-300 via-blue-400 to-purple-400 drop-shadow-lg font-sans">
                       Acceso de Root
                     </h2>
-                    <p className="text-xs text-cyan-500/80 font-mono mt-2 flex items-center gap-2">
-                      <span className="inline-block w-2 h-2 bg-cyan-500 rounded-full animate-pulse"></span>
-                      Terminal Restringida - Ingrese Credenciales
+                    <p className="text-[10px] sm:text-xs text-cyan-500/70 font-mono mt-2 sm:mt-3 flex items-center gap-2">
+                      <span className="inline-block w-1.5 h-1.5 bg-green-400 rounded-full"></span>
+                      ENVYGUARD ORQUESTADOR v1.2.5
                     </p>
                   </motion.div>
                   <motion.button
-                    whileHover={{ rotate: 90, scale: 1.1 }}
-                    whileTap={{ scale: 0.9 }}
+                    whileHover={{ rotate: 90, scale: 1.15 }}
+                    whileTap={{ scale: 0.85 }}
                     onClick={onClose}
-                    className="text-gray-400 hover:text-red-500 transition-colors flex-shrink-0"
+                    className="text-gray-400 hover:text-cyan-400 transition-colors flex-shrink-0 relative"
                   >
-                    <svg className="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <motion.div
+                      className="absolute inset-0 bg-cyan-500/20 rounded-full"
+                      animate={{ scale: [1, 1.2, 1] }}
+                      transition={{ repeat: Infinity, duration: 3, opacity: [0.5, 0, 0.5] }}
+                    />
+                    <svg className="w-6 sm:w-7 h-6 sm:h-7 relative" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
                     </svg>
                   </motion.button>
@@ -445,80 +428,95 @@ const LoginModal = ({ isOpen, onClose, buttonRef }) => {
                 <motion.div
                   initial={{ scaleX: 0 }}
                   animate={{ scaleX: 1 }}
-                  transition={{ delay: 0.2, duration: 0.4 }}
-                  className="h-px bg-gradient-to-r from-cyan-500/50 via-cyan-500/90 to-transparent mb-8 origin-left shadow-lg shadow-cyan-500/30"
+                  transition={{ delay: 0.2, duration: 0.5 }}
+                  className="h-0.5 bg-gradient-to-r from-transparent via-gray-600 to-transparent mb-6 sm:mb-10 origin-left shadow-lg shadow-gray-600/50"
                 />
 
                 {/* Formulario */}
                 <motion.form 
                   onSubmit={handleSubmit}
-                  className="flex-1 flex flex-col gap-6"
+                  className="flex-1 flex flex-col gap-4 sm:gap-6 mb-6 sm:mb-8"
                 >
                   {/* Email Input */}
                   <motion.div
-                    initial={{ opacity: 0, y: 10 }}
+                    initial={{ opacity: 0, y: 15 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ delay: 0.3, duration: 0.4 }}
+                    className="group"
                   >
-                    <label className="block text-sm font-mono text-cyan-300 mb-2 flex items-center gap-2">
-                      <Mail size={16} className="text-cyan-400" /> Correo/Usuario
+                    <label className="block text-[11px] sm:text-xs font-mono text-cyan-400 mb-2 sm:mb-3 flex items-center gap-2 tracking-wider">
+                      <Mail size={14} className="text-cyan-400 flex-shrink-0" /> 
+                      USUARIO / CORREO
                     </label>
-                    <input
-                      type="text"
-                      value={email}
-                      onChange={(e) => setEmail(e.target.value)}
-                      placeholder="root@envyguard"
-                      className="w-full bg-black/60 border-2 border-cyan-500/30 rounded-lg px-4 py-3 text-white placeholder-gray-500 focus:outline-none focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500 transition-all font-mono text-sm"
-                    />
+                    <div className="relative">
+                      <input
+                        type="text"
+                        value={email}
+                        onChange={(e) => setEmail(e.target.value)}
+                        placeholder="admin@envyguard"
+                        className="w-full bg-black/40 border border-cyan-500/30 rounded-lg px-3 sm:px-4 py-2 sm:py-3 text-white text-sm placeholder-gray-600 focus:outline-none focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500/50 transition-all font-mono group-focus-within:shadow-[0_0_20px_rgba(6,182,212,0.2)]"
+                      />
+                      <div className="absolute right-3 top-1/2 transform -translate-y-1/2 text-cyan-500/30 group-focus-within:text-cyan-500/60 transition-colors">
+                        <Terminal size={16} />
+                      </div>
+                    </div>
                   </motion.div>
 
                   {/* Password Input */}
                   <motion.div
-                    initial={{ opacity: 0, y: 10 }}
+                    initial={{ opacity: 0, y: 15 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ delay: 0.4, duration: 0.4 }}
+                    className="group"
                   >
-                    <label className="block text-sm font-mono text-cyan-300 mb-2 flex items-center gap-2">
-                      <Key size={16} className="text-cyan-400" /> Contraseña de Orquestador
+                    <label className="block text-[11px] sm:text-xs font-mono text-cyan-400 mb-2 sm:mb-3 flex items-center gap-2 tracking-wider">
+                      <Key size={14} className="text-cyan-400 flex-shrink-0" /> 
+                      CONTRASEÑA
                     </label>
-                    <input
-                      type="password"
-                      value={password}
-                      onChange={(e) => setPassword(e.target.value)}
-                      placeholder="••••••••••"
-                      className="w-full bg-black/60 border-2 border-cyan-500/30 rounded-lg px-4 py-3 text-white placeholder-gray-500 focus:outline-none focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500 transition-all font-mono text-sm"
-                    />
+                    <div className="relative">
+                      <input
+                        type="password"
+                        value={password}
+                        onChange={(e) => setPassword(e.target.value)}
+                        placeholder="••••••••••••••••"
+                        className="w-full bg-black/40 border border-cyan-500/30 rounded-lg px-3 sm:px-4 py-2 sm:py-3 text-white text-sm placeholder-gray-600 focus:outline-none focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500/50 transition-all font-mono group-focus-within:shadow-[0_0_20px_rgba(6,182,212,0.2)]"
+                      />
+                      <div className="absolute right-3 top-1/2 transform -translate-y-1/2 text-cyan-500/30 group-focus-within:text-cyan-500/60 transition-colors">
+                        <Lock size={16} />
+                      </div>
+                    </div>
                   </motion.div>
 
                   {/* Login Button */}
                   <motion.button
-                    initial={{ opacity: 0, y: 10 }}
+                    initial={{ opacity: 0, y: 15 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ delay: 0.5, duration: 0.4 }}
                     whileHover={{ 
-                      scale: 1.03, 
-                      boxShadow: "0 0 40px rgba(34, 211, 238, 0.8)",
-                      y: -2
+                      scale: 1.02,
+                      boxShadow: "0 0 40px rgba(6, 182, 212, 1), inset 0 0 20px rgba(34, 211, 238, 0.3)"
                     }}
-                    whileTap={{ scale: 0.97 }}
+                    whileTap={{ scale: 0.98 }}
                     type="submit"
-                    className="w-full bg-gradient-to-r from-cyan-500 via-cyan-400 to-purple-600 text-black font-bold py-3 rounded-lg hover:shadow-2xl transition-all flex items-center justify-center gap-2 mt-8 font-sans text-lg tracking-wider"
+                    className="w-full bg-gradient-to-r from-cyan-600 via-cyan-500 to-blue-600 text-white font-bold py-2 sm:py-3 px-4 rounded-lg hover:shadow-2xl transition-all flex items-center justify-center gap-2 sm:gap-3 mt-2 sm:mt-4 font-sans text-sm sm:text-base tracking-wider border border-cyan-400/50 relative overflow-hidden group"
                   >
-                    <Lock size={18} />
-                    INICIAR SESIÓN
+                    <div className="absolute inset-0 bg-white/10 translate-y-full group-hover:translate-y-0 transition-transform duration-300" />
+                    <Lock size={16} className="sm:w-[18px] sm:h-[18px] relative" />
+                    <span className="relative">INICIAR SESIÓN</span>
                   </motion.button>
 
                 </motion.form>
 
                 {/* Footer de seguridad */}
                 <motion.div 
-                  initial={{ opacity: 0, y: 10 }}
+                  initial={{ opacity: 0, y: 15 }}
                   animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: 0.6, duration: 0.4 }}
-                  className="text-center text-xs text-cyan-500/80 pt-6 border-t border-cyan-500/20 mt-auto font-mono space-y-2"
+                  transition={{ delay: 0.7, duration: 0.4 }}
+                  className="text-center text-[10px] sm:text-xs text-cyan-500/60 pt-6 sm:pt-8 border-t border-cyan-500/20 mt-auto font-mono space-y-1 sm:space-y-2"
                 >
-                  <p className="font-bold tracking-widest">█ ENVYGUARD SECURE GATEWAY █</p>
-                  <p>Acceso restringido a usuarios con nivel de privilegio Root o superior.</p>
+                  <p className="font-bold tracking-widest text-cyan-500/80">🔒 PUERTA SEGURA</p>
+                  <p>Acceso restringido - Solo personal autorizado</p>
+                  <p className="text-[9px] sm:text-[10px] text-cyan-600/50">Sesión registrada y monitoreada</p>
                 </motion.div>
               </div>
             </div>
@@ -553,10 +551,10 @@ export default function Home() {
 
       {/* Navigation */}
       <nav className="fixed top-0 w-full z-50 border-b border-white/5 bg-black/80 backdrop-blur-xl">
-        <div className="max-w-7xl mx-auto px-6 h-16 flex items-center justify-between">
-          <div className="flex items-center gap-3 group cursor-none">
-            <img src={iconLogo} alt="EnvyGuard" className="w-9 h-9 object-contain group-hover:scale-110 transition-transform" />
-            <span className="font-bold text-lg tracking-wider font-mono text-transparent bg-clip-text bg-gradient-to-r from-white to-gray-400">EnvyGuard</span>
+        <div className="max-w-7xl mx-auto px-3 sm:px-6 h-14 sm:h-16 flex items-center justify-between">
+          <div className="flex items-center gap-2 sm:gap-3 group cursor-none">
+            <img src={iconLogo} alt="EnvyGuard" className="w-7 sm:w-9 h-7 sm:h-9 object-contain group-hover:scale-110 transition-transform" />
+            <span className="font-bold text-sm sm:text-lg tracking-wider font-mono text-transparent bg-clip-text bg-gradient-to-r from-white to-gray-400">EnvyGuard</span>
           </div>
           <div className="hidden md:flex items-center gap-8 text-sm font-medium text-gray-400">
             <motion.button
@@ -564,7 +562,7 @@ export default function Home() {
               onClick={() => setShowLoginModal(true)}
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
-              className="bg-white/5 border border-white/10 hover:border-cyan-500/50 text-white px-4 py-2 rounded-full text-xs font-mono transition-all hover:bg-cyan-500/10 flex items-center gap-3 group cursor-none"
+              className="bg-white/5 border border-white/10 hover:border-cyan-500/50 text-white px-3 sm:px-4 py-2 rounded-full text-xs font-mono transition-all hover:bg-cyan-500/10 flex items-center gap-2 sm:gap-3 group cursor-none"
             >
               PANEL DE ACCESO
               <motion.div
@@ -575,21 +573,32 @@ export default function Home() {
               </motion.div>
             </motion.button>
           </div>
+          {/* Mobile Login Button */}
+          <motion.button
+            ref={loginButtonRef}
+            onClick={() => setShowLoginModal(true)}
+            whileHover={{ scale: 1.05 }}
+            whileTap={{ scale: 0.95 }}
+            className="md:hidden bg-white/5 border border-white/10 hover:border-cyan-500/50 text-white px-3 py-1.5 rounded-full text-[10px] font-mono transition-all hover:bg-cyan-500/10 flex items-center gap-1 group cursor-none"
+          >
+            ACCESO
+            <ChevronRight size={12} className="group-hover:text-cyan-400 transition-colors"/>
+          </motion.button>
         </div>
       </nav>
 
       {/* Hero Section */}
-      <section className="relative min-h-screen flex items-center justify-center pt-20 px-6 overflow-hidden">
+      <section className="relative min-h-screen flex items-center justify-center pt-16 sm:pt-20 px-4 sm:px-6 overflow-hidden">
         <RetroGrid />
         
-        <div className="max-w-7xl w-full mx-auto relative z-10 grid lg:grid-cols-2 gap-16 items-center mt-10">
+        <div className="max-w-7xl w-full mx-auto relative z-10 grid lg:grid-cols-2 gap-8 lg:gap-16 items-center mt-6 sm:mt-10">
           <div className="order-2 lg:order-1">
             <motion.div 
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.8, delay: loading ? 0 : 0.5 }}
             >
-              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-cyan-950/30 border border-cyan-500/20 text-cyan-400 text-xs font-mono mb-6 shadow-[0_0_10px_rgba(6,182,212,0.1)]">
+              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-cyan-950/30 border border-cyan-500/20 text-cyan-400 text-[10px] sm:text-xs font-mono mb-4 sm:mb-6 shadow-[0_0_10px_rgba(6,182,212,0.1)]">
                 <span className="relative flex h-2 w-2">
                   <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-cyan-400 opacity-75"></span>
                   <span className="relative inline-flex rounded-full h-2 w-2 bg-cyan-500"></span>
@@ -598,29 +607,29 @@ export default function Home() {
               </div>
               
               <GlitchTitle text="Control Total." />
-              <h1 className="text-5xl md:text-7xl font-bold leading-tight mb-6 tracking-tight">
+              <h1 className="text-3xl sm:text-5xl md:text-6xl lg:text-7xl font-bold leading-tight mb-4 sm:mb-6 tracking-tight">
                 <span className="text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 via-blue-500 to-purple-600 animate-gradient">Sin Latencia.</span>
               </h1>
               
-              <p className="text-gray-400 text-lg mb-8 max-w-lg leading-relaxed border-l-2 border-cyan-900/50 pl-6">
+              <p className="text-gray-400 text-sm sm:text-base md:text-lg mb-6 sm:mb-8 max-w-lg leading-relaxed border-l-2 border-cyan-900/50 pl-4">
                 Orquesta agentes remotos con precisión de nivel militar. 
                 Telemetría en tiempo real, despliegue silencioso y control absoluto sobre tu infraestructura.
               </p>
 
-              <div className="flex flex-col sm:flex-row gap-4">
-                <button className="relative px-8 py-4 bg-cyan-500 text-black font-bold rounded-lg overflow-hidden group cursor-none">
+              <div className="flex flex-col sm:flex-row gap-3 sm:gap-4">
+                <button className="relative px-6 sm:px-8 py-3 sm:py-4 bg-cyan-500 text-black font-bold rounded-lg overflow-hidden group cursor-none text-sm sm:text-base">
                   <div className="absolute inset-0 bg-white/20 translate-y-full group-hover:translate-y-0 transition-transform duration-300" />
                   <span className="relative flex items-center justify-center gap-2">
-                    <Download size={20} /> Desplegar Agente
+                    <Download size={18} /> Desplegar Agente
                   </span>
                 </button>
-                <button className="px-8 py-4 bg-transparent border border-gray-800 hover:border-cyan-500/50 text-white rounded-lg transition-all flex items-center justify-center gap-2 group hover:bg-cyan-950/10 cursor-none">
-                  <Terminal size={20} className="group-hover:text-cyan-400" />
+                <button className="px-6 sm:px-8 py-3 sm:py-4 bg-transparent border border-gray-800 hover:border-cyan-500/50 text-white rounded-lg transition-all flex items-center justify-center gap-2 group hover:bg-cyan-950/10 cursor-none text-sm sm:text-base">
+                  <Terminal size={18} className="group-hover:text-cyan-400" />
                   <span>Documentación</span>
                 </button>
               </div>
 
-              <div className="mt-12 flex flex-wrap gap-3">
+              <div className="mt-8 sm:mt-12 flex flex-wrap gap-2 sm:gap-3">
                 <CipherBadge label="C# .NET" icon={Terminal} />
                 <CipherBadge label="Spring Boot" icon={Server} />
                 <CipherBadge label="RabbitMQ" icon={Activity} />
@@ -645,13 +654,13 @@ export default function Home() {
               <motion.div 
                 animate={{ y: [0, -10, 0] }}
                 transition={{ repeat: Infinity, duration: 4, ease: "easeInOut" }}
-                className="absolute -right-8 top-12 bg-black/80 border border-gray-800 p-4 rounded-xl shadow-2xl backdrop-blur-xl w-40"
+                className="absolute -right-4 sm:-right-8 top-8 sm:top-12 bg-black/80 border border-gray-800 p-3 sm:p-4 rounded-xl shadow-2xl backdrop-blur-xl w-32 sm:w-40"
               >
-                <div className="flex items-center gap-3 mb-2">
-                  <Wifi className="text-green-400" size={16} />
-                  <span className="text-[10px] font-mono text-gray-400">RED</span>
+                <div className="flex items-center gap-2 sm:gap-3 mb-2">
+                  <Wifi className="text-green-400 flex-shrink-0" size={14} />
+                  <span className="text-[9px] sm:text-[10px] font-mono text-gray-400">RED</span>
                 </div>
-                <div className="text-2xl font-bold text-white font-mono tracking-tighter">98.2%</div>
+                <div className="text-xl sm:text-2xl font-bold text-white font-mono tracking-tighter">98.2%</div>
                 <div className="w-full h-1 bg-gray-800 mt-2 rounded-full overflow-hidden">
                   <div className="h-full w-[98%] bg-green-500" />
                 </div>
@@ -660,14 +669,14 @@ export default function Home() {
               <motion.div 
                 animate={{ y: [0, 10, 0] }}
                 transition={{ repeat: Infinity, duration: 5, ease: "easeInOut", delay: 1 }}
-                className="absolute -left-20 -bottom-14 bg-black/80 border border-gray-800 p-4 rounded-xl shadow-2xl backdrop-blur-xl w-48"
+                className="absolute -left-12 sm:-left-20 -bottom-10 sm:-bottom-14 bg-black/80 border border-gray-800 p-3 sm:p-4 rounded-xl shadow-2xl backdrop-blur-xl w-40 sm:w-48"
               >
-                <div className="flex items-center gap-3 mb-2">
-                  <ShieldAlert className="text-purple-400" size={16} />
-                  <span className="text-[10px] font-mono text-gray-400">AMENAZAS</span>
+                <div className="flex items-center gap-2 sm:gap-3 mb-2">
+                  <ShieldAlert className="text-purple-400 flex-shrink-0" size={14} />
+                  <span className="text-[9px] sm:text-[10px] font-mono text-gray-400">AMENAZAS</span>
                 </div>
-                <div className="text-xl font-bold text-white font-mono">142 BLOQUEADOS</div>
-                <div className="text-[10px] text-gray-500 mt-1">Últimas 24 horas</div>
+                <div className="text-lg sm:text-xl font-bold text-white font-mono">142 BLOQUEADOS</div>
+                <div className="text-[9px] sm:text-[10px] text-gray-500 mt-1">Últimas 24 horas</div>
               </motion.div>
             </div>
           </motion.div>
