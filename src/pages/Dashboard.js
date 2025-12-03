@@ -52,11 +52,16 @@ import {
   Play,
   Pause,
   Loader,
-  Copy
+  Copy,
+  Menu,
+  Eye,
+  RefreshCw,
+  Maximize2
 } from "lucide-react";
 import iconLogo from "../assets/icons/icon.png";
 import DeviceService from "../services/DeviceService";
 import WebSocketService from "../services/WebSocketService";
+import RabbitMQService from "../services/RabbitMQService";
 
 // --- UTILS & COMPONENTS ---
 
@@ -72,10 +77,35 @@ const ScrollArea = ({ children, className = "" }) => (
 const SidebarContext = createContext(undefined);
 
 const Sidebar = ({ children, open, setOpen }) => {
+  const [isMobileOpen, setIsMobileOpen] = useState(false);
+
   return (
     <SidebarContext.Provider value={{ open, setOpen }}>
+      {/* Hamburger Menu - Solo visible en móvil */}
+      <button
+        onClick={() => setIsMobileOpen(!isMobileOpen)}
+        className="fixed top-4 left-4 z-[110] md:hidden p-2 rounded-lg bg-cyan-500/20 border border-cyan-500/50 hover:bg-cyan-500/30 text-cyan-400 transition-all"
+      >
+        <Menu size={24} />
+      </button>
+
+      {/* Overlay móvil */}
+      <AnimatePresence>
+        {isMobileOpen && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.2 }}
+            className="fixed inset-0 bg-black/70 z-40 md:hidden"
+            onClick={() => setIsMobileOpen(false)}
+          />
+        )}
+      </AnimatePresence>
+
+      {/* Sidebar - Desktop normal, Mobile deslizable */}
       <motion.div
-        className="relative flex h-full flex-col bg-[#0f0f0f] border-r border-gray-900 overflow-hidden w-[80px] z-50 shrink-0"
+        className="relative flex h-full flex-col bg-[#0f0f0f] border-r border-gray-900 overflow-hidden z-50 shrink-0 hidden md:flex w-[80px]"
         animate={{ width: open ? 280 : 80 }}
         transition={{ duration: 0.2, type: "tween", ease: "easeOut" }}
         onMouseEnter={() => setOpen(true)}
@@ -83,12 +113,32 @@ const Sidebar = ({ children, open, setOpen }) => {
       >
         {children}
       </motion.div>
+
+      {/* Sidebar móvil - Menú deslizable */}
+      <AnimatePresence>
+        {isMobileOpen && (
+          <motion.div
+            initial={{ x: -280 }}
+            animate={{ x: 0 }}
+            exit={{ x: -280 }}
+            transition={{ duration: 0.3, type: "tween", ease: "easeOut" }}
+            className="fixed left-0 top-0 h-full w-[280px] bg-[#0f0f0f] border-r border-gray-900 overflow-hidden z-50 md:hidden flex flex-col"
+            onClick={(e) => {
+              if (e.target.closest('a') || e.target.closest('button:not(.fixed)')) {
+                setIsMobileOpen(false);
+              }
+            }}
+          >
+            {children}
+          </motion.div>
+        )}
+      </AnimatePresence>
     </SidebarContext.Provider>
   );
 };
 
 const SidebarBody = (props) => (
-  <div className="flex h-full w-full flex-1 flex-col justify-between overflow-y-auto overflow-x-hidden p-3" {...props} />
+  <div className="flex h-full w-full flex-1 flex-col justify-between overflow-y-auto overflow-x-hidden px-3 md:px-3 py-3 md:py-3" {...props} />
 );
 
 const SidebarLink = ({ link, className = "", isActive = false, onClick, ...props }) => {
@@ -99,7 +149,7 @@ const SidebarLink = ({ link, className = "", isActive = false, onClick, ...props
     <motion.a
       href={link.href}
       onClick={(e) => { e.preventDefault(); if (onClick) onClick(link.page); }}
-      className={`relative flex items-center justify-center lg:justify-start gap-3 px-3 py-2.5 rounded-lg transition-all group cursor-pointer mb-1.5 ${className}`}
+      className={`relative flex items-center justify-center md:justify-start gap-3 px-3 md:px-3 py-2.5 md:py-2.5 rounded-lg transition-all group cursor-pointer mb-2 md:mb-1.5 ${className}`}
       onHoverStart={() => setIsHovered(true)}
       onHoverEnd={() => setIsHovered(false)}
       {...props}
@@ -121,12 +171,13 @@ const SidebarLink = ({ link, className = "", isActive = false, onClick, ...props
         />
       )}
 
-      <div className={`relative z-10 flex-shrink-0 w-5 h-5 flex items-center justify-center transition-all duration-300 ${isActive ? 'text-cyan-400' : 'text-gray-500 group-hover:text-gray-200'}`}>
+      <div className={`relative z-10 flex-shrink-0 w-5 h-5 md:w-5 md:h-5 flex items-center justify-center transition-all duration-300 ${isActive ? 'text-cyan-400' : 'text-gray-500 group-hover:text-gray-200'}`}>
         <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-full h-full">
           {link.icon}
         </svg>
       </div>
 
+      {/* Desktop: mostrar en AnimatePresence con open state */}
       <AnimatePresence mode="wait">
         {open && (
           <motion.span
@@ -134,12 +185,17 @@ const SidebarLink = ({ link, className = "", isActive = false, onClick, ...props
             animate={{ opacity: 1, x: 0 }}
             exit={{ opacity: 0, x: -10 }}
             transition={{ duration: 0.1, ease: "easeOut" }}
-            className={`relative z-10 whitespace-nowrap text-sm font-medium transition-colors font-sans ${isActive ? 'text-white' : 'text-gray-400 group-hover:text-gray-200'}`}
+            className={`relative z-10 text-sm font-medium whitespace-nowrap transition-colors hidden md:inline-block ${isActive ? 'text-white' : 'text-gray-400 group-hover:text-gray-200'}`}
           >
             {link.label}
           </motion.span>
         )}
       </AnimatePresence>
+
+      {/* Móvil: siempre mostrar */}
+      <span className="relative z-10 text-sm font-medium whitespace-nowrap md:hidden">
+        {link.label}
+      </span>
     </motion.a>
   );
 };
@@ -147,10 +203,12 @@ const SidebarLink = ({ link, className = "", isActive = false, onClick, ...props
 const SidebarLogo = () => {
   const { open } = useContext(SidebarContext);
   return (
-    <div className="relative z-20 flex items-center justify-center lg:justify-start gap-3 px-2 py-4 mb-8 border-b border-gray-800 pb-4">
-      <div className="w-10 h-10 flex items-center justify-center shrink-0 rounded-lg flex-shrink-0 bg-cyan-500/10 border border-cyan-500/30">
-        <img src={iconLogo} alt="EnvyGuard" className="w-8 h-8 object-contain" />
+    <div className="relative z-20 flex items-center justify-center md:justify-start gap-3 px-3 md:px-2 py-4 md:py-4 mb-8 md:mb-8 border-b border-gray-800 pb-4 md:pb-4 w-full">
+      <div className="w-10 md:w-10 h-10 md:h-10 flex items-center justify-center shrink-0 rounded-lg flex-shrink-0 bg-cyan-500/10 border border-cyan-500/30">
+        <img src={iconLogo} alt="EnvyGuard" className="w-8 md:w-8 h-8 md:h-8 object-contain" />
       </div>
+      
+      {/* Desktop: mostrar en AnimatePresence con open state */}
       <AnimatePresence mode="wait">
         {open && (
           <motion.div
@@ -158,13 +216,24 @@ const SidebarLogo = () => {
             animate={{ opacity: 1, x: 0 }}
             exit={{ opacity: 0, x: -10 }}
             transition={{ duration: 0.1, ease: "easeOut" }}
-            className="flex flex-col min-w-0"
+            className="flex flex-col min-w-0 hidden md:flex"
           >
             <span className="font-bold text-sm tracking-wide font-mono text-gray-50">ENVYGUARD</span>
             <span className="text-[8px] text-gray-500 font-mono tracking-wider uppercase">V1.0</span>
           </motion.div>
         )}
       </AnimatePresence>
+      
+      {/* Móvil: siempre mostrar */}
+      <motion.div
+        initial={{ opacity: 0, x: -10 }}
+        animate={{ opacity: 1, x: 0 }}
+        transition={{ duration: 0.1, ease: "easeOut" }}
+        className="flex flex-col min-w-0 md:hidden"
+      >
+        <span className="font-bold text-sm md:text-sm tracking-wide font-mono text-gray-50">ENVYGUARD</span>
+        <span className="text-[9px] md:text-[8px] text-gray-500 font-mono tracking-wider uppercase">V1.0</span>
+      </motion.div>
     </div>
   );
 };
@@ -186,38 +255,43 @@ const UserProfile = ({
 
   return (
     <>
-      <div className="border-t border-gray-900 pt-4 pb-3 flex flex-col gap-3">
+      <div className="border-t border-gray-900 pt-3 md:pt-4 pb-2 md:pb-3 flex flex-col gap-2 md:gap-3">
         {/* Profile Button */}
         <button 
           onClick={() => setShowProfileModal(true)}
-          className="flex items-center gap-3 px-3 py-2.5 rounded-lg cursor-pointer hover:bg-cyan-500/10 transition-all border border-transparent hover:border-cyan-500/30 group w-full"
+          className="flex items-center gap-2 md:gap-3 px-2 md:px-3 py-2 md:py-2.5 rounded-lg cursor-pointer hover:bg-cyan-500/10 transition-all border border-transparent hover:border-cyan-500/30 group w-full"
         >
-          <div className="h-10 w-10 rounded-full bg-gradient-to-br from-cyan-500/20 to-cyan-900/20 p-[1px] shrink-0 flex items-center justify-center border border-cyan-500/20 group-hover:border-cyan-500/50 transition-colors overflow-hidden">
+          <div className="h-8 md:h-10 w-8 md:w-10 rounded-full bg-gradient-to-br from-cyan-500/20 to-cyan-900/20 p-[1px] shrink-0 flex items-center justify-center border border-cyan-500/20 group-hover:border-cyan-500/50 transition-colors overflow-hidden">
             {currentAvatarUrl ? (
               <img src={currentAvatarUrl} alt="avatar" className="w-full h-full object-cover rounded-full" />
             ) : (
-              <span className="font-bold text-sm text-cyan-400">{user?.name?.charAt(0)}</span>
+              <span className="font-bold text-xs md:text-sm text-cyan-400">{user?.name?.charAt(0)}</span>
             )}
           </div>
           <AnimatePresence mode="wait">
             {open && (
-              <motion.div initial={{ opacity: 0, x: -10 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -10 }} transition={{ duration: 0.1, ease: "easeOut" }} className="flex flex-col min-w-0 text-left flex-1">
+              <motion.div initial={{ opacity: 0, x: -10 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -10 }} transition={{ duration: 0.1, ease: "easeOut" }} className="flex flex-col min-w-0 text-left flex-1 hidden md:flex">
                 <span className="text-sm font-semibold text-gray-100 truncate group-hover:text-cyan-400 transition-colors">{user?.name}</span>
                 <span className="text-[10px] text-gray-500 truncate font-mono group-hover:text-cyan-400/70 transition-colors">{user?.role}</span>
               </motion.div>
             )}
           </AnimatePresence>
-          {open && <Settings className="ml-auto text-gray-600 w-4 h-4 group-hover:text-cyan-400 transition-all duration-300 shrink-0" />}
+          {/* Siempre mostrar en móvil */}
+          <div className="flex flex-col min-w-0 text-left flex-1 md:hidden">
+            <span className="text-xs font-semibold text-gray-100 truncate group-hover:text-cyan-400 transition-colors">{user?.name}</span>
+            <span className="text-[7px] text-gray-500 truncate font-mono group-hover:text-cyan-400/70 transition-colors">{user?.role}</span>
+          </div>
+          {open && <Settings className="ml-auto text-gray-600 w-3 md:w-4 h-3 md:h-4 group-hover:text-cyan-400 transition-all duration-300 shrink-0 hidden md:block" />}
         </button>
 
         {/* Logout Button */}
         <motion.button
           whileHover={{ scale: 1.02 }}
           whileTap={{ scale: 0.98 }}
-          className="w-full flex items-center justify-center gap-2 px-3 py-2 rounded text-sm text-gray-500 hover:text-red-400 transition-all group"
+          className="w-full flex items-center justify-center gap-2 px-2 md:px-3 py-1.5 md:py-2 rounded text-xs md:text-sm text-gray-500 hover:text-red-400 transition-all group"
           onClick={() => console.log("Cerrando sesión...")}
         >
-          <LogOut size={16} className="shrink-0" />
+          <LogOut size={14} className="shrink-0 md:w-4 md:h-4" />
           <AnimatePresence mode="wait">
             {open && (
               <motion.span
@@ -225,12 +299,14 @@ const UserProfile = ({
                 animate={{ opacity: 1, x: 0 }}
                 exit={{ opacity: 0, x: -10 }}
                 transition={{ duration: 0.1, ease: "easeOut" }}
-                className="text-sm font-medium text-center"
+                className="text-xs md:text-sm font-medium text-center hidden md:inline"
               >
                 Cerrar Sesión
               </motion.span>
             )}
           </AnimatePresence>
+          {/* Siempre mostrar en móvil */}
+          <span className="text-xs font-medium text-center md:hidden">Salir</span>
         </motion.button>
       </div>
 
@@ -314,7 +390,7 @@ const UserProfile = ({
                         <p className="text-sm font-bold text-cyan-300 uppercase tracking-widest">Personalizá tu Avatar</p>
                       </div>
 
-                      <div className="grid grid-cols-4 gap-4">
+                      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
                         {avatarOptions.map((avatar, idx) => (
                           <motion.button
                             key={avatar.id}
@@ -370,13 +446,13 @@ const UserProfile = ({
                   initial={{ opacity: 0, y: 10 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: 0.15 }}
-                  className="grid grid-cols-2 gap-4"
+                  className="grid grid-cols-1 sm:grid-cols-2 gap-4"
                 >
-                  <div className="col-span-2 sm:col-span-1 p-4 rounded-lg bg-white/5 border border-white/10 hover:border-cyan-500/30 transition-colors">
+                  <div className="p-4 rounded-lg bg-white/5 border border-white/10 hover:border-cyan-500/30 transition-colors">
                     <p className="text-[10px] font-mono text-gray-500 uppercase tracking-wider mb-1">Correo</p>
                     <p className="text-sm text-gray-200 font-mono break-all">{user?.email || "admin@envyguard.com"}</p>
                   </div>
-                  <div className="col-span-2 sm:col-span-1 p-4 rounded-lg bg-white/5 border border-white/10 hover:border-cyan-500/30 transition-colors">
+                  <div className="p-4 rounded-lg bg-white/5 border border-white/10 hover:border-cyan-500/30 transition-colors">
                     <p className="text-[10px] font-mono text-gray-500 uppercase tracking-wider mb-1">Estado</p>
                     <div className="flex items-center gap-2">
                       <div className="relative w-2.5 h-2.5">
@@ -451,17 +527,17 @@ const OverviewSection = () => {
   });
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 md:space-y-6">
       {/* Welcome Banner */}
       <motion.div 
         initial={{ opacity: 0, y: -20 }} 
         animate={{ opacity: 1, y: 0 }} 
-        className="w-full p-6 rounded-2xl bg-gradient-to-r from-cyan-900/20 via-black to-black border border-cyan-500/20 relative overflow-hidden"
+        className="w-full p-4 md:p-6 rounded-2xl bg-gradient-to-r from-cyan-900/20 via-black to-black border border-cyan-500/20 relative overflow-hidden"
       >
         <div className="absolute top-0 right-0 w-64 h-64 bg-cyan-500/10 blur-[80px]" />
-        <div className="flex justify-between items-end relative z-10">
+        <div className="flex flex-col md:flex-row justify-between items-start md:items-end relative z-10 gap-4">
           <div>
-            <h2 className="text-3xl font-bold text-white mb-2">Bienvenido, Agente.</h2>
+            <h2 className="text-2xl md:text-3xl font-bold text-white mb-2">Bienvenido, Agente.</h2>
           {/* ... */}
 
             <p className="text-cyan-400/80 font-mono text-sm flex items-center gap-2">
@@ -512,7 +588,7 @@ const OverviewSection = () => {
       </motion.div>
 
       {/* Charts & Logs Area */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 h-full">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 md:gap-6 h-full">
         
         {/* Logs Terminal */}
         <motion.div 
@@ -586,7 +662,7 @@ const OverviewSection = () => {
 };
 
 // 2. MONITORING SECTION (SALAS)
-const ComputerMonitoringSection = () => {
+const ComputerMonitoringSection = ({ showDeployModal, setShowDeployModal, deployTargetPCs, setDeployTargetPCs }) => {
   const [selectedPC, setSelectedPC] = useState(null);
   const [actionLoading, setActionLoading] = useState(null);
   const [selectedSala, setSelectedSala] = useState("sala1");
@@ -594,8 +670,6 @@ const ComputerMonitoringSection = () => {
   const [filter, setFilter] = useState("all");
   const [selectedList, setSelectedList] = useState(new Set());
   const [showBulkModal, setShowBulkModal] = useState(false);
-  const [showDeployModal, setShowDeployModal] = useState(false);
-  const [deployTargetPCs, setDeployTargetPCs] = useState([]);
   const [toast, setToast] = useState(null);
   const [loadingDevices, setLoadingDevices] = useState(false);
   const [deviceStatusOverrides, setDeviceStatusOverrides] = useState({}); // ip -> {status, meta}
@@ -606,73 +680,294 @@ const ComputerMonitoringSection = () => {
       nombre: "Sala 1",
       stats: { total: 36, online: 34, power: "4.2kW" },
       layout: [
-        // Grupo 1: 2 columnas (COL-A, COL-B)
+        // Columna A
         { 
           col: 1, 
-          pcs: Array(4).fill(null).map((_, i) => ({ id: `s1-col1-pc${i + 1}`, status: i === 3 ? "offline" : "online", ip: `192.168.3.${10 + i}` })),
+          pcs: [
+            { id: "s1-col1-pc1", status: "online", ip: "192.168.3.10", cpuCode: "0374" },
+            { id: "s1-col1-pc2", status: "no_internet", ip: "192.168.3.11", cpuCode: "0371" },
+            { id: "s1-col1-pc3", status: "online", ip: "192.168.3.12", cpuCode: "0368" },
+            { id: "s1-col1-pc4", status: "offline", ip: "192.168.3.13", cpuCode: "0365" }
+          ],
           paired: true,
           pairedCol: 2
         },
+        // Columna B
         { 
           col: 2, 
-          pcs: Array(4).fill(null).map((_, i) => ({ id: `s1-col2-pc${i + 1}`, status: "online", ip: `192.168.3.${20 + i}` }))
+          pcs: [
+            { id: "s1-col2-pc1", status: "online", ip: "192.168.3.20", cpuCode: "0353" },
+            { id: "s1-col2-pc2", status: "online", ip: "192.168.3.21", cpuCode: "0356" },
+            { id: "s1-col2-pc3", status: "online", ip: "192.168.3.22", cpuCode: "0943" },
+            { id: "s1-col2-pc4", status: "online", ip: "192.168.3.23", cpuCode: "0442" }
+          ]
         },
-        // Grupo 2: 2 columnas (COL-C, COL-D)
+        // Columna C
         { 
           col: 3, 
-          pcs: Array(4).fill(null).map((_, i) => ({ id: `s1-col3-pc${i + 1}`, status: "online", ip: `192.168.3.${30 + i}` })),
+          pcs: [
+            { id: "s1-col3-pc1", status: "online", ip: "192.168.3.30", cpuCode: "0350" },
+            { id: "s1-col3-pc2", status: "online", ip: "192.168.3.31", cpuCode: "0347" },
+            { id: "s1-col3-pc3", status: "no_internet", ip: "192.168.3.32", cpuCode: "0344" },
+            { id: "s1-col3-pc4", status: "offline", ip: "192.168.3.33", cpuCode: "0341" }
+          ],
           paired: true,
           pairedCol: 4
         },
+        // Columna D
         { 
           col: 4, 
-          pcs: Array(4).fill(null).map((_, i) => ({ id: `s1-col4-pc${i + 1}`, status: "online", ip: `192.168.3.${40 + i}` }))
+          pcs: [
+            { id: "s1-col4-pc1", status: "online", ip: "192.168.3.40", cpuCode: "0329" },
+            { id: "s1-col4-pc2", status: "online", ip: "192.168.3.41", cpuCode: "0332" },
+            { id: "s1-col4-pc3", status: "online", ip: "192.168.3.42", cpuCode: "0335" },
+            { id: "s1-col4-pc4", status: "online", ip: "192.168.3.43", cpuCode: "0338" }
+          ]
         },
-        // Grupo 3: 2 columnas (COL-E, COL-F)
+        // Columna E
         { 
           col: 5, 
-          pcs: Array(4).fill(null).map((_, i) => ({ id: `s1-col5-pc${i + 1}`, status: "online", ip: `192.168.3.${50 + i}` })),
+          pcs: [
+            { id: "s1-col5-pc1", status: "online", ip: "192.168.3.50", cpuCode: "0326" },
+            { id: "s1-col5-pc2", status: "online", ip: "192.168.3.51", cpuCode: "0323" },
+            { id: "s1-col5-pc3", status: "online", ip: "192.168.3.52", cpuCode: "0320" },
+            { id: "s1-col5-pc4", status: "online", ip: "192.168.3.53", cpuCode: "0317" }
+          ],
           paired: true,
           pairedCol: 6
         },
+        // Columna F
         { 
           col: 6, 
-          pcs: Array(4).fill(null).map((_, i) => ({ id: `s1-col6-pc${i + 1}`, status: "online", ip: `192.168.3.${60 + i}` }))
+          pcs: [
+            { id: "s1-col6-pc1", status: "online", ip: "192.168.3.60", cpuCode: "0308" },
+            { id: "s1-col6-pc2", status: "online", ip: "192.168.3.61", cpuCode: "0311" },
+            { id: "s1-col6-pc3", status: "online", ip: "192.168.3.62", cpuCode: "0305" },
+            { id: "s1-col6-pc4", status: "online", ip: "192.168.3.63", cpuCode: "0314" }
+          ]
         },
         // Fila 1 (Horizontal) - 6 PCs
-        { row: 1, pcs: Array(6).fill(null).map((_, i) => ({ id: `s1-row1-pc${i + 1}`, status: "online", ip: `192.168.3.${70 + i}` })) },
+        { 
+          row: 1, 
+          pcs: [
+            { id: "s1-row1-pc1", status: "online", ip: "192.168.3.70", cpuCode: "0377" },
+            { id: "s1-row1-pc2", status: "online", ip: "192.168.3.71", cpuCode: "0380" },
+            { id: "s1-row1-pc3", status: "online", ip: "192.168.3.72", cpuCode: "0363" },
+            { id: "s1-row1-pc4", status: "online", ip: "192.168.3.73", cpuCode: "0386" },
+            { id: "s1-row1-pc5", status: "online", ip: "192.168.3.74", cpuCode: "0389" },
+            { id: "s1-row1-pc6", status: "online", ip: "192.168.3.75", cpuCode: "0392" }
+          ]
+        },
         // Fila 2 (Horizontal) - 6 PCs
-        { row: 2, pcs: Array(6).fill(null).map((_, i) => ({ id: `s1-row2-pc${i + 1}`, status: "online", ip: `192.168.3.${80 + i}` })) }
+        { 
+          row: 2, 
+          pcs: [
+            { id: "s1-row2-pc1", status: "online", ip: "192.168.3.80", cpuCode: "0411" },
+            { id: "s1-row2-pc2", status: "online", ip: "192.168.3.81", cpuCode: "0407" },
+            { id: "s1-row2-pc3", status: "online", ip: "192.168.3.82", cpuCode: "0404" },
+            { id: "s1-row2-pc4", status: "online", ip: "192.168.3.83", cpuCode: "0401" },
+            { id: "s1-row2-pc5", status: "online", ip: "192.168.3.84", cpuCode: "0398" },
+            { id: "s1-row2-pc6", status: "online", ip: "192.168.3.85", cpuCode: "0395" }
+          ]
+        }
       ]
     },
     sala2: {
       nombre: "Sala 2",
       stats: { total: 32, online: 32, power: "3.1kW" },
       layout: [
-        { izquierda: Array(4).fill(null).map((_, i) => ({ id: `s2-iz-pc${i + 1}`, status: "online", ip: `192.168.2.${30 + i}` })), derecha: Array(4).fill(null).map((_, i) => ({ id: `s2-der-pc${i + 1}`, status: "online", ip: `192.168.2.${40 + i}` })) },
-        { izquierda: Array(4).fill(null).map((_, i) => ({ id: `s2-iz2-pc${i + 1}`, status: "online", ip: `192.168.2.${50 + i}` })), derecha: Array(4).fill(null).map((_, i) => ({ id: `s2-der2-pc${i + 1}`, status: "online", ip: `192.168.2.${60 + i}` })) },
-        { izquierda: Array(4).fill(null).map((_, i) => ({ id: `s2-iz3-pc${i + 1}`, status: "online", ip: `192.168.2.${70 + i}` })), derecha: Array(4).fill(null).map((_, i) => ({ id: `s2-der3-pc${i + 1}`, status: "online", ip: `192.168.2.${80 + i}` })) },
-        { izquierda: Array(4).fill(null).map((_, i) => ({ id: `s2-iz4-pc${i + 1}`, status: "online", ip: `192.168.2.${90 + i}` })), derecha: Array(4).fill(null).map((_, i) => ({ id: `s2-der4-pc${i + 1}`, status: "online", ip: `192.168.2.${100 + i}` })) }
+        { 
+          izquierda: [
+            { id: "s2-iz-pc1", status: "online", ip: "192.168.2.30", cpuCode: "0552" },
+            { id: "s2-iz-pc2", status: "no_internet", ip: "192.168.2.31", cpuCode: "0551" },
+            { id: "s2-iz-pc3", status: "online", ip: "192.168.2.32", cpuCode: "0546" },
+            { id: "s2-iz-pc4", status: "offline", ip: "192.168.2.33", cpuCode: "0543" }
+          ],
+          derecha: [
+            { id: "s2-der-pc1", status: "online", ip: "192.168.2.40", cpuCode: "0557" },
+            { id: "s2-der-pc2", status: "online", ip: "192.168.2.41", cpuCode: "0584" },
+            { id: "s2-der-pc3", status: "no_internet", ip: "192.168.2.42", cpuCode: "0581" },
+            { id: "s2-der-pc4", status: "online", ip: "192.168.2.43", cpuCode: "0578" }
+          ]
+        },
+        { 
+          izquierda: [
+            { id: "s2-iz2-pc1", status: "online", ip: "192.168.2.50", cpuCode: "0531" },
+            { id: "s2-iz2-pc2", status: "online", ip: "192.168.2.51", cpuCode: "0534" },
+            { id: "s2-iz2-pc3", status: "online", ip: "192.168.2.52", cpuCode: "0537" },
+            { id: "s2-iz2-pc4", status: "online", ip: "192.168.2.53", cpuCode: "0564" }
+          ],
+          derecha: [
+            { id: "s2-der2-pc1", status: "online", ip: "192.168.2.60", cpuCode: "0589" },
+            { id: "s2-der2-pc2", status: "online", ip: "192.168.2.61", cpuCode: "0592" },
+            { id: "s2-der2-pc3", status: "online", ip: "192.168.2.62", cpuCode: "0518" },
+            { id: "s2-der2-pc4", status: "online", ip: "192.168.2.63", cpuCode: "0598" }
+          ]
+        },
+        { 
+          izquierda: [
+            { id: "s2-iz3-pc1", status: "online", ip: "192.168.2.70", cpuCode: "0528" },
+            { id: "s2-iz3-pc2", status: "online", ip: "192.168.2.71", cpuCode: "0525" },
+            { id: "s2-iz3-pc3", status: "online", ip: "192.168.2.72", cpuCode: "0522" },
+            { id: "s2-iz3-pc4", status: "online", ip: "192.168.2.73", cpuCode: "0540" }
+          ],
+          derecha: [
+            { id: "s2-der3-pc1", status: "online", ip: "192.168.2.80", cpuCode: "0610" },
+            { id: "s2-der3-pc2", status: "online", ip: "192.168.2.81", cpuCode: "0616" },
+            { id: "s2-der3-pc3", status: "online", ip: "192.168.2.82", cpuCode: "0604" },
+            { id: "s2-der3-pc4", status: "online", ip: "192.168.2.83", cpuCode: "0601" }
+          ]
+        },
+        { 
+          izquierda: [
+            { id: "s2-iz4-pc1", status: "online", ip: "192.168.2.90", cpuCode: "0558" },
+            { id: "s2-iz4-pc2", status: "online", ip: "192.168.2.91", cpuCode: "0561" },
+            { id: "s2-iz4-pc3", status: "online", ip: "192.168.2.92", cpuCode: "0555" },
+            { id: "s2-iz4-pc4", status: "online", ip: "192.168.2.93", cpuCode: "0480" }
+          ],
+          derecha: [
+            { id: "s2-der4-pc1", status: "online", ip: "192.168.2.100", cpuCode: "0566" },
+            { id: "s2-der4-pc2", status: "online", ip: "192.168.2.101", cpuCode: "0576" },
+            { id: "s2-der4-pc3", status: "online", ip: "192.168.2.102", cpuCode: "0572" },
+            { id: "s2-der4-pc4", status: "online", ip: "192.168.2.103", cpuCode: "0569" }
+          ]
+        }
       ]
     },
     sala3: { 
       nombre: "Sala 3", 
-      stats: { total: 20, online: 15, power: "1.8kW" }, 
+      stats: { total: 38, online: 36, power: "3.2kW" }, 
       layout: [
-        { izquierda: Array(4).fill(null).map((_, i) => ({ id: `s3-iz-pc${i + 1}`, status: "online", ip: `192.168.1.${30 + i}` })), derecha: Array(4).fill(null).map((_, i) => ({ id: `s3-der-pc${i + 1}`, status: "online", ip: `192.168.1.${40 + i}` })) },
-        { izquierda: Array(4).fill(null).map((_, i) => ({ id: `s3-iz2-pc${i + 1}`, status: "online", ip: `192.168.1.${50 + i}` })), derecha: Array(4).fill(null).map((_, i) => ({ id: `s3-der2-pc${i + 1}`, status: "online", ip: `192.168.1.${60 + i}` })) },
-        { izquierda: Array(4).fill(null).map((_, i) => ({ id: `s3-iz3-pc${i + 1}`, status: "online", ip: `192.168.1.${70 + i}` })), derecha: Array(3).fill(null).map((_, i) => ({ id: `s3-der3-pc${i + 1}`, status: "online", ip: `192.168.1.${80 + i}` })) },
-        { izquierda: Array(2).fill(null).map((_, i) => ({ id: `s3-iz4-pc${i + 1}`, status: "online", ip: `192.168.1.${90 + i}` })), derecha: Array(3).fill(null).map((_, i) => ({ id: `s3-der4-pc${i + 1}`, status: "online", ip: `192.168.1.${100 + i}` })) }
+        { 
+          izquierda: [
+            { id: "s3-iz-pc1", status: "online", ip: "192.168.1.30", cpuCode: "0821" },
+            { id: "s3-iz-pc2", status: "online", ip: "192.168.1.31", cpuCode: "0824" },
+            { id: "s3-iz-pc3", status: "online", ip: "192.168.1.32", cpuCode: "0827" },
+            { id: "s3-iz-pc4", status: "online", ip: "192.168.1.33", cpuCode: "0830" }
+          ],
+          derecha: [
+            { id: "s3-der-pc1", status: "online", ip: "192.168.1.40", cpuCode: "0769" },
+            { id: "s3-der-pc2", status: "online", ip: "192.168.1.41", cpuCode: "0465" },
+            { id: "s3-der-pc3", status: "online", ip: "192.168.1.42", cpuCode: "0833" },
+            { id: "s3-der-pc4", status: "online", ip: "192.168.1.43", cpuCode: "0715" }
+          ]
+        },
+        { 
+          izquierda: [
+            { id: "s3-iz2-pc1", status: "online", ip: "192.168.1.50", cpuCode: "0775" },
+            { id: "s3-iz2-pc2", status: "online", ip: "192.168.1.51", cpuCode: "0778" },
+            { id: "s3-iz2-pc3", status: "online", ip: "192.168.1.52", cpuCode: "0781" },
+            { id: "s3-iz2-pc4", status: "online", ip: "192.168.1.53", cpuCode: "0784" }
+          ],
+          derecha: [
+            { id: "s3-der2-pc1", status: "online", ip: "192.168.1.60", cpuCode: "0712" },
+            { id: "s3-der2-pc2", status: "online", ip: "192.168.1.61", cpuCode: "0790" },
+            { id: "s3-der2-pc3", status: "online", ip: "192.168.1.62", cpuCode: "0793" },
+            { id: "s3-der2-pc4", status: "online", ip: "192.168.1.63", cpuCode: "0772" }
+          ]
+        },
+        { 
+          izquierda: [
+            { id: "s3-iz3-pc1", status: "online", ip: "192.168.1.70", cpuCode: "0806" },
+            { id: "s3-iz3-pc2", status: "online", ip: "192.168.1.71", cpuCode: "0803" },
+            { id: "s3-iz3-pc3", status: "online", ip: "192.168.1.72", cpuCode: "0800" },
+            { id: "s3-iz3-pc4", status: "online", ip: "192.168.1.73", cpuCode: "0796" }
+          ],
+          derecha: [
+            { id: "s3-der3-pc1", status: "online", ip: "192.168.1.80", cpuCode: "0812" },
+            { id: "s3-der3-pc2", status: "online", ip: "192.168.1.81", cpuCode: "0815" },
+            { id: "s3-der3-pc3", status: "online", ip: "192.168.1.82", cpuCode: "0818" },
+            { id: "s3-der3-pc4", status: "online", ip: "192.168.1.83", cpuCode: "0809" }
+          ]
+        },
+        { 
+          izquierda: [
+            { id: "s3-iz4-pc1", status: "online", ip: "192.168.1.90", cpuCode: "0763" },
+            { id: "s3-iz4-pc2", status: "online", ip: "192.168.1.91", cpuCode: "0766" },
+            { id: "s3-iz4-pc3", status: "online", ip: "192.168.1.92", cpuCode: "0759" },
+            { id: "s3-iz4-pc4", status: "online", ip: "192.168.1.93", cpuCode: "0787" }
+          ],
+          derecha: [
+            { id: "s3-der4-pc1", status: "online", ip: "192.168.1.100", cpuCode: "0996" },
+            { id: "s3-der4-pc2", status: "online", ip: "192.168.1.101", cpuCode: "0993" },
+            { id: "s3-der4-pc3", status: "online", ip: "192.168.1.102", cpuCode: "0990" },
+            { id: "s3-der4-pc4", status: "online", ip: "192.168.1.103", cpuCode: "0787" }
+          ]
+        },
+        { 
+          izquierda: [
+            { id: "s3-iz5-pc1", status: "online", ip: "192.168.1.110", cpuCode: "0860" },
+            { id: "s3-iz5-pc2", status: "online", ip: "192.168.1.111", cpuCode: "0718" },
+            { id: "s3-iz5-pc3", status: "online", ip: "192.168.1.112", cpuCode: "0766" }
+          ],
+          derecha: [
+            { id: "s3-der5-pc1", status: "online", ip: "192.168.1.120", cpuCode: "0934" },
+            { id: "s3-der5-pc2", status: "online", ip: "192.168.1.121", cpuCode: "0931" },
+            { id: "s3-der5-pc3", status: "online", ip: "192.168.1.122", cpuCode: "0928" }
+          ]
+        }
       ] 
     },
     sala4: { 
       nombre: "Sala 4", 
       stats: { total: 25, online: 24, power: "2.5kW" }, 
       layout: [
-        { izquierda: Array(4).fill(null).map((_, i) => ({ id: `s4-iz-pc${i + 1}`, status: "online", ip: `192.168.4.${30 + i}` })), derecha: Array(4).fill(null).map((_, i) => ({ id: `s4-der-pc${i + 1}`, status: "online", ip: `192.168.4.${40 + i}` })) },
-        { izquierda: Array(4).fill(null).map((_, i) => ({ id: `s4-iz2-pc${i + 1}`, status: "online", ip: `192.168.4.${50 + i}` })), derecha: Array(4).fill(null).map((_, i) => ({ id: `s4-der2-pc${i + 1}`, status: "online", ip: `192.168.4.${60 + i}` })) },
-        { izquierda: Array(4).fill(null).map((_, i) => ({ id: `s4-iz3-pc${i + 1}`, status: "online", ip: `192.168.4.${70 + i}` })), derecha: Array(4).fill(null).map((_, i) => ({ id: `s4-der3-pc${i + 1}`, status: "online", ip: `192.168.4.${80 + i}` })) },
-        { izquierda: Array(4).fill(null).map((_, i) => ({ id: `s4-iz4-pc${i + 1}`, status: "online", ip: `192.168.4.${90 + i}` })), derecha: Array(4).fill(null).map((_, i) => ({ id: `s4-der4-pc${i + 1}`, status: "online", ip: `192.168.4.${100 + i}` })) }
+        { 
+          izquierda: [
+            { id: "s4-iz-pc1", status: "online", ip: "192.168.4.30", cpuCode: "O697" },
+            { id: "s4-iz-pc2", status: "no_internet", ip: "192.168.4.31", cpuCode: "O700" },
+            { id: "s4-iz-pc3", status: "online", ip: "192.168.4.32", cpuCode: "O703" },
+            { id: "s4-iz-pc4", status: "offline", ip: "192.168.4.33", cpuCode: "O706" }
+          ],
+          derecha: [
+            { id: "s4-der-pc1", status: "online", ip: "192.168.4.40", cpuCode: "O622" },
+            { id: "s4-der-pc2", status: "online", ip: "192.168.4.41", cpuCode: "O619" },
+            { id: "s4-der-pc3", status: "online", ip: "192.168.4.42", cpuCode: "O616" },
+            { id: "s4-der-pc4", status: "online", ip: "192.168.4.43", cpuCode: "O613" }
+          ]
+        },
+        { 
+          izquierda: [
+            { id: "s4-iz2-pc1", status: "online", ip: "192.168.4.50", cpuCode: "O694" },
+            { id: "s4-iz2-pc2", status: "online", ip: "192.168.4.51", cpuCode: "O691" },
+            { id: "s4-iz2-pc3", status: "online", ip: "192.168.4.52", cpuCode: "O688" },
+            { id: "s4-iz2-pc4", status: "online", ip: "192.168.4.53", cpuCode: "O685" }
+          ],
+          derecha: [
+            { id: "s4-der2-pc1", status: "online", ip: "192.168.4.60", cpuCode: "O625" },
+            { id: "s4-der2-pc2", status: "online", ip: "192.168.4.61", cpuCode: "O628" },
+            { id: "s4-der2-pc3", status: "online", ip: "192.168.4.62", cpuCode: "O631" },
+            { id: "s4-der2-pc4", status: "online", ip: "192.168.4.63", cpuCode: "O634" }
+          ]
+        },
+        { 
+          izquierda: [
+            { id: "s4-iz3-pc1", status: "online", ip: "192.168.4.70", cpuCode: "O673" },
+            { id: "s4-iz3-pc2", status: "online", ip: "192.168.4.71", cpuCode: "O676" },
+            { id: "s4-iz3-pc3", status: "online", ip: "192.168.4.72", cpuCode: "O679" },
+            { id: "s4-iz3-pc4", status: "online", ip: "192.168.4.73", cpuCode: "O682" }
+          ],
+          derecha: [
+            { id: "s4-der3-pc1", status: "online", ip: "192.168.4.80", cpuCode: "O646" },
+            { id: "s4-der3-pc2", status: "online", ip: "192.168.4.81", cpuCode: "O643" },
+            { id: "s4-der3-pc3", status: "online", ip: "192.168.4.82", cpuCode: "O640" },
+            { id: "s4-der3-pc4", status: "online", ip: "192.168.4.83", cpuCode: "O637" }
+          ]
+        },
+        { 
+          izquierda: [
+            { id: "s4-iz4-pc1", status: "online", ip: "192.168.4.90", cpuCode: "O670" },
+            { id: "s4-iz4-pc2", status: "online", ip: "192.168.4.91", cpuCode: "O667" },
+            { id: "s4-iz4-pc3", status: "online", ip: "192.168.4.92", cpuCode: "O664" },
+            { id: "s4-iz4-pc4", status: "online", ip: "192.168.4.93", cpuCode: "O661" }
+          ],
+          derecha: [
+            { id: "s4-der4-pc1", status: "online", ip: "192.168.4.100", cpuCode: "O492" },
+            { id: "s4-der4-pc2", status: "online", ip: "192.168.4.101", cpuCode: "O450" },
+            { id: "s4-der4-pc3", status: "online", ip: "192.168.4.102", cpuCode: "O655" },
+            { id: "s4-der4-pc4", status: "online", ip: "192.168.4.103", cpuCode: "O658" }
+          ]
+        }
       ] 
     }
   };
@@ -731,8 +1026,16 @@ const ComputerMonitoringSection = () => {
     const override = deviceStatusOverrides[pc.ip];
     const effectiveStatus = override?.status || pc.status;
     if (filter === "online" && effectiveStatus !== "online") return null;
-  if (filter === "offline" && effectiveStatus === "offline") return null;
+    if (filter === "offline" && effectiveStatus === "offline") return null;
 
+    // Determinar color del indicador según estado
+    const getStatusColor = () => {
+      if (effectiveStatus === "online") return { bg: "bg-green-500", border: "border-green-500/20", hover: "hover:border-green-500/50 hover:bg-green-500/10 hover:shadow-[0_0_15px_rgba(34,197,94,0.2)]", dotColor: "bg-green-500" };
+      if (effectiveStatus === "no_internet") return { bg: "bg-yellow-500", border: "border-yellow-500/20", hover: "hover:border-yellow-500/50 hover:bg-yellow-500/10 hover:shadow-[0_0_15px_rgba(234,179,8,0.2)]", dotColor: "bg-yellow-500" };
+      return { bg: "bg-red-500", border: "border-red-500/20", hover: "hover:border-red-500/50 hover:bg-red-500/10 hover:shadow-[0_0_15px_rgba(239,68,68,0.2)]", dotColor: "bg-red-500" };
+    };
+
+    const statusStyle = getStatusColor();
     const isOnline = effectiveStatus === "online";
     const isSelected = Array.from(selectedList).some(s => s.id === pc.id);
     return (
@@ -756,11 +1059,7 @@ const ComputerMonitoringSection = () => {
             setSelectedPC({ ...pc, status: effectiveStatus });
           }
         }}
-        className={`group relative p-3 rounded-lg border cursor-pointer transition-all flex-shrink-0 backdrop-blur-sm min-w-[120px] ${
-          isOnline 
-            ? "border-green-500/20 bg-green-500/5 hover:border-green-500/50 hover:bg-green-500/10 hover:shadow-[0_0_15px_rgba(34,197,94,0.2)]" 
-            : "border-red-500/20 bg-red-500/5 hover:border-red-500/50 hover:bg-red-500/10 hover:shadow-[0_0_15px_rgba(239,68,68,0.2)]"
-        } ${isSelected ? "ring-2 ring-cyan-400/60" : ""}`}
+        className={`group relative p-3 rounded-lg border cursor-pointer transition-all flex-shrink-0 backdrop-blur-sm min-w-[120px] ${statusStyle.border} ${statusStyle.hover} ${statusStyle.bg}/5 ${isSelected ? "ring-2 ring-cyan-400/60" : ""}`}
       >
         {/* Checkbox en esquina superior derecha */}
         <div className="absolute top-2 right-2 z-20">
@@ -790,11 +1089,14 @@ const ComputerMonitoringSection = () => {
 
         <div className="flex items-center gap-2 mb-2">
           <div className="relative">
-            <div className={`w-2 h-2 rounded-full ${isOnline ? "bg-green-500" : "bg-red-500"} z-10 relative`} />
-            <div className={`absolute inset-0 w-2 h-2 rounded-full ${isOnline ? "bg-green-500 animate-ping" : "bg-red-500"}`} />
+            <div className={`w-2 h-2 rounded-full ${statusStyle.dotColor} z-10 relative`} />
+            <div className={`absolute inset-0 w-2 h-2 rounded-full ${statusStyle.dotColor} ${effectiveStatus !== "offline" ? "animate-ping" : ""}`} />
           </div>
           <span className="text-xs font-mono text-gray-200 font-bold tracking-tight">{pc.id.split('-').pop().toUpperCase()}</span>
         </div>
+        {pc.cpuCode && (
+          <div className="text-[10px] font-mono text-gray-400">{pc.cpuCode}</div>
+        )}
         <div className="text-[10px] text-gray-500 font-mono group-hover:text-cyan-400 transition-colors">{pc.ip}</div>
         {override?.latencyMs !== undefined && (
           <div className="mt-1 text-[10px] font-mono text-gray-600">{override.latencyMs} ms</div>
@@ -1060,52 +1362,52 @@ const ComputerMonitoringSection = () => {
         
         <div className="relative z-10">
           {selectedSala === 'sala1' ? (
-            <div className="space-y-12 flex flex-col items-center w-full">
-              {/* 3 Pares de Columnas Verticales - Centradas */}
-              <div className="flex justify-center gap-8 w-full">
+            <div className="space-y-6 md:space-y-12 flex flex-col items-center w-full">
+              {/* 3 Pares de Columnas Verticales - Responsivas */}
+              <div className="flex flex-col md:flex-row justify-center gap-4 md:gap-8 w-full flex-wrap md:flex-nowrap">
                 {/* Grupo 1 */}
-                <div className="flex gap-1">
+                <div className="flex gap-1 w-full md:w-auto justify-center">
                   {currentRoom.layout.slice(0, 2).map((col, idx) => (
-                    <div key={idx} className="flex flex-col gap-4 p-6 rounded-xl bg-black/40 border border-white/5 hover:border-cyan-500/20 transition-colors">
-                      <div className="text-[10px] text-cyan-500 font-mono text-center uppercase tracking-wider mb-2">COL-{String.fromCharCode(65 + idx)}</div>
+                    <div key={idx} className="flex flex-col gap-2 md:gap-4 p-3 md:p-6 rounded-xl bg-black/40 border border-white/5 hover:border-cyan-500/20 transition-colors">
+                      <div className="text-[9px] md:text-[10px] text-cyan-500 font-mono text-center uppercase tracking-wider mb-1 md:mb-2">COL-{String.fromCharCode(65 + idx)}</div>
                       {col.pcs && col.pcs.map(pc => <PCCard key={pc.id} pc={pc} />)}
                     </div>
                   ))}
                 </div>
                 
                 {/* Grupo 2 */}
-                <div className="flex gap-1">
+                <div className="flex gap-1 w-full md:w-auto justify-center">
                   {currentRoom.layout.slice(2, 4).map((col, idx) => (
-                    <div key={idx + 2} className="flex flex-col gap-4 p-6 rounded-xl bg-black/40 border border-white/5 hover:border-cyan-500/20 transition-colors">
-                      <div className="text-[10px] text-cyan-500 font-mono text-center uppercase tracking-wider mb-2">COL-{String.fromCharCode(67 + idx)}</div>
+                    <div key={idx + 2} className="flex flex-col gap-2 md:gap-4 p-3 md:p-6 rounded-xl bg-black/40 border border-white/5 hover:border-cyan-500/20 transition-colors">
+                      <div className="text-[9px] md:text-[10px] text-cyan-500 font-mono text-center uppercase tracking-wider mb-1 md:mb-2">COL-{String.fromCharCode(67 + idx)}</div>
                       {col.pcs && col.pcs.map(pc => <PCCard key={pc.id} pc={pc} />)}
                     </div>
                   ))}
                 </div>
                 
                 {/* Grupo 3 */}
-                <div className="flex gap-1">
+                <div className="flex gap-1 w-full md:w-auto justify-center">
                   {currentRoom.layout.slice(4, 6).map((col, idx) => (
-                    <div key={idx + 4} className="flex flex-col gap-4 p-6 rounded-xl bg-black/40 border border-white/5 hover:border-cyan-500/20 transition-colors">
-                      <div className="text-[10px] text-cyan-500 font-mono text-center uppercase tracking-wider mb-2">COL-{String.fromCharCode(69 + idx)}</div>
+                    <div key={idx + 4} className="flex flex-col gap-2 md:gap-4 p-3 md:p-6 rounded-xl bg-black/40 border border-white/5 hover:border-cyan-500/20 transition-colors">
+                      <div className="text-[9px] md:text-[10px] text-cyan-500 font-mono text-center uppercase tracking-wider mb-1 md:mb-2">COL-{String.fromCharCode(69 + idx)}</div>
                       {col.pcs && col.pcs.map(pc => <PCCard key={pc.id} pc={pc} />)}
                     </div>
                   ))}
                 </div>
               </div>
 
-              {/* Filas Horizontales */}
-              <div className="w-full flex flex-col gap-8">
+              {/* Filas Horizontales - Responsivas */}
+              <div className="w-full flex flex-col gap-4 md:gap-8">
                 {currentRoom.layout.slice(6, 8).map((row, idx) => (
                   <div key={idx + 6} className="flex justify-center">
-                    <div className="w-full max-w-4xl p-5 rounded-xl bg-black/40 border border-white/5 relative overflow-hidden">
+                    <div className="w-full max-w-2xl md:max-w-4xl p-3 md:p-5 rounded-xl bg-black/40 border border-white/5 relative overflow-hidden">
                       {/* Grid Background */}
                       <div className="absolute inset-0 z-0 opacity-10" 
                             style={{ backgroundImage: 'linear-gradient(#444 1px, transparent 1px), linear-gradient(90deg, #444 1px, transparent 1px)', backgroundSize: '80px 80px' }} 
                       />
                       <div className="relative z-10">
-                        <div className="text-xs text-cyan-500 font-mono mb-4 border-b border-cyan-500/20 pb-2">FILA {idx + 1}</div>
-                        <div className="flex flex-wrap justify-center gap-3">{row.pcs && row.pcs.map(pc => <PCCard key={pc.id} pc={pc} />)}</div>
+                        <div className="text-[9px] md:text-xs text-cyan-500 font-mono mb-3 md:mb-4 border-b border-cyan-500/20 pb-2">FILA {idx + 1}</div>
+                        <div className="flex flex-wrap justify-center gap-2 md:gap-3">{row.pcs && row.pcs.map(pc => <PCCard key={pc.id} pc={pc} />)}</div>
                       </div>
                     </div>
                   </div>
@@ -1113,14 +1415,14 @@ const ComputerMonitoringSection = () => {
               </div>
             </div>
           ) : (
-            // LÓGICA DE RENDERIZADO ESTÁNDAR PARA SALAS 2, 3 Y 4
-            <div className="space-y-6">
+            // LÓGICA DE RENDERIZADO ESTÁNDAR PARA SALAS 2, 3 Y 4 - RESPONSIVA
+            <div className="space-y-4 md:space-y-6">
                 {currentRoom.layout.map((fila, i) => (
-                  <div key={i} className="flex flex-col md:flex-row gap-6 p-4 rounded-xl bg-black/40 border border-white/5 hover:border-cyan-500/20 transition-colors">
+                  <div key={i} className="flex flex-col md:flex-row gap-3 md:gap-6 p-3 md:p-4 rounded-xl bg-black/40 border border-white/5 hover:border-cyan-500/20 transition-colors">
                     {/* Fila Izquierda */}
                     <div className="flex-1">
-                        <div className="text-[10px] text-cyan-500/70 font-mono mb-3 uppercase tracking-wider border-b border-white/5 pb-1">Fila {i + 1} - Sector A</div>
-                        <div className={`flex flex-wrap gap-3 ${i === currentRoom.layout.length - 1 ? 'justify-center' : (fila.izquierda?.length <= 2 ? 'justify-start' : 'justify-center')}`}>
+                        <div className="text-[9px] md:text-[10px] text-cyan-500/70 font-mono mb-2 md:mb-3 uppercase tracking-wider border-b border-white/5 pb-1">Fila {i + 1} - Sector A</div>
+                        <div className={`flex flex-wrap gap-2 md:gap-3 ${i === currentRoom.layout.length - 1 ? 'justify-center' : (fila.izquierda?.length <= 2 ? 'justify-start' : 'justify-center')}`}>
                           {fila.izquierda.map(pc => <PCCard key={pc.id} pc={pc} />)}
                           {i === currentRoom.layout.length - 1 && fila.izquierda.length < 4 &&
                             Array.from({ length: 4 - fila.izquierda.length }).map((_, idxGhost) => (
@@ -1135,8 +1437,8 @@ const ComputerMonitoringSection = () => {
 
                     {/* Fila Derecha */}
                     <div className="flex-1">
-                        <div className="text-[10px] text-purple-500/70 font-mono mb-3 uppercase tracking-wider border-b border-white/5 pb-1">Fila {i + 1} - Sector B</div>
-                        <div className={`flex flex-wrap gap-3 ${fila.derecha?.length <= 2 ? 'justify-start' : 'justify-center'}`}>
+                        <div className="text-[9px] md:text-[10px] text-purple-500/70 font-mono mb-2 md:mb-3 uppercase tracking-wider border-b border-white/5 pb-1">Fila {i + 1} - Sector B</div>
+                        <div className={`flex flex-wrap gap-2 md:gap-3 ${fila.derecha?.length <= 2 ? 'justify-start' : 'justify-center'}`}>
                           {i >= 2 && fila.derecha?.length === 3 && (
                             <div className="min-w-[120px] opacity-0 pointer-events-none" />
                           )}
@@ -1173,20 +1475,20 @@ const ComputerMonitoringSection = () => {
                 </div>
               </div>
               
-              <div className="p-6 grid grid-cols-2 gap-3">
+              <div className="p-3 md:p-6 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-2 gap-2 md:gap-3">
                 {[
-                  { id: 'power', label: 'Apagar', icon: Power, color: 'hover:bg-red-500/20 hover:text-red-400' },
-                  { id: 'start', label: 'Encender (WOL)', icon: Zap, color: 'hover:bg-green-500/20 hover:text-green-400' },
-                  { id: 'restart', label: 'Reiniciar', icon: RotateCw, color: 'hover:bg-blue-500/20 hover:text-blue-400' },
-                  { id: 'format', label: 'Limpiar', icon: HardDrive, color: 'hover:bg-yellow-500/20 hover:text-yellow-400' },
-                  { id: 'install', label: 'Instalar Apps', icon: Package, color: 'col-span-2 hover:bg-purple-500/20 hover:text-purple-400' },
-                  { id: 'logs', label: 'Ver Logs', icon: FileText, color: 'col-span-2 hover:bg-gray-500/20 hover:text-gray-300' },
+                  { id: 'power', label: 'Apagar', icon: Power, color: 'hover:bg-red-500/20 hover:text-red-400', span: false },
+                  { id: 'start', label: 'Encender (WOL)', icon: Zap, color: 'hover:bg-green-500/20 hover:text-green-400', span: false },
+                  { id: 'restart', label: 'Reiniciar', icon: RotateCw, color: 'hover:bg-blue-500/20 hover:text-blue-400', span: false },
+                  { id: 'format', label: 'Limpiar', icon: HardDrive, color: 'hover:bg-yellow-500/20 hover:text-yellow-400', span: false },
+                  { id: 'install', label: 'Instalar Apps', icon: Package, color: 'hover:bg-purple-500/20 hover:text-purple-400', span: true },
+                  { id: 'logs', label: 'Ver Logs', icon: FileText, color: 'hover:bg-gray-500/20 hover:text-gray-300', span: true },
                 ].map(action => (
                   <button
                     key={action.id}
                     onClick={() => handleAction(action.id, selectedPC.id, selectedPC.ip)}
                     disabled={actionLoading !== null}
-                    className={`p-3 rounded-lg border border-white/5 bg-black/40 text-gray-400 transition-all flex items-center justify-center gap-2 text-sm font-medium ${action.color} ${action.id === 'install' || action.id === 'logs' ? 'col-span-2' : ''}`}
+                    className={`p-2 md:p-3 rounded-lg border border-white/5 bg-black/40 text-gray-400 transition-all flex items-center justify-center gap-2 text-xs md:text-sm font-medium ${action.color} ${action.span ? 'col-span-2' : ''}`}
                   >
                     {actionLoading === `${selectedPC.id}-${action.id}` ? (
                       <RotateCw className="animate-spin" size={16} />
@@ -1236,7 +1538,7 @@ const ComputerMonitoringSection = () => {
                 
                 {/* Selected PCs List */}
                 <div className="mt-4 max-h-24 overflow-y-auto">
-                  <div className="grid grid-cols-2 gap-2">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                     {Array.from(selectedList).map((pcItem) => {
                       const status = deviceStatusOverrides[pcItem.ip]?.status || 'unknown';
                       return (
@@ -1254,20 +1556,20 @@ const ComputerMonitoringSection = () => {
               </div>
               
               {/* Actions Grid */}
-              <div className="p-6 grid grid-cols-2 gap-3">
+              <div className="p-3 md:p-6 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-2 gap-2 md:gap-3">
                 {[
-                  { id: 'power', label: 'Apagar', icon: Power, color: 'hover:bg-red-500/20 hover:text-red-400' },
-                  { id: 'start', label: 'Encender (WOL)', icon: Zap, color: 'hover:bg-green-500/20 hover:text-green-400' },
-                  { id: 'restart', label: 'Reiniciar', icon: RotateCw, color: 'hover:bg-blue-500/20 hover:text-blue-400' },
-                  { id: 'format', label: 'Limpiar', icon: HardDrive, color: 'hover:bg-yellow-500/20 hover:text-yellow-400' },
-                  { id: 'install', label: 'Instalar Apps', icon: Package, color: 'col-span-2 hover:bg-purple-500/20 hover:text-purple-400' },
-                  { id: 'logs', label: 'Ver Logs', icon: FileText, color: 'col-span-2 hover:bg-gray-500/20 hover:text-gray-300' },
+                  { id: 'power', label: 'Apagar', icon: Power, color: 'hover:bg-red-500/20 hover:text-red-400', span: false },
+                  { id: 'start', label: 'Encender (WOL)', icon: Zap, color: 'hover:bg-green-500/20 hover:text-green-400', span: false },
+                  { id: 'restart', label: 'Reiniciar', icon: RotateCw, color: 'hover:bg-blue-500/20 hover:text-blue-400', span: false },
+                  { id: 'format', label: 'Limpiar', icon: HardDrive, color: 'hover:bg-yellow-500/20 hover:text-yellow-400', span: false },
+                  { id: 'install', label: 'Instalar Apps', icon: Package, color: 'hover:bg-purple-500/20 hover:text-purple-400', span: true },
+                  { id: 'logs', label: 'Ver Logs', icon: FileText, color: 'hover:bg-gray-500/20 hover:text-gray-300', span: true },
                 ].map(action => (
                   <button
                     key={action.id}
                     onClick={() => handleBulkAction(action.id)}
                     disabled={actionLoading !== null}
-                    className={`p-3 rounded-lg border border-white/5 bg-black/40 text-gray-400 transition-all flex items-center justify-center gap-2 text-sm font-medium ${action.color} ${action.id === 'install' || action.id === 'logs' ? 'col-span-2' : ''}`}
+                    className={`p-3 rounded-lg border border-white/5 bg-black/40 text-gray-400 transition-all flex items-center justify-center gap-2 text-sm font-medium ${action.color} ${action.span ? 'col-span-2' : ''}`}
                   >
                     {actionLoading === `bulk-${action.id}` ? (
                       <RotateCw className="animate-spin" size={16} />
@@ -1282,50 +1584,6 @@ const ComputerMonitoringSection = () => {
               {/* Footer */}
               <div className="p-4 bg-black/40 border-t border-white/5 text-center">
                 <button onClick={() => setShowBulkModal(false)} className="text-xs text-gray-500 hover:text-white transition-colors">CANCELAR OPERACIÓN</button>
-              </div>
-            </motion.div>
-          </motion.div>
-        )}
-      </AnimatePresence>
-
-      {/* App Deployment Modal */}
-      <AnimatePresence>
-        {showDeployModal && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            onClick={() => setShowDeployModal(false)}
-            className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-[100] p-2"
-          >
-            <motion.div
-              initial={{ scale: 0.9, y: 20 }}
-              animate={{ scale: 1, y: 0 }}
-              exit={{ scale: 0.9, y: 20 }}
-              onClick={(e) => e.stopPropagation()}
-              className="bg-[#0f0f0f] border border-cyan-500/30 w-full max-w-7xl rounded-2xl shadow-2xl overflow-hidden max-h-[97vh] flex flex-col"
-            >
-              <div className="flex items-center justify-between px-8 py-6 border-b border-white/5 bg-gradient-to-r from-cyan-900/20 to-transparent">
-                <div className="flex items-center gap-4 flex-1">
-                  <Terminal className="text-cyan-400" size={24} />
-                  <div className="min-w-0">
-                    <h3 className="text-2xl font-bold text-white truncate">Despliegue de Apps</h3>
-                    <p className="text-xs text-cyan-400 font-mono mt-1 truncate">
-                      {deployTargetPCs.length === 1 
-                        ? `Equipo: ${deployTargetPCs[0].id}`
-                        : `${deployTargetPCs.length} equipos seleccionados`}
-                    </p>
-                  </div>
-                </div>
-                <button
-                  onClick={() => setShowDeployModal(false)}
-                  className="text-gray-500 hover:text-white transition-colors flex-shrink-0 ml-4"
-                >
-                  <X size={24} />
-                </button>
-              </div>
-              <div className="flex-1 overflow-y-auto p-8">
-                <AppDeploymentSection targetPCs={deployTargetPCs} isModal={true} />
               </div>
             </motion.div>
           </motion.div>
@@ -1361,25 +1619,26 @@ const CreateUsersSection = ({ avatarOptions, getAvatarUrl }) => {
   return (
     <div className="flex flex-col h-full space-y-6">
       {/* Header with improved styling */}
-      <div className="flex flex-col md:flex-row justify-between items-end md:items-center gap-4 pb-6 border-b border-white/5">
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 md:gap-4 pb-4 md:pb-6 border-b border-white/5">
         <div>
-           <div className="flex items-center gap-3">
-                <div className="p-2.5 bg-cyan-500/10 rounded-lg border border-cyan-500/20">
-                    <UserPlus className="text-cyan-400" size={24} />
+           <div className="flex items-start sm:items-center gap-2 md:gap-3">
+                <div className="p-2 md:p-2.5 bg-cyan-500/10 rounded-lg border border-cyan-500/20 shrink-0">
+                    <UserPlus className="text-cyan-400" size={20} />
                 </div>
                 <div>
-                    <h2 className="text-2xl font-bold text-white tracking-tight">Gestión de Accesos</h2>
-                    <p className="text-gray-500 text-sm font-sans">Control de credenciales y privilegios.</p>
+                    <h2 className="text-xl md:text-2xl font-bold text-white tracking-tight">Gestión de Accesos</h2>
+                    <p className="text-gray-500 text-xs md:text-sm font-sans">Control de credenciales y privilegios.</p>
                 </div>
            </div>
         </div>
         <button 
           onClick={() => setShowForm(!showForm)}
-          className="group relative px-5 py-2.5 bg-cyan-600 hover:bg-cyan-500 text-black font-bold rounded-lg shadow-[0_0_20px_rgba(6,182,212,0.2)] hover:shadow-[0_0_25px_rgba(6,182,212,0.4)] transition-all flex items-center gap-2 text-sm overflow-hidden"
+          className="group relative px-3 md:px-5 py-2 md:py-2.5 bg-cyan-600 hover:bg-cyan-500 text-black font-bold rounded-lg shadow-[0_0_20px_rgba(6,182,212,0.2)] hover:shadow-[0_0_25px_rgba(6,182,212,0.4)] transition-all flex items-center justify-center gap-2 text-xs md:text-sm overflow-hidden w-full sm:w-auto"
         >
           <span className="relative z-10 flex items-center gap-2">
             {showForm ? <ChevronDown size={16} /> : <UserPlus size={16} />}
-            {showForm ? "Cerrar Panel" : "Nuevo Usuario"}
+            <span className="hidden sm:inline">{showForm ? "Cerrar Panel" : "Nuevo Usuario"}</span>
+            <span className="sm:hidden">{showForm ? "Cerrar" : "Nuevo"}</span>
           </span>
           {/* Shine Effect */}
           <div className="absolute inset-0 -translate-x-full group-hover:translate-x-full transition-transform duration-700 bg-gradient-to-r from-transparent via-white/30 to-transparent skew-x-12" />
@@ -1398,10 +1657,10 @@ const CreateUsersSection = ({ avatarOptions, getAvatarUrl }) => {
                </h3>
                
                <form className="flex flex-col gap-6">
-                 <div className="flex items-start gap-6">
+                 <div className="flex flex-col sm:flex-row items-start gap-6">
                     {/* Avatar Selection for New User */}
                     <div className="shrink-0">
-                        <label className="block text-xs font-mono text-gray-500 mb-2">AVATAR</label>
+                        <label className="block text-[10px] md:text-xs font-mono text-gray-500 mb-2">AVATAR</label>
                         <div className="w-20 h-20 rounded-xl border border-white/10 bg-white/5 p-1 relative overflow-hidden group">
                             <img 
                                 src={getAvatarUrl(avatarOptions.find(a => a.id === newUserAvatarId))} 
@@ -1411,25 +1670,25 @@ const CreateUsersSection = ({ avatarOptions, getAvatarUrl }) => {
                             <button 
                                 type="button"
                                 onClick={() => setNewUserAvatarId(prev => prev >= 8 ? 1 : prev + 1)}
-                                className="absolute inset-0 bg-black/60 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity text-xs font-bold text-white cursor-pointer"
+                                className="absolute inset-0 bg-black/60 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity text-[10px] md:text-xs font-bold text-white cursor-pointer"
                             >
                                 CAMBIAR
                             </button>
                         </div>
                     </div>
 
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 flex-1">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 md:gap-4 flex-1 w-full">
                         <div>
-                            <label className="block text-xs font-mono text-gray-500 mb-1.5 ml-1">NOMBRE COMPLETO</label>
-                            <input type="text" placeholder="Ej: John Doe" className="w-full bg-black/40 border border-white/10 rounded-lg px-4 py-2.5 text-sm text-white focus:border-cyan-500 focus:bg-cyan-900/5 outline-none transition-all" />
+                            <label className="block text-[10px] md:text-xs font-mono text-gray-500 mb-1.5 ml-1">NOMBRE COMPLETO</label>
+                            <input type="text" placeholder="Ej: John Doe" className="w-full bg-black/40 border border-white/10 rounded-lg px-3 md:px-4 py-2 md:py-2.5 text-xs md:text-sm text-white focus:border-cyan-500 focus:bg-cyan-900/5 outline-none transition-all" />
                         </div>
                         <div>
-                            <label className="block text-xs font-mono text-gray-500 mb-1.5 ml-1">CORREO CORPORATIVO</label>
-                            <input type="email" placeholder="user@envyguard.com" className="w-full bg-black/40 border border-white/10 rounded-lg px-4 py-2.5 text-sm text-white focus:border-cyan-500 focus:bg-cyan-900/5 outline-none transition-all" />
+                            <label className="block text-[10px] md:text-xs font-mono text-gray-500 mb-1.5 ml-1">CORREO CORPORATIVO</label>
+                            <input type="email" placeholder="user@envyguard.com" className="w-full bg-black/40 border border-white/10 rounded-lg px-3 md:px-4 py-2 md:py-2.5 text-xs md:text-sm text-white focus:border-cyan-500 focus:bg-cyan-900/5 outline-none transition-all" />
                         </div>
                         <div>
-                            <label className="block text-xs font-mono text-gray-500 mb-1.5 ml-1">ROL DEL SISTEMA</label>
-                            <select className="w-full bg-black/40 border border-white/10 rounded-lg px-4 py-2.5 text-sm text-gray-300 focus:border-cyan-500 outline-none transition-all appearance-none cursor-pointer">
+                            <label className="block text-[10px] md:text-xs font-mono text-gray-500 mb-1.5 ml-1">ROL DEL SISTEMA</label>
+                            <select className="w-full bg-black/40 border border-white/10 rounded-lg px-3 md:px-4 py-2 md:py-2.5 text-xs md:text-sm text-gray-300 focus:border-cyan-500 outline-none transition-all appearance-none cursor-pointer">
                                 <option>Admin</option>
                             </select>
                         </div>
@@ -1437,24 +1696,24 @@ const CreateUsersSection = ({ avatarOptions, getAvatarUrl }) => {
                  </div>
 
                  {/* Contraseña y Confirmación */}
-                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                 <div className="grid grid-cols-1 md:grid-cols-2 gap-3 md:gap-4">
                     <div>
-                        <label className="block text-xs font-mono text-gray-500 mb-1.5 ml-1">CONTRASEÑA</label>
-                        <input type="password" placeholder="Contraseña segura" className="w-full bg-black/40 border border-white/10 rounded-lg px-4 py-2.5 text-sm text-white focus:border-cyan-500 focus:bg-cyan-900/5 outline-none transition-all" />
+                        <label className="block text-[10px] md:text-xs font-mono text-gray-500 mb-1.5 ml-1">CONTRASEÑA</label>
+                        <input type="password" placeholder="Contraseña segura" className="w-full bg-black/40 border border-white/10 rounded-lg px-3 md:px-4 py-2 md:py-2.5 text-xs md:text-sm text-white focus:border-cyan-500 focus:bg-cyan-900/5 outline-none transition-all" />
                     </div>
                     <div>
-                        <label className="block text-xs font-mono text-gray-500 mb-1.5 ml-1">CONFIRMAR CONTRASEÑA</label>
-                        <input type="password" placeholder="Confirmar contraseña" className="w-full bg-black/40 border border-white/10 rounded-lg px-4 py-2.5 text-sm text-white focus:border-cyan-500 focus:bg-cyan-900/5 outline-none transition-all" />
+                        <label className="block text-[10px] md:text-xs font-mono text-gray-500 mb-1.5 ml-1">CONFIRMAR CONTRASEÑA</label>
+                        <input type="password" placeholder="Confirmar contraseña" className="w-full bg-black/40 border border-white/10 rounded-lg px-3 md:px-4 py-2 md:py-2.5 text-xs md:text-sm text-white focus:border-cyan-500 focus:bg-cyan-900/5 outline-none transition-all" />
                     </div>
                  </div>
                  
-                 <div className="flex justify-end gap-3 pt-4 border-t border-white/5">
+                 <div className="flex flex-col-reverse sm:flex-row justify-end gap-2 md:gap-3 pt-4 border-t border-white/5">
                     <motion.button 
                         type="button" 
                         onClick={() => setShowForm(false)}
                         whileHover={{ scale: 1.05, y: -2 }}
                         whileTap={{ scale: 0.95 }}
-                        className="px-6 py-2.5 text-xs font-bold uppercase tracking-wider rounded-lg border border-red-500/40 text-red-400 hover:text-red-300 hover:bg-red-500/10 transition-all"
+                        className="px-4 md:px-6 py-2 md:py-2.5 text-[10px] md:text-xs font-bold uppercase tracking-wider rounded-lg border border-red-500/40 text-red-400 hover:text-red-300 hover:bg-red-500/10 transition-all"
                     >
                         CANCELAR
                     </motion.button>
@@ -1462,9 +1721,9 @@ const CreateUsersSection = ({ avatarOptions, getAvatarUrl }) => {
                         type="submit"
                         whileHover={{ scale: 1.08, y: -3 }}
                         whileTap={{ scale: 0.92 }}
-                        className="px-8 py-2.5 bg-gradient-to-r from-cyan-500 to-blue-600 text-black font-bold rounded-lg text-xs uppercase tracking-widest transition-all flex items-center gap-2 border border-cyan-400/50 hover:border-cyan-300"
+                        className="px-4 md:px-8 py-2 md:py-2.5 bg-gradient-to-r from-cyan-500 to-blue-600 text-black font-bold rounded-lg text-[10px] md:text-xs uppercase tracking-widest transition-all flex items-center justify-center gap-2 border border-cyan-400/50 hover:border-cyan-300"
                     >
-                        <UserPlus size={16} />
+                        <UserPlus size={14} />
                         CREAR USUARIO
                     </motion.button>
                  </div>
@@ -1475,16 +1734,16 @@ const CreateUsersSection = ({ avatarOptions, getAvatarUrl }) => {
       </AnimatePresence>
 
       {/* Toolbar & Filters */}
-      <div className="flex flex-col md:flex-row gap-4 justify-between items-center bg-[#0a0a0a] p-2 rounded-xl border border-white/5">
+      <div className="flex flex-col gap-3 md:gap-4 bg-[#0a0a0a] p-2 md:p-3 rounded-xl border border-white/5">
          {/* Role Tabs */}
-         <div className="flex p-1 bg-black/40 rounded-lg border border-white/5 w-full md:w-auto overflow-x-auto">
+         <div className="flex p-1 bg-black/40 rounded-lg border border-white/5 w-full overflow-x-auto">
             {[
                 { id: "all", label: "Todos" }
             ].map(tab => (
                 <button
                     key={tab.id}
                     onClick={() => setRoleFilter(tab.id)}
-                    className={`px-4 py-1.5 text-xs font-medium rounded-md transition-all whitespace-nowrap ${
+                    className={`px-3 md:px-4 py-1 md:py-1.5 text-xs md:text-sm font-medium rounded-md transition-all whitespace-nowrap ${
                         roleFilter === tab.id 
                         ? "bg-white/10 text-white shadow-sm border border-white/10" 
                         : "text-gray-500 hover:text-gray-300 hover:bg-white/5"
@@ -1496,19 +1755,19 @@ const CreateUsersSection = ({ avatarOptions, getAvatarUrl }) => {
          </div>
 
          {/* Search */}
-         <div className="flex items-center gap-3 bg-black/40 px-3 py-2 rounded-lg border border-white/5 w-full md:w-80 focus-within:border-cyan-500/50 transition-colors">
-            <Search size={14} className="text-gray-500" />
+         <div className="flex items-center gap-2 md:gap-3 bg-black/40 px-2 md:px-3 py-1.5 md:py-2 rounded-lg border border-white/5 w-full focus-within:border-cyan-500/50 transition-colors">
+            <Search size={14} className="text-gray-500 shrink-0" />
             <input 
             type="text" 
             placeholder="Buscar por nombre, email o ID..." 
-            className="bg-transparent border-none outline-none text-xs text-white w-full placeholder-gray-600"
+            className="bg-transparent border-none outline-none text-xs md:text-sm text-white w-full placeholder-gray-600"
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
             />
         </div>
       </div>
 
-      <ScrollArea className="flex-1 rounded-xl border border-white/5 bg-[#0a0a0a] overflow-hidden custom-scrollbar shadow-inner">
+      <ScrollArea className="flex-1 rounded-xl border border-white/5 bg-[#0a0a0a] overflow-hidden custom-scrollbar shadow-inner hidden md:flex">
         <table className="w-full text-left border-collapse">
           <thead className="bg-white/5 text-[10px] uppercase font-mono text-gray-500 sticky top-0 backdrop-blur-md z-10 tracking-wider">
             <tr>
@@ -1575,6 +1834,90 @@ const CreateUsersSection = ({ avatarOptions, getAvatarUrl }) => {
           </tbody>
         </table>
       </ScrollArea>
+
+      {/* Users Mobile Cards - Mobile */}
+      <div className="flex md:hidden flex-1 flex-col gap-3 overflow-y-auto">
+        {filteredUsers.length === 0 ? (
+          <div className="flex items-center justify-center h-40 text-gray-500 text-xs">
+            No hay usuarios
+          </div>
+        ) : (
+          filteredUsers.map((user) => (
+            <div 
+              key={user.id} 
+              className="p-4 rounded-lg border border-white/10 bg-black/40 hover:bg-black/60 transition-colors"
+            >
+              {/* User Header */}
+              <div className="flex items-start gap-3 mb-3">
+                <div className="w-12 h-12 rounded-lg bg-white/5 p-0.5 border border-white/10 overflow-hidden shrink-0">
+                    <img 
+                        src={getAvatarUrl(avatarOptions.find(a => a.id === user.avatarId) || avatarOptions[0])} 
+                        alt={user.name}
+                        className="w-full h-full object-cover rounded-md"
+                    />
+                </div>
+                <div className="flex-1 min-w-0">
+                    <div className="font-bold text-gray-200 text-xs md:text-sm truncate">{user.name}</div>
+                    <div className="text-[10px] text-gray-500 font-mono tracking-tight truncate">{user.email}</div>
+                </div>
+              </div>
+
+              {/* Role and Status Row */}
+              <div className="flex items-center gap-2 justify-between mb-3 py-2 border-t border-white/5">
+                <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-bold border uppercase tracking-wider shrink-0 ${
+                  user.role === 'Admin' 
+                    ? 'border-cyan-500/30 text-cyan-400 bg-cyan-500/5' 
+                    : user.role === 'Agente'
+                        ? 'border-purple-500/30 text-purple-400 bg-purple-500/5'
+                        : 'border-white/20 text-gray-400 bg-white/5'
+                }`}>
+                  {user.role === 'Admin' && <Shield size={8} />}
+                  {user.role}
+                </span>
+                <div className="flex items-center gap-1.5">
+                  <div className={`relative w-2 h-2 rounded-full ${user.status === 'Activo' ? 'bg-green-500 shadow-[0_0_8px_rgba(34,197,94,0.6)]' : 'bg-gray-600'}`}>
+                    {user.status === 'Activo' && <div className="absolute inset-0 rounded-full bg-green-500 animate-ping opacity-75" />}
+                  </div>
+                  <span className={`text-xs font-medium ${user.status === 'Activo' ? 'text-gray-300' : 'text-gray-600'}`}>{user.status}</span>
+                </div>
+              </div>
+
+              {/* Activity Row */}
+              <div className="flex items-center justify-between text-[10px] mb-3 pb-2 border-b border-white/5">
+                <span className="text-gray-500">Registrado:</span>
+                <span className="text-gray-400 font-mono">{user.createdAt}</span>
+              </div>
+
+              {/* Actions Row */}
+              <div className="flex justify-end gap-2">
+                <motion.button
+                  whileHover={{ scale: 1.1 }}
+                  whileTap={{ scale: 0.9 }}
+                  className="p-2 hover:bg-cyan-500/10 hover:text-cyan-400 rounded-lg transition-colors"
+                  title="Editar"
+                >
+                  <Edit2 size={14} />
+                </motion.button>
+                <motion.button
+                  whileHover={{ scale: 1.1 }}
+                  whileTap={{ scale: 0.9 }}
+                  className="p-2 hover:bg-red-500/10 hover:text-red-400 rounded-lg transition-colors"
+                  title="Eliminar"
+                >
+                  <Trash2 size={14} />
+                </motion.button>
+                <motion.button
+                  whileHover={{ scale: 1.1 }}
+                  whileTap={{ scale: 0.9 }}
+                  className="p-2 hover:bg-white/10 text-gray-400 hover:text-white rounded-lg transition-colors"
+                >
+                  <MoreVertical size={14} />
+                </motion.button>
+              </div>
+            </div>
+          ))
+        )}
+      </div>
     </div>
   );
 };
@@ -1653,7 +1996,7 @@ const BlockingSitesSection = () => {
   };
 
   return (
-    <div className="flex flex-col h-full space-y-6">
+    <div className="flex flex-col h-full space-y-2 md:space-y-4">
       {/* Toast */}
       <AnimatePresence>
         {toast && (
@@ -1715,34 +2058,34 @@ const BlockingSitesSection = () => {
       </motion.div>
 
       {/* Add New Site Form */}
-      <div className="bg-black/40 p-6 rounded-xl border border-white/5 space-y-4">
-        <h3 className="text-lg font-bold text-white flex items-center gap-2">
-          <Plus size={20} className="text-cyan-400" />
-          Agregar Sitio a Bloquear
+      <div className="bg-black/40 p-2 md:p-6 rounded-xl border border-white/5 space-y-2 md:space-y-4 shrink-0">
+        <h3 className="text-sm md:text-lg font-bold text-white flex items-center gap-2">
+          <Plus size={16} className="text-cyan-400" />
+          Agregar Sitio
         </h3>
         
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
-          <div className="md:col-span-2">
-            <label className="text-xs font-bold text-gray-400 uppercase mb-2 block">URL del Sitio</label>
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2 md:gap-3">
+          <div className="sm:col-span-2 lg:col-span-2">
+            <label className="text-[10px] md:text-xs font-bold text-gray-400 uppercase mb-1.5 md:mb-2 block">URL del Sitio</label>
             <input
               type="text"
               placeholder="ej: example.com"
               value={newSite}
               onChange={(e) => setNewSite(e.target.value)}
               onKeyPress={(e) => e.key === 'Enter' && handleAddSite()}
-              className="w-full px-3 py-2 bg-white/5 border border-white/10 rounded-lg text-white text-sm focus:border-cyan-500/50 focus:outline-none placeholder-gray-700"
+              className="w-full px-3 py-2 md:py-2.5 bg-white/5 border border-white/10 rounded-lg text-white text-xs md:text-sm focus:border-cyan-500/50 focus:outline-none placeholder-gray-700"
             />
           </div>
 
-          <div className="relative">
-            <label className="text-xs font-bold text-gray-400 uppercase mb-2 block">Categoría</label>
+          <div className="relative sm:col-span-1">
+            <label className="text-[10px] md:text-xs font-bold text-gray-400 uppercase mb-1.5 md:mb-2 block">Categoría</label>
             <button
-              className="w-full px-3 py-2 bg-white/5 border border-white/10 rounded-lg text-white text-sm hover:border-white/20 transition-all flex justify-between items-center cursor-pointer group"
+              className="w-full px-3 py-2 md:py-2.5 bg-white/5 border border-white/10 rounded-lg text-white text-xs md:text-sm hover:border-white/20 transition-all flex justify-between items-center cursor-pointer group"
               onClick={() => setOpenCategoryMenu(!openCategoryMenu)}
             >
-              <span className="font-medium">{selectedCategory}</span>
+              <span className="font-medium truncate">{selectedCategory}</span>
               <motion.div animate={{ rotate: openCategoryMenu ? 180 : 0 }} transition={{ duration: 0.2 }}>
-                <ChevronDown size={14} className="text-gray-500 group-hover:text-gray-300" />
+                <ChevronDown size={14} className="text-gray-500 group-hover:text-gray-300 flex-shrink-0" />
               </motion.div>
             </button>
             
@@ -1762,7 +2105,7 @@ const BlockingSitesSection = () => {
                         setSelectedCategory(cat);
                         setOpenCategoryMenu(false);
                       }}
-                      className={`w-full px-4 py-3 text-left text-sm transition-all border-b border-white/5 last:border-0 flex items-center gap-3 ${
+                      className={`w-full px-4 py-2 md:py-3 text-left text-xs md:text-sm transition-all border-b border-white/5 last:border-0 flex items-center gap-3 ${
                         selectedCategory === cat
                           ? 'bg-cyan-500/20 text-cyan-300 font-bold'
                           : 'text-gray-300 hover:bg-white/5'
@@ -1778,12 +2121,12 @@ const BlockingSitesSection = () => {
             </AnimatePresence>
           </div>
 
-          <div className="flex items-end">
+          <div className="sm:col-span-1 flex items-end">
             <motion.button
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
               onClick={handleAddSite}
-              className="w-full px-4 py-2 bg-gradient-to-r from-cyan-500 to-blue-600 text-black font-bold rounded-lg text-xs uppercase tracking-widest transition-all flex items-center justify-center gap-2 border border-cyan-400/50 hover:border-cyan-300"
+              className="w-full px-3 md:px-4 py-2 md:py-2.5 bg-gradient-to-r from-cyan-500 to-blue-600 text-black font-bold rounded-lg text-[10px] md:text-xs uppercase tracking-widest transition-all flex items-center justify-center gap-2 border border-cyan-400/50 hover:border-cyan-300"
             >
               <Plus size={14} />
               Agregar
@@ -1793,8 +2136,8 @@ const BlockingSitesSection = () => {
       </div>
 
       {/* Filters */}
-      <div className="flex flex-col md:flex-row gap-4 justify-between items-center bg-[#0a0a0a] p-2 rounded-xl border border-white/5">
-        <div className="flex p-1 bg-black/40 rounded-lg border border-white/5 w-full md:w-auto overflow-x-auto">
+      <div className="flex flex-col sm:flex-row gap-2 md:gap-4 justify-between items-start sm:items-center bg-[#0a0a0a] p-1.5 md:p-2 rounded-xl border border-white/5 shrink-0">
+        <div className="flex p-1 bg-black/40 rounded-lg border border-white/5 w-full sm:w-auto overflow-x-auto">
           {[
             { id: "all", label: "Todos" },
             { id: "active", label: "Activos" },
@@ -1803,7 +2146,7 @@ const BlockingSitesSection = () => {
             <button
               key={f.id}
               onClick={() => setFilterCategory(f.id === 'all' ? 'all' : f.id === 'active' ? 'active' : 'inactive')}
-              className={`flex items-center gap-2 px-3 py-1.5 rounded-md text-xs font-medium transition-all whitespace-nowrap ${
+              className={`flex items-center gap-2 px-2 md:px-3 py-1 md:py-1.5 rounded-md text-[10px] md:text-xs font-medium transition-all whitespace-nowrap ${
                 filterCategory === (f.id === 'all' ? 'all' : f.id === 'active' ? 'active' : 'inactive') ? 
                   "bg-white/10 text-white shadow-sm border border-white/10" : 
                   "text-gray-500 hover:text-gray-300 hover:bg-white/5"
@@ -1814,20 +2157,20 @@ const BlockingSitesSection = () => {
           ))}
         </div>
 
-        <div className="flex items-center gap-3 bg-black/40 px-3 py-2 rounded-lg border border-white/5 w-full md:w-64 focus-within:border-cyan-500/50 transition-colors">
-          <Search size={14} className="text-gray-500" />
+        <div className="flex items-center gap-2 md:gap-3 bg-black/40 px-2 md:px-3 py-1 md:py-2 rounded-lg border border-white/5 w-full sm:w-auto focus-within:border-cyan-500/50 transition-colors">
+          <Search size={12} className="text-gray-500 shrink-0" />
           <input 
             type="text" 
-            placeholder="Buscar sitios..." 
-            className="bg-transparent border-none outline-none text-xs text-white w-full placeholder-gray-600"
+            placeholder="Buscar..." 
+            className="bg-transparent border-none outline-none text-[10px] md:text-xs text-white w-full placeholder-gray-600"
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
           />
         </div>
       </div>
 
-      {/* Blocked Sites Table */}
-      <ScrollArea className="flex-1 rounded-xl border border-white/5 bg-[#0a0a0a] overflow-hidden shadow-inner">
+      {/* Blocked Sites Table - Desktop */}
+        <ScrollArea className="hidden md:flex flex-1 rounded-xl border border-white/5 bg-[#0a0a0a] overflow-hidden shadow-inner min-h-[300px]">
         <table className="w-full text-left border-collapse">
           <thead className="bg-white/5 text-[10px] uppercase font-mono text-gray-500 sticky top-0 backdrop-blur-md z-10 tracking-wider">
             <tr>
@@ -1895,6 +2238,79 @@ const BlockingSitesSection = () => {
           </tbody>
         </table>
       </ScrollArea>
+
+      {/* Blocked Sites Mobile Cards - Mobile */}
+        <div className="md:hidden flex-1 flex flex-col gap-2 rounded-xl border border-white/5 bg-[#0a0a0a] overflow-hidden min-h-[200px]">
+        <div className="flex-1 overflow-y-auto flex flex-col">
+          {filteredSites.length === 0 ? (
+          <div className="flex items-center justify-center h-full text-gray-500 text-xs">
+              No hay sitios bloqueados
+            </div>
+          ) : (
+            <div className="flex flex-col gap-2 p-2">
+              {filteredSites.map((site) => (
+                <div 
+                  key={site.id} 
+                  className="p-2.5 rounded-lg border border-white/10 bg-black/40 hover:bg-black/60 transition-colors"
+                >
+                  {/* URL and Category Row */}
+                  <div className="flex flex-col gap-1.5 mb-2.5">
+                    <div className="font-bold text-[11px] text-gray-200 font-mono truncate">
+                      {site.url}
+                    </div>
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <span className="text-[9px] px-1.5 py-0.5 rounded-full bg-white/5 border border-white/10 text-gray-300 whitespace-nowrap">
+                        {site.category}
+                      </span>
+                      <span className="text-[9px] text-gray-500 whitespace-nowrap">{site.dateAdded}</span>
+                    </div>
+                  </div>
+
+                  {/* Stats Row */}
+                  <div className="flex items-center justify-between mb-2 py-1.5 border-t border-white/5">
+                    <div className="flex items-center gap-1.5">
+                      <span className="text-[9px] text-gray-500">Disp:</span>
+                      <span className="text-[10px] font-bold text-cyan-400">{site.devices}</span>
+                    </div>
+                    <div className="flex items-center gap-1.5">
+                      <div className={`relative w-1.5 h-1.5 rounded-full ${site.blocked ? "bg-red-500 shadow-[0_0_6px_rgba(239,68,68,0.6)]" : "bg-green-500"}`} />
+                      <span className={`text-[9px] font-bold ${site.blocked ? "text-red-400" : "text-green-400"}`}>
+                        {site.blocked ? "BLOQ" : "PERM"}
+                      </span>
+                    </div>
+                  </div>
+
+                  {/* Actions Row */}
+                  <div className="flex justify-end gap-1">
+                    <motion.button
+                      whileHover={{ scale: 1.1 }}
+                      whileTap={{ scale: 0.9 }}
+                      onClick={() => handleToggleSite(site.id)}
+                      className={`p-1.5 rounded-lg transition-colors text-xs ${
+                        site.blocked 
+                          ? "hover:bg-green-500/10 hover:text-green-400 text-green-400/60" 
+                          : "hover:bg-red-500/10 hover:text-red-400 text-red-400/60"
+                      }`}
+                      title={site.blocked ? "Permitir" : "Bloquear"}
+                    >
+                      {site.blocked ? <Zap size={12} /> : <Lock size={12} />}
+                    </motion.button>
+                    <motion.button
+                      whileHover={{ scale: 1.1 }}
+                      whileTap={{ scale: 0.9 }}
+                      onClick={() => handleRemoveSite(site.id)}
+                      className="p-1.5 hover:bg-red-500/10 hover:text-red-400 text-red-400/60 rounded-lg transition-colors text-xs"
+                      title="Eliminar"
+                    >
+                      <Trash2 size={12} />
+                    </motion.button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      </div>
     </div>
   );
 };
@@ -2265,6 +2681,9 @@ const LogsAndTrafficSection = () => {
   );
 };
 
+
+
+
 // 3.7 APP DEPLOYMENT SECTION
 const AppDeploymentSection = ({ targetPCs = [], isModal = false }) => {
   const [deploymentCode, setDeploymentCode] = useState('');
@@ -2285,7 +2704,6 @@ const AppDeploymentSection = ({ targetPCs = [], isModal = false }) => {
     { id: 4, date: '2025-11-28 11:22', device: 'all', command: 'apt-get install -y git', status: 'success' },
   ]);
 
-  // Si hay PCs específicos pasados como props, usa esos; si no, usa los predefinidos
   const devices = targetPCs.length > 0 
     ? [
         ...targetPCs.map(pc => ({ id: pc.id, name: pc.id, online: true })),
@@ -2304,10 +2722,8 @@ const AppDeploymentSection = ({ targetPCs = [], isModal = false }) => {
       return;
     }
 
-    // Guardar comando en la lista de comandos rápidos si no existe
     const commandExists = savedCommands.some(cmd => cmd.cmd === deploymentCode.trim());
     if (!commandExists) {
-      // Generar una etiqueta automática basada en el comando
       const label = deploymentCode.substring(0, 20) + (deploymentCode.length > 20 ? '...' : '');
       setSavedCommands([...savedCommands, { label, cmd: deploymentCode.trim() }]);
     }
@@ -2316,7 +2732,6 @@ const AppDeploymentSection = ({ targetPCs = [], isModal = false }) => {
     setExecutionOutput('Conectando con el servidor...\n');
     setShowOutput(true);
 
-    // Simular ejecución
     setTimeout(() => {
       const targetName = selectedDevice === 'all' 
         ? 'todos los dispositivos' 
@@ -2336,7 +2751,6 @@ const AppDeploymentSection = ({ targetPCs = [], isModal = false }) => {
       setExecutionOutput(prev => prev + `✓ Instalación completada exitosamente\n`);
       setIsExecuting(false);
       
-      // Agregar al historial
       const newEntry = {
         id: deploymentHistory.length + 1,
         date: new Date().toLocaleString('es-ES'),
@@ -2378,7 +2792,6 @@ const AppDeploymentSection = ({ targetPCs = [], isModal = false }) => {
           color: #ffffff;
         }
       `}</style>
-      {/* Header - Solo mostrar si NO es modal */}
       {!isModal && (
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-3 pb-4 border-b border-white/5">
           <div>
@@ -2399,87 +2812,102 @@ const AppDeploymentSection = ({ targetPCs = [], isModal = false }) => {
         </div>
       )}
 
-      {/* Main Content Area */}
-      <div className={`flex-1 grid ${isModal ? 'grid-cols-1 lg:grid-cols-2' : 'grid-cols-1 lg:grid-cols-3'} ${isModal ? 'gap-4' : 'gap-4'} overflow-hidden`}>
+      <div className={`flex-1 ${isModal ? 'flex flex-col gap-4 overflow-hidden' : 'grid grid-cols-1 lg:grid-cols-3 gap-4 overflow-hidden'}`}>
         
-        {/* Code Editor Section */}
-        <div className={`${isModal ? 'lg:col-span-1' : 'lg:col-span-2'} flex flex-col gap-3 h-full overflow-hidden`}>
-          
-          {/* Device Selector */}
-          <div className={`bg-black/40 rounded-lg border border-white/5 p-3 space-y-1.5`}>
-            <label className={`font-bold text-gray-400 uppercase block text-xs`}>Dispositivo</label>
-            <select 
-              value={selectedDevice}
-              onChange={(e) => setSelectedDevice(e.target.value)}
-              className={`w-full px-3 py-2 bg-white/5 border border-white/10 rounded-lg text-white text-sm focus:border-cyan-500/50 outline-none transition-colors`}
-            >
-              {devices.map(device => (
-                <option key={device.id} value={device.id}>
-                  {device.name} {device.online ? '● Online' : '● Offline'}
-                </option>
-              ))}
-            </select>
-          </div>
-
-          {/* Code Input */}
-          <div className={`flex-1 flex flex-col gap-1.5 min-h-0`}>
-            <div className="flex justify-between items-center gap-2">
-              <label className={`font-bold text-gray-400 uppercase text-xs`}>Comando</label>
-              <button
-                onClick={copyToClipboard}
-                disabled={!deploymentCode}
-                className="px-2 py-1 text-xs bg-white/5 hover:bg-white/10 border border-white/10 rounded text-gray-300 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-1"
+        {/* ESTRUCTURA VERTICAL PARA MODAL */}
+        {isModal ? (
+          <>
+            {/* Dispositivo */}
+            <div className={`bg-black/40 rounded-lg border border-white/5 p-3 space-y-1.5 flex-shrink-0`}>
+              <label className={`font-bold text-gray-400 uppercase block text-xs`}>Dispositivo</label>
+              <select 
+                value={selectedDevice}
+                onChange={(e) => setSelectedDevice(e.target.value)}
+                className={`w-full px-3 py-2 bg-white/5 border border-white/10 rounded-lg text-white text-sm focus:border-cyan-500/50 outline-none transition-colors`}
               >
-                <Mail size={10} />
-                Copiar
-              </button>
+                {devices.map(device => (
+                  <option key={device.id} value={device.id}>
+                    {device.name} {device.online ? '● Online' : '● Offline'}
+                  </option>
+                ))}
+              </select>
             </div>
-            <textarea
-              value={deploymentCode}
-              onChange={(e) => setDeploymentCode(e.target.value)}
-              placeholder="apt-get update&#10;apt-get install -y docker.io"
-              className={`flex-1 px-3 py-2 bg-[#0a0a0a] border border-white/10 rounded-lg text-white font-mono focus:border-cyan-500/50 outline-none placeholder-gray-700 resize-none min-h-0 text-xs`}
-            />
-          </div>
 
-          {/* Execute Button */}
-          <button
-            onClick={handleExecuteDeploy}
-            disabled={!deploymentCode.trim() || isExecuting}
-            className={`w-full px-4 py-2.5 rounded-lg font-bold flex items-center justify-center gap-2 transition-all text-sm ${
-              isExecuting
-                ? 'bg-yellow-600 text-black'
-                : deploymentCode.trim()
-                ? 'bg-cyan-600 hover:bg-cyan-500 text-black shadow-[0_0_20px_rgba(6,182,212,0.2)]'
-                : 'bg-gray-600 text-gray-400 cursor-not-allowed'
-            }`}
-          >
-            {isExecuting ? (
-              <>
-                <Loader size={14} className="animate-spin" />
-                Ejecutando...
-              </>
-            ) : (
-              <>
-                <Play size={14} />
-                Ejecutar
-              </>
-            )}
-          </button>
-        </div>
+            {/* Comando */}
+            <div className={`flex flex-col gap-1.5 flex-1 min-h-0`}>
+              <div className="flex justify-between items-center gap-2">
+                <label className={`font-bold text-gray-400 uppercase text-xs`}>Comando</label>
+                <button
+                  onClick={copyToClipboard}
+                  disabled={!deploymentCode}
+                  className="px-2 py-1 text-xs bg-white/5 hover:bg-white/10 border border-white/10 rounded text-gray-300 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-1"
+                >
+                  <Mail size={10} />
+                  Copiar
+                </button>
+              </div>
+              <textarea
+                value={deploymentCode}
+                onChange={(e) => setDeploymentCode(e.target.value)}
+                placeholder="apt-get update&#10;apt-get install -y docker.io"
+                className={`flex-1 px-3 py-2 bg-[#0a0a0a] border border-white/10 rounded-lg text-white font-mono focus:border-cyan-500/50 outline-none placeholder-gray-700 resize-none text-xs`}
+              />
+            </div>
 
-        {/* Info Panel */}
-        <div className={`flex flex-col gap-3 h-full overflow-hidden lg:col-span-1`}>
-          
-          {/* Quick Commands */}
-          <div className={`bg-black/40 p-3 rounded-lg border border-white/5 space-y-1.5 flex-shrink-0`}>
-            <h3 className={`text-xs font-bold text-cyan-400 flex items-center gap-2`}>
-              <BookOpen size={12} />
-              Comandos Rápidos
-            </h3>
-            <div className={`space-y-0.5 overflow-y-auto max-h-28`}>
+            {/* Botón Ejecutar */}
+            <button
+              onClick={handleExecuteDeploy}
+              disabled={!deploymentCode.trim() || isExecuting}
+              className={`w-full px-4 py-2.5 rounded-lg font-bold flex items-center justify-center gap-2 transition-all text-sm flex-shrink-0 ${
+                isExecuting
+                  ? 'bg-yellow-600 text-black'
+                  : deploymentCode.trim()
+                  ? 'bg-cyan-600 hover:bg-cyan-500 text-black shadow-[0_0_20px_rgba(6,182,212,0.2)]'
+                  : 'bg-gray-600 text-gray-400 cursor-not-allowed'
+              }`}
+            >
+              {isExecuting ? (
+                <>
+                  <Loader size={14} className="animate-spin" />
+                  Ejecutando...
+                </>
+              ) : (
+                <>
+                  <Play size={14} />
+                  Ejecutar
+                </>
+              )}
+            </button>
+
+            {/* Comandos Rápidos y Salida lado a lado */}
+            <div className={`grid grid-cols-2 gap-4 flex-shrink-0 min-h-[150px] max-h-[200px]`}>
+              
+              <div className={`bg-black/40 p-3 rounded-lg border border-white/5 space-y-1.5 overflow-hidden flex flex-col`}>
+                <h3 className={`text-xs font-bold text-cyan-400 flex items-center gap-2 flex-shrink-0`}>
+                  <BookOpen size={12} />
+                  Comandos Rápidos
+                </h3>
+                <div className={`space-y-0.5 overflow-y-auto flex-1`} style={{
+                  scrollbarWidth: 'thin',
+                  scrollbarColor: '#1f1f1f transparent'
+                }}>
+                  <style>{`
+                    .quick-commands-scroll::-webkit-scrollbar {
+                      width: 6px;
+                    }
+                    .quick-commands-scroll::-webkit-scrollbar-track {
+                      background: transparent;
+                    }
+                    .quick-commands-scroll::-webkit-scrollbar-thumb {
+                      background: #1f1f1f;
+                      border-radius: 3px;
+                    }
+                    .quick-commands-scroll::-webkit-scrollbar-thumb:hover {
+                      background: #333333;
+                    }
+                  `}</style>
               {savedCommands.map((item, idx) => (
-                <div key={idx} className="flex items-center gap-2 group">
+                <div key={idx} className="flex items-center gap-2 group flex-shrink-0">
                   <button
                     onClick={() => setDeploymentCode(item.cmd)}
                     className={`flex-1 text-left px-2 py-1 bg-black/40 hover:bg-black/60 border border-white/10 rounded text-xs text-gray-400 hover:text-cyan-300 transition-colors`}
@@ -2489,7 +2917,7 @@ const AppDeploymentSection = ({ targetPCs = [], isModal = false }) => {
                   </button>
                   <button
                     onClick={() => removeCommand(idx)}
-                    className="opacity-0 group-hover:opacity-100 transition-opacity p-1 hover:bg-red-500/20 hover:text-red-400 text-gray-500 rounded"
+                    className="opacity-0 group-hover:opacity-100 transition-opacity p-1 hover:bg-red-500/20 hover:text-red-400 text-gray-500 rounded flex-shrink-0"
                     title="Eliminar comando"
                   >
                     <Trash2 size={12} />
@@ -2499,21 +2927,127 @@ const AppDeploymentSection = ({ targetPCs = [], isModal = false }) => {
             </div>
           </div>
 
-          {/* Output Panel */}
-          <div className="flex-1 flex flex-col min-h-0">
-            <h3 className={`text-xs font-bold text-green-400 mb-1.5`}>Salida</h3>
-            <div className={`flex-1 bg-[#0a0a0a] border border-green-500/20 rounded-lg p-3 font-mono text-[10px] text-green-400 overflow-y-auto min-h-0 border-dashed`}>
-              {executionOutput ? (
-                <pre className="whitespace-pre-wrap break-words">{executionOutput}</pre>
-              ) : (
-                <p className="text-gray-600">Salida aquí...</p>
-              )}
+              <div className={`bg-black/40 flex flex-col min-h-0 rounded-lg border border-white/5 overflow-hidden`}>
+                <h3 className={`text-xs font-bold text-green-400 p-3 pb-1.5`}>Salida</h3>
+                <div className={`flex-1 bg-[#0a0a0a] border border-green-500/20 rounded-lg m-3 mt-1 p-3 font-mono text-[10px] text-green-400 overflow-y-auto border-dashed`}>
+                  {executionOutput ? (
+                    <pre className="whitespace-pre-wrap break-words">{executionOutput}</pre>
+                  ) : (
+                    <p className="text-gray-600">Salida aquí...</p>
+                  )}
+                </div>
+              </div>
             </div>
-          </div>
-        </div>
+          </>
+        ) : (
+          <>
+            {/* ESTRUCTURA NO-MODAL (original) */}
+            <div className={`lg:col-span-2 flex flex-col gap-3 h-full overflow-hidden`}>
+              
+              <div className={`bg-black/40 rounded-lg border border-white/5 p-3 space-y-1.5`}>
+                <label className={`font-bold text-gray-400 uppercase block text-xs`}>Dispositivo</label>
+                <select 
+                  value={selectedDevice}
+                  onChange={(e) => setSelectedDevice(e.target.value)}
+                  className={`w-full px-3 py-2 bg-white/5 border border-white/10 rounded-lg text-white text-sm focus:border-cyan-500/50 outline-none transition-colors`}
+                >
+                  {devices.map(device => (
+                    <option key={device.id} value={device.id}>
+                      {device.name} {device.online ? '● Online' : '● Offline'}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div className={`flex-1 flex flex-col gap-1.5 min-h-0`}>
+                <div className="flex justify-between items-center gap-2">
+                  <label className={`font-bold text-gray-400 uppercase text-xs`}>Comando</label>
+                  <button
+                    onClick={copyToClipboard}
+                    disabled={!deploymentCode}
+                    className="px-2 py-1 text-xs bg-white/5 hover:bg-white/10 border border-white/10 rounded text-gray-300 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-1"
+                  >
+                    <Mail size={10} />
+                    Copiar
+                  </button>
+                </div>
+                <textarea
+                  value={deploymentCode}
+                  onChange={(e) => setDeploymentCode(e.target.value)}
+                  placeholder="apt-get update&#10;apt-get install -y docker.io"
+                  className={`flex-1 px-3 py-2 bg-[#0a0a0a] border border-white/10 rounded-lg text-white font-mono focus:border-cyan-500/50 outline-none placeholder-gray-700 resize-none min-h-0 text-xs`}
+                />
+              </div>
+
+              <button
+                onClick={handleExecuteDeploy}
+                disabled={!deploymentCode.trim() || isExecuting}
+                className={`w-full px-4 py-2.5 rounded-lg font-bold flex items-center justify-center gap-2 transition-all text-sm ${
+                  isExecuting
+                    ? 'bg-yellow-600 text-black'
+                    : deploymentCode.trim()
+                    ? 'bg-cyan-600 hover:bg-cyan-500 text-black shadow-[0_0_20px_rgba(6,182,212,0.2)]'
+                    : 'bg-gray-600 text-gray-400 cursor-not-allowed'
+                }`}
+              >
+                {isExecuting ? (
+                  <>
+                    <Loader size={14} className="animate-spin" />
+                    Ejecutando...
+                  </>
+                ) : (
+                  <>
+                    <Play size={14} />
+                    Ejecutar
+                  </>
+                )}
+              </button>
+            </div>
+
+            <div className={`flex flex-col gap-3 h-full overflow-hidden lg:col-span-1`}>
+              
+              <div className={`bg-black/40 p-3 rounded-lg border border-white/5 space-y-1.5 flex-shrink-0 overflow-hidden flex flex-col`}>
+                <h3 className={`text-xs font-bold text-cyan-400 flex items-center gap-2`}>
+                  <BookOpen size={12} />
+                  Comandos Rápidos
+                </h3>
+                <div className={`space-y-0.5 overflow-y-auto max-h-28`}>
+                  {savedCommands.map((item, idx) => (
+                    <div key={idx} className="flex items-center gap-2 group">
+                      <button
+                        onClick={() => setDeploymentCode(item.cmd)}
+                        className={`flex-1 text-left px-2 py-1 bg-black/40 hover:bg-black/60 border border-white/10 rounded text-xs text-gray-400 hover:text-cyan-300 transition-colors`}
+                        title={item.cmd}
+                      >
+                        <span className={`block font-bold text-gray-200 text-xs truncate`}>{item.label}</span>
+                      </button>
+                      <button
+                        onClick={() => removeCommand(idx)}
+                        className="opacity-0 group-hover:opacity-100 transition-opacity p-1 hover:bg-red-500/20 hover:text-red-400 text-gray-500 rounded"
+                        title="Eliminar comando"
+                      >
+                        <Trash2 size={12} />
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              <div className="flex-1 flex flex-col min-h-0">
+                <h3 className={`text-xs font-bold text-green-400 mb-1.5`}>Salida</h3>
+                <div className={`flex-1 bg-[#0a0a0a] border border-green-500/20 rounded-lg p-3 font-mono text-[10px] text-green-400 overflow-y-auto min-h-0 border-dashed`}>
+                  {executionOutput ? (
+                    <pre className="whitespace-pre-wrap break-words">{executionOutput}</pre>
+                  ) : (
+                    <p className="text-gray-600">Salida aquí...</p>
+                  )}
+                </div>
+              </div>
+            </div>
+          </>
+        )}
       </div>
 
-      {/* History - Solo si NO es modal */}
       {!isModal && (
         <div className="bg-black/40 p-4 rounded-xl border border-white/5 space-y-3">
           <h3 className="text-sm font-bold text-white flex items-center gap-2">
@@ -2555,6 +3089,296 @@ const AppDeploymentSection = ({ targetPCs = [], isModal = false }) => {
   );
 };
 
+// 3.8 SCREEN MONITORING SECTION
+const ScreenMonitoringSection = () => {
+  const [screens, setScreens] = useState([
+    {
+      id: 1,
+      pcId: "SALA-01-PC1",
+      imageBase64: null,
+      timestamp: new Date(Date.now() - 5000),
+      status: "online",
+      lastUpdate: new Date(Date.now() - 2000),
+    },
+    {
+      id: 2,
+      pcId: "SALA-02-PC3",
+      imageBase64: null,
+      timestamp: new Date(Date.now() - 8000),
+      status: "online",
+      lastUpdate: new Date(Date.now() - 3000),
+    },
+    {
+      id: 3,
+      pcId: "SALA-03-PC5",
+      imageBase64: null,
+      timestamp: new Date(Date.now() - 12000),
+      status: "offline",
+      lastUpdate: new Date(Date.now() - 15000),
+    },
+  ]);
+
+  const [selectedScreen, setSelectedScreen] = useState(null);
+  const [showFullscreen, setShowFullscreen] = useState(false);
+
+  const handleScreenMessage = (messageData) => {
+    try {
+      // messageData viene del RabbitMQService, ya parseado
+      const parsedData = typeof messageData === 'string' ? JSON.parse(messageData) : messageData;
+      setScreens(prev => prev.map(screen =>
+        screen.pcId === parsedData.PcId || screen.pcId === parsedData.pcId
+          ? {
+              ...screen,
+              imageBase64: parsedData.ImageBase64 || parsedData.imageBase64,
+              timestamp: new Date(parsedData.Timestamp || parsedData.timestamp),
+              lastUpdate: new Date(),
+              status: 'online'
+            }
+          : screen
+      ));
+    } catch (e) {
+      console.error('Error parsing screen message:', e);
+    }
+  };
+
+  // RabbitMQ Connection useEffect
+  useEffect(() => {
+    const initRabbitMQ = async () => {
+      try {
+        // Conectar al servicio RabbitMQ
+        await RabbitMQService.connect();
+        
+        // Registrar callback para recibir mensajes
+        RabbitMQService.onMessage(handleScreenMessage);
+
+        console.log('✅ ScreenMonitoringSection conectada a RabbitMQ');
+      } catch (error) {
+        console.error('❌ Error inicializando RabbitMQ en ScreenMonitoringSection:', error);
+      }
+    };
+
+    initRabbitMQ();
+
+    // Cleanup en desmontaje
+    return () => {
+      RabbitMQService.offMessage(handleScreenMessage);
+    };
+  }, []);
+
+  return (
+    <div className="flex flex-col h-full space-y-6">
+      {/* Header */}
+      <div className="flex flex-col md:flex-row justify-between items-end md:items-center gap-4 pb-6 border-b border-white/5">
+        <div>
+          <div className="flex items-center gap-3">
+            <div className="p-2.5 bg-purple-500/10 rounded-lg border border-purple-500/20">
+              <Monitor className="text-purple-400" size={24} />
+            </div>
+            <div>
+              <h2 className="text-2xl font-bold text-white tracking-tight">Vigilancia de Pantallas</h2>
+              <p className="text-gray-500 text-sm font-sans">Monitorea las pantallas de los dispositivos en tiempo real.</p>
+            </div>
+          </div>
+        </div>
+        <div className="text-xs text-gray-400 font-mono">
+          {screens.filter(s => s.status === 'online').length}/{screens.length} en línea
+        </div>
+      </div>
+
+      {/* Stats */}
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+        {[
+          { label: "Dispositivos Monitoreados", value: screens.length, icon: Monitor, color: "text-purple-400", bg: "from-purple-500/10 to-transparent", border: "border-purple-500/20" },
+          { label: "En Línea", value: screens.filter(s => s.status === 'online').length, icon: Eye, color: "text-green-400", bg: "from-green-500/10 to-transparent", border: "border-green-500/20" },
+          { label: "Actualizaciones/min", value: screens.length * 12, icon: RefreshCw, color: "text-blue-400", bg: "from-blue-500/10 to-transparent", border: "border-blue-500/20" },
+        ].map((stat, idx) => (
+          <motion.div
+            key={idx}
+            whileHover={{ scale: 1.02, y: -5 }}
+            className={`p-5 rounded-xl border ${stat.border} bg-gradient-to-b ${stat.bg} backdrop-blur-sm group`}
+          >
+            <div className="flex justify-between items-start mb-4">
+              <div className={`p-2 rounded-lg bg-black/40 border border-white/5 ${stat.color}`}>
+                <stat.icon size={20} />
+              </div>
+            </div>
+            <h3 className="text-3xl font-bold text-white mb-1 font-mono">{stat.value}</h3>
+            <p className="text-xs text-gray-400 font-mono uppercase tracking-wider">{stat.label}</p>
+          </motion.div>
+        ))}
+      </div>
+
+      {/* Screen Grid */}
+      <div className="flex-1 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 overflow-y-auto">
+        {screens.map((screen) => (
+          <motion.div
+            key={screen.id}
+            initial={{ opacity: 0, scale: 0.9 }}
+            animate={{ opacity: 1, scale: 1 }}
+            whileHover={{ scale: 1.02 }}
+            className="relative group rounded-xl overflow-hidden border border-white/10 bg-black/40 hover:border-purple-500/30 transition-all cursor-pointer"
+            onClick={() => {
+              setSelectedScreen(screen);
+              setShowFullscreen(true);
+            }}
+          >
+            {/* Status Badge */}
+            <div className="absolute top-3 right-3 z-10 flex items-center gap-2 px-2.5 py-1.5 rounded-full bg-black/60 backdrop-blur-sm border border-white/10">
+              <div className={`w-2 h-2 rounded-full ${screen.status === 'online' ? 'bg-green-500 animate-pulse' : 'bg-red-500'}`} />
+              <span className={`text-xs font-bold ${screen.status === 'online' ? 'text-green-400' : 'text-red-400'}`}>
+                {screen.status === 'online' ? 'EN LÍNEA' : 'DESCONECTADO'}
+              </span>
+            </div>
+
+            {/* Screen Preview */}
+            <div className="aspect-video bg-gradient-to-br from-black/80 to-purple-900/20 flex items-center justify-center relative overflow-hidden">
+              {screen.imageBase64 ? (
+                <motion.img
+                  src={`data:image/jpeg;base64,${screen.imageBase64}`}
+                  alt={screen.pcId}
+                  className="w-full h-full object-cover"
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  transition={{ duration: 0.3 }}
+                />
+              ) : (
+                <div className="flex flex-col items-center justify-center text-gray-500">
+                  <Monitor size={32} className="mb-2 opacity-50" />
+                  <span className="text-xs">Sin captura</span>
+                </div>
+              )}
+              {/* Overlay on Hover */}
+              <div className="absolute inset-0 bg-black/0 group-hover:bg-black/40 transition-all flex items-center justify-center opacity-0 group-hover:opacity-100">
+                <Maximize2 size={24} className="text-white" />
+              </div>
+            </div>
+
+            {/* Info Footer */}
+            <div className="p-3 space-y-2 border-t border-white/5">
+              <h3 className="font-bold text-sm text-white font-mono truncate">{screen.pcId}</h3>
+              <div className="text-[10px] text-gray-500 space-y-1">
+                <div className="flex justify-between">
+                  <span>Captura:</span>
+                  <span className="text-cyan-400">{screen.timestamp.toLocaleTimeString()}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span>Actualización:</span>
+                  <span className="text-cyan-400">hace {Math.round((new Date() - screen.lastUpdate) / 1000)}s</span>
+                </div>
+              </div>
+            </div>
+          </motion.div>
+        ))}
+      </div>
+
+      {/* Fullscreen Modal */}
+      <AnimatePresence>
+        {showFullscreen && selectedScreen && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 bg-black/95 backdrop-blur-sm flex items-center justify-center z-[200] p-4"
+            onClick={() => setShowFullscreen(false)}
+          >
+            <motion.div
+              initial={{ scale: 0.9 }}
+              animate={{ scale: 1 }}
+              exit={{ scale: 0.9 }}
+              className="relative w-full max-w-4xl rounded-xl overflow-hidden border border-purple-500/30 shadow-2xl"
+              onClick={(e) => e.stopPropagation()}
+            >
+              {/* Close Button */}
+              <button
+                onClick={() => setShowFullscreen(false)}
+                className="absolute top-4 right-4 z-10 p-2 bg-black/60 hover:bg-black/80 rounded-lg border border-white/10 text-gray-300 hover:text-white transition-colors"
+              >
+                <X size={20} />
+              </button>
+
+              {/* Image */}
+              {selectedScreen.imageBase64 ? (
+                <img
+                  src={`data:image/jpeg;base64,${selectedScreen.imageBase64}`}
+                  alt={selectedScreen.pcId}
+                  className="w-full h-auto"
+                />
+              ) : (
+                <div className="aspect-video bg-gradient-to-br from-black to-purple-900/40 flex items-center justify-center">
+                  <div className="text-center text-gray-500">
+                    <Monitor size={64} className="mb-4 opacity-30 mx-auto" />
+                    <p className="text-lg">Sin captura disponible</p>
+                  </div>
+                </div>
+              )}
+
+              {/* Footer Info */}
+              <div className="bg-black/80 border-t border-white/10 p-4 flex justify-between items-center">
+                <div>
+                  <h3 className="text-white font-bold font-mono">{selectedScreen.pcId}</h3>
+                  <p className="text-xs text-gray-400 mt-1">
+                    Capturado: {selectedScreen.timestamp.toLocaleString()}
+                  </p>
+                </div>
+                <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-black/60 border border-white/10">
+                  <div className={`w-2 h-2 rounded-full ${selectedScreen.status === 'online' ? 'bg-green-500 animate-pulse' : 'bg-red-500'}`} />
+                  <span className={`text-xs font-bold ${selectedScreen.status === 'online' ? 'text-green-400' : 'text-red-400'}`}>
+                    {selectedScreen.status === 'online' ? 'EN LÍNEA' : 'DESCONECTADO'}
+                  </span>
+                </div>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </div>
+  );
+};
+
+// 4. DEPLOYMENT MODAL
+const DeploymentModal = ({ showDeployModal, setShowDeployModal, deployTargetPCs, setDeployTargetPCs }) => (
+  <AnimatePresence>
+    {showDeployModal && (
+      <motion.div
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        exit={{ opacity: 0 }}
+        className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-[200] p-4"
+        onClick={() => setShowDeployModal(false)}
+      >
+        <motion.div
+          initial={{ scale: 0.9, y: 20 }}
+          animate={{ scale: 1, y: 0 }}
+          exit={{ scale: 0.9, y: 20 }}
+          className="bg-[#0f0f0f] border border-cyan-500/30 w-full max-w-5xl max-h-[90vh] rounded-2xl shadow-2xl overflow-hidden flex flex-col"
+          onClick={(e) => e.stopPropagation()}
+        >
+          {/* Header */}
+          <div className="bg-gradient-to-r from-cyan-900/20 to-transparent p-6 border-b border-white/5 flex justify-between items-center sticky top-0 z-10">
+            <div className="flex items-center gap-3">
+              <Terminal size={24} className="text-cyan-400" />
+              <h2 className="text-xl font-bold text-white font-mono">Despliegue de Aplicaciones</h2>
+            </div>
+            <button
+              onClick={() => setShowDeployModal(false)}
+              className="text-gray-500 hover:text-white transition-colors"
+            >
+              <X size={24} />
+            </button>
+          </div>
+
+          {/* Content with better organization */}
+          <div className="flex-1 overflow-y-auto flex flex-col lg:flex-row gap-4 p-6">
+            {/* Main Content */}
+            <div className="flex-1 min-w-0">
+              <AppDeploymentSection targetPCs={deployTargetPCs} isModal={true} />
+            </div>
+          </div>
+        </motion.div>
+      </motion.div>
+    )}
+  </AnimatePresence>
+);
 
 // 4. PLACEHOLDER SECTIONS
 const PlaceholderSection = ({ title, icon: Icon, description }) => (
@@ -2573,16 +3397,16 @@ const PlaceholderSection = ({ title, icon: Icon, description }) => (
 
 // --- MAIN LAYOUT LOGIC ---
 
-const DashboardContent = ({ currentPage, avatarOptions, getAvatarUrl }) => {
-  const containerClass = "flex flex-1 flex-col gap-6 rounded-tl-3xl border-l border-t border-white/10 bg-[#080808] p-4 md:p-8 backdrop-blur-xl overflow-y-auto shadow-[-20px_-20px_50px_rgba(0,0,0,0.5)] relative z-10 h-full w-full scrollbar-hide";
+const DashboardContent = ({ currentPage, avatarOptions, getAvatarUrl, showDeployModal, setShowDeployModal, deployTargetPCs, setDeployTargetPCs }) => {
+  const containerClass = "flex flex-1 flex-col gap-4 md:gap-6 rounded-tl-3xl border-l border-t border-white/10 bg-[#080808] p-3 md:p-8 backdrop-blur-xl overflow-y-auto shadow-[-20px_-20px_50px_rgba(0,0,0,0.5)] relative z-10 h-full w-full scrollbar-hide md:rounded-tl-3xl rounded-none";
   
   const renderContent = () => {
     switch(currentPage) {
       case 'dashboard': return <OverviewSection />;
-      case 'computers': return <ComputerMonitoringSection />;
+      case 'computers': return <ComputerMonitoringSection showDeployModal={showDeployModal} setShowDeployModal={setShowDeployModal} deployTargetPCs={deployTargetPCs} setDeployTargetPCs={setDeployTargetPCs} />;
+      case 'screens': return <ScreenMonitoringSection />;
       case 'users': return <CreateUsersSection avatarOptions={avatarOptions} getAvatarUrl={getAvatarUrl} />;
       case 'blocking': return <BlockingSitesSection />;
-      case 'deploy': return <AppDeploymentSection />;
       case 'logs': return <LogsAndTrafficSection />;
       case 'settings': return <PlaceholderSection title="Configuración del Sistema" icon={Settings} description="Ajustes globales, conexiones a bases de datos y preferencias de interfaz." />;
       default: return <OverviewSection />;
@@ -2630,6 +3454,8 @@ const DashboardLayout = () => {
   const [currentPage, setCurrentPage] = useState("dashboard");
   const [showProfileModal, setShowProfileModal] = useState(false);
   const [showAvatarSelector, setShowAvatarSelector] = useState(false);
+  const [showDeployModal, setShowDeployModal] = useState(false);
+  const [deployTargetPCs, setDeployTargetPCs] = useState([]);
   
   // Estado del avatar con persistencia en localStorage
   const [selectedAvatar, setSelectedAvatarState] = useState(() => {
@@ -2726,8 +3552,8 @@ const DashboardLayout = () => {
   const links = [
     { label: "Panel Principal", href: "#dashboard", icon: <LayoutGrid />, page: "dashboard" },
     { label: "Servidores Linux", href: "#computers", icon: <Monitor />, page: "computers" },
+    { label: "Vigilancia de Pantallas", href: "#screens", icon: <Eye />, page: "screens" },
     { label: "Bloqueo de Sitios", href: "#blocking", icon: <AlertTriangle />, page: "blocking" },
-    { label: "Despliegue de Apps", href: "#deploy", icon: <Download />, page: "deploy" },
     { label: "Gestión de Usuarios", href: "#users", icon: <UserPlus />, page: "users" },
     { label: "Logs y Tráfico", href: "#logs", icon: <FileText />, page: "logs" },
     { label: "Configuración", href: "#settings", icon: <Settings />, page: "settings" },
@@ -2763,7 +3589,23 @@ const DashboardLayout = () => {
         </SidebarBody>
       </Sidebar>
 
-      <DashboardContent currentPage={currentPage} avatarOptions={avatarOptions} getAvatarUrl={getAvatarUrl} />
+      <div className="flex-1 flex flex-col md:pt-0 pt-16">
+        <DashboardContent 
+          currentPage={currentPage} 
+          avatarOptions={avatarOptions} 
+          getAvatarUrl={getAvatarUrl}
+          showDeployModal={showDeployModal}
+          setShowDeployModal={setShowDeployModal}
+          deployTargetPCs={deployTargetPCs}
+          setDeployTargetPCs={setDeployTargetPCs}
+        />
+        <DeploymentModal 
+          showDeployModal={showDeployModal}
+          setShowDeployModal={setShowDeployModal}
+          deployTargetPCs={deployTargetPCs}
+          setDeployTargetPCs={setDeployTargetPCs}
+        />
+      </div>
     </div>
   );
 }
