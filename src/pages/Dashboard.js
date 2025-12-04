@@ -1,4 +1,5 @@
 import React, { useState, createContext, useContext, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { 
   LayoutGrid, 
@@ -59,9 +60,56 @@ import {
   Maximize2
 } from "lucide-react";
 import iconLogo from "../assets/icons/icon.png";
-import DeviceService from "../services/DeviceService";
-import WebSocketService from "../services/WebSocketService";
-import RabbitMQService from "../services/RabbitMQService";
+import { deviceService, WebSocketService, RabbitMQService, AuthService } from "../services";
+
+// ============================================
+// 🔧 FUNCIONES DE DEBUG (Para consola)
+// ============================================
+if (typeof window !== 'undefined') {
+  window.debugEnvyGuard = {
+    getUserData: () => {
+      console.log('%c🔍 DATOS DEL USUARIO ACTUAL', 'font-size: 14px; color: #00ff88; font-weight: bold;');
+      const user = AuthService.getCurrentUser();
+      console.log('Usuario completo:', user);
+      if (user) {
+        console.table(user);
+        console.log('Nombre resuelto:', (user.firstName || user.nombre) + ' ' + (user.lastName || user.apellido));
+        console.log('Rol resuelto:', user.role || user.rol);
+      }
+      return user;
+    },
+    
+    getLocalStorage: () => {
+      console.log('%c📦 CONTENIDO DE LOCALSTORAGE', 'font-size: 14px; color: #00d4ff; font-weight: bold;');
+      console.log('authToken:', localStorage.getItem('authToken') ? 'Presente ✅' : 'No encontrado ❌');
+      const userStr = localStorage.getItem('user');
+      console.log('user (string):', userStr);
+      if (userStr) {
+        try {
+          console.log('user (parseado):', JSON.parse(userStr));
+        } catch (e) {
+          console.error('Error al parsear:', e);
+        }
+      }
+      return { token: localStorage.getItem('authToken'), user: userStr };
+    },
+    
+    clearData: () => {
+      console.log('%c🗑️  LIMPIANDO DATOS', 'font-size: 14px; color: #ff006e; font-weight: bold;');
+      localStorage.clear();
+      console.log('✅ localStorage limpiado. Recarga la página.');
+    },
+    
+    help: () => {
+      console.log('%c📚 FUNCIONES DE DEBUG DISPONIBLES:', 'font-size: 14px; color: #ffbe0b; font-weight: bold;');
+      console.log('window.debugEnvyGuard.getUserData() - Ver datos del usuario actual');
+      console.log('window.debugEnvyGuard.getLocalStorage() - Ver localStorage');
+      console.log('window.debugEnvyGuard.clearData() - Limpiar localStorage');
+      console.log('window.debugEnvyGuard.help() - Mostrar esta ayuda');
+    }
+  };
+  console.log('%c✨ Debug tools disponibles. Escribe: window.debugEnvyGuard.help()', 'color: #00ff88; font-weight: bold;');
+}
 
 // --- UTILS & COMPONENTS ---
 
@@ -71,6 +119,67 @@ const ScrollArea = ({ children, className = "" }) => (
     {children}
   </div>
 );
+
+// 🎨 COMPONENTE TOAST ESTANDARIZADO Y REUTILIZABLE
+const Toast = ({ toast, onClose }) => {
+  useEffect(() => {
+    if (!toast) return;
+    const timer = setTimeout(() => onClose(), 3000);
+    return () => clearTimeout(timer);
+  }, [toast, onClose]);
+
+  if (!toast) return null;
+
+  return (
+    <AnimatePresence>
+      <motion.div 
+        key="toast"
+        initial={{ x: 400, opacity: 0, y: 0 }} 
+        animate={{ x: 0, opacity: 1, y: 0 }} 
+        exit={{ x: 400, opacity: 0, y: -100 }}
+        transition={{ type: "spring", stiffness: 400, damping: 30, exit: { duration: 0.5 } }}
+        className={`fixed top-6 right-6 max-w-md p-4 rounded-xl text-sm font-semibold border-2 shadow-2xl backdrop-blur-md z-[99999] flex items-center gap-3 ${
+          toast.type === 'success' 
+            ? 'text-green-100 border-green-500/60 bg-green-500/20' 
+            : toast.type === 'warn' 
+            ? 'text-yellow-100 border-yellow-500/60 bg-yellow-500/20' 
+            : 'text-red-100 border-red-500/60 bg-red-500/20'
+        }`}
+      >
+        {toast.type === 'success' && (
+          <div className="flex-shrink-0">
+            <svg className="w-5 h-5 text-green-400" fill="currentColor" viewBox="0 0 20 20">
+              <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+            </svg>
+          </div>
+        )}
+        {toast.type === 'warn' && (
+          <div className="flex-shrink-0">
+            <svg className="w-5 h-5 text-yellow-400" fill="currentColor" viewBox="0 0 20 20">
+              <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+            </svg>
+          </div>
+        )}
+        {toast.type === 'error' && (
+          <div className="flex-shrink-0">
+            <svg className="w-5 h-5 text-red-400" fill="currentColor" viewBox="0 0 20 20">
+              <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
+            </svg>
+          </div>
+        )}
+        <span className="flex-1">{toast.msg}</span>
+        <button
+          onClick={onClose}
+          className="flex-shrink-0 ml-2 opacity-70 hover:opacity-100 transition-opacity"
+        >
+          <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+            <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
+          </svg>
+        </button>
+      </motion.div>
+    </AnimatePresence>
+  );
+};
 
 // --- SIDEBAR ---
 
@@ -247,11 +356,61 @@ const UserProfile = ({
   avatarOptions,
   selectedAvatar,
   setSelectedAvatar,
-  getAvatarUrl
+  getAvatarUrl,
+  onLogout
 }) => {
   const { open } = useContext(SidebarContext);
   const selectedAvatarData = avatarOptions.find(a => a.id === selectedAvatar);
   const currentAvatarUrl = selectedAvatar ? getAvatarUrl(selectedAvatarData) : null;
+  
+  // Estado para el tiempo de último acceso
+  const [lastAccessTime, setLastAccessTime] = useState("");
+
+  // Función para calcular el tiempo transcurrido
+  const calculateLastAccessTime = () => {
+    try {
+      const loginTime = localStorage.getItem('loginTime');
+      if (!loginTime) return "Sin registrar";
+      
+      const loginDate = new Date(loginTime);
+      const now = new Date();
+      const diffMs = now - loginDate;
+      const diffSecs = Math.floor(diffMs / 1000);
+      const diffMins = Math.floor(diffSecs / 60);
+      const diffHours = Math.floor(diffMins / 60);
+      const diffDays = Math.floor(diffHours / 24);
+      
+      if (diffSecs < 60) return "Hace unos segundos";
+      if (diffMins < 60) return `Hace ${diffMins} ${diffMins === 1 ? 'minuto' : 'minutos'}`;
+      if (diffHours < 24) return `Hace ${diffHours} ${diffHours === 1 ? 'hora' : 'horas'}`;
+      if (diffDays === 1) return "Ayer";
+      if (diffDays < 30) return `Hace ${diffDays} días`;
+      
+      // Mostrar fecha exacta si es más antiguo
+      return loginDate.toLocaleDateString('es-ES', { 
+        year: 'numeric', 
+        month: 'short', 
+        day: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit'
+      });
+    } catch (e) {
+      console.error('Error calculando tiempo de acceso:', e);
+      return "Sin registrar";
+    }
+  };
+
+  // Actualizar tiempo de último acceso cuando el modal se abre
+  useEffect(() => {
+    if (showProfileModal) {
+      setLastAccessTime(calculateLastAccessTime());
+      // Actualizar cada 10 segundos
+      const interval = setInterval(() => {
+        setLastAccessTime(calculateLastAccessTime());
+      }, 10000);
+      return () => clearInterval(interval);
+    }
+  }, [showProfileModal]);
 
   return (
     <>
@@ -271,14 +430,14 @@ const UserProfile = ({
           <AnimatePresence mode="wait">
             {open && (
               <motion.div initial={{ opacity: 0, x: -10 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -10 }} transition={{ duration: 0.1, ease: "easeOut" }} className="flex flex-col min-w-0 text-left flex-1 hidden md:flex">
-                <span className="text-sm font-semibold text-gray-100 truncate group-hover:text-cyan-400 transition-colors">{user?.name}</span>
+                <span className="text-sm font-semibold text-gray-100 truncate group-hover:text-cyan-400 transition-colors">{user?.name?.split(' ')[0]}</span>
                 <span className="text-[10px] text-gray-500 truncate font-mono group-hover:text-cyan-400/70 transition-colors">{user?.role}</span>
               </motion.div>
             )}
           </AnimatePresence>
           {/* Siempre mostrar en móvil */}
           <div className="flex flex-col min-w-0 text-left flex-1 md:hidden">
-            <span className="text-xs font-semibold text-gray-100 truncate group-hover:text-cyan-400 transition-colors">{user?.name}</span>
+            <span className="text-xs font-semibold text-gray-100 truncate group-hover:text-cyan-400 transition-colors">{user?.name?.split(' ')[0]}</span>
             <span className="text-[7px] text-gray-500 truncate font-mono group-hover:text-cyan-400/70 transition-colors">{user?.role}</span>
           </div>
           {open && <Settings className="ml-auto text-gray-600 w-3 md:w-4 h-3 md:h-4 group-hover:text-cyan-400 transition-all duration-300 shrink-0 hidden md:block" />}
@@ -289,7 +448,7 @@ const UserProfile = ({
           whileHover={{ scale: 1.02 }}
           whileTap={{ scale: 0.98 }}
           className="w-full flex items-center justify-center gap-2 px-2 md:px-3 py-1.5 md:py-2 rounded text-xs md:text-sm text-gray-500 hover:text-red-400 transition-all group"
-          onClick={() => console.log("Cerrando sesión...")}
+          onClick={onLogout}
         >
           <LogOut size={14} className="shrink-0 md:w-4 md:h-4" />
           <AnimatePresence mode="wait">
@@ -477,7 +636,10 @@ const UserProfile = ({
                   </div>
                   <div className="flex justify-between items-center">
                     <span className="text-[10px] font-mono text-gray-500 uppercase tracking-wider">Último acceso</span>
-                    <span className="text-sm text-gray-300">Hace 5 minutos</span>
+                    <span className="text-sm text-gray-300 font-mono flex items-center gap-2">
+                      <span className="inline-block w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse"></span>
+                      {lastAccessTime || "Cargando..."}
+                    </span>
                   </div>
                   <div className="flex justify-between items-center">
                     <span className="text-[10px] font-mono text-gray-500 uppercase tracking-wider">Nivel de acceso</span>
@@ -983,7 +1145,7 @@ const ComputerMonitoringSection = ({ showDeployModal, setShowDeployModal, deploy
 
     setActionLoading(`${pcId}-${action}`);
     try {
-      await DeviceService.sendCommand(pcId, action, ip ? { ip } : {});
+      await deviceService.sendCommand(pcId, action, ip ? { ip } : {});
       setToast({ type: "success", msg: `Comando ${action} enviado a ${pcId}` });
     } catch (e) {
       setToast({ type: "error", msg: `Error enviando ${action} a ${pcId}` });
@@ -1008,7 +1170,7 @@ const ComputerMonitoringSection = ({ showDeployModal, setShowDeployModal, deploy
     setActionLoading(`bulk-${action}`);
     try {
       const results = await Promise.allSettled(
-        items.map(({ id, ip }) => DeviceService.sendCommand(id, action, ip ? { ip } : {}))
+        items.map(({ id, ip }) => deviceService.sendCommand(id, action, ip ? { ip } : {}))
       );
       const ok = results.filter(r => r.status === 'fulfilled').length;
       const fail = results.length - ok;
@@ -1113,7 +1275,7 @@ const ComputerMonitoringSection = ({ showDeployModal, setShowDeployModal, deploy
     const fetchDevices = async () => {
       setLoadingDevices(true);
       try {
-        const data = await DeviceService.getDevices();
+        const data = await deviceService.getDevices();
         if (cancelled) return;
         // Esperamos array de dispositivos: { id, ip, status, latencyMs? }
         const map = {};
@@ -1162,14 +1324,9 @@ const ComputerMonitoringSection = ({ showDeployModal, setShowDeployModal, deploy
 
   return (
     <div className="space-y-6 h-full flex flex-col">
-      {/* Toast liviano */}
-      <AnimatePresence>
-        {toast && (
-          <motion.div initial={{ y: -20, opacity: 0 }} animate={{ y: 0, opacity: 1 }} exit={{ y: -20, opacity: 0 }} className={`self-center px-4 py-2 rounded-md text-sm font-mono border ${toast.type === 'success' ? 'text-green-300 border-green-500/30 bg-green-500/10' : toast.type === 'warn' ? 'text-yellow-300 border-yellow-500/30 bg-yellow-500/10' : 'text-red-300 border-red-500/30 bg-red-500/10'}`}>
-            {toast.msg}
-          </motion.div>
-        )}
-      </AnimatePresence>
+      {/* Toast Reutilizable */}
+      <Toast toast={toast} onClose={() => setToast(null)} />
+      
       {/* Header & Controls - ELEVATED Z-INDEX */}
       <div className="relative z-30 flex flex-col md:flex-row justify-between items-start md:items-center gap-4 bg-black/40 p-4 rounded-xl border border-white/5 backdrop-blur-sm">
         <div className="relative z-50">
@@ -1596,18 +1753,406 @@ const ComputerMonitoringSection = ({ showDeployModal, setShowDeployModal, deploy
 // 3. USERS SECTION
 const CreateUsersSection = ({ avatarOptions, getAvatarUrl }) => {
   const [searchTerm, setSearchTerm] = useState("");
-  // Estado para el avatar seleccionado en el formulario de creación
   const [newUserAvatarId, setNewUserAvatarId] = useState(1);
   const [roleFilter, setRoleFilter] = useState("all");
-
-  const [users, setUsers] = useState([
-    { id: 1, name: "Juan Pérez", email: "juan@envyguard.com", role: "Admin", status: "Activo", createdAt: "2025-11-20", avatarId: 1 },
-    { id: 2, name: "María García", email: "maria@envyguard.com", role: "Operador", status: "Activo", createdAt: "2025-11-18", avatarId: 2 },
-    { id: 3, name: "Carlos López", email: "carlos@envyguard.com", role: "Visualizador", status: "Inactivo", createdAt: "2025-11-15", avatarId: 3 },
-    { id: 4, name: "Ana Torres", email: "ana@envyguard.com", role: "Agente", status: "Activo", createdAt: "2025-11-22", avatarId: 4 },
-  ]);
-  const [showForm, setShowForm] = useState(false);
+  const [toast, setToast] = useState(null);
+  const [isLoading, setIsLoading] = useState(false);
+  const [isFetchingUsers, setIsFetchingUsers] = useState(true);
   
+  // Estado para el formulario
+  const [formData, setFormData] = useState({
+    firstName: '',
+    lastName: '',
+    email: '',
+    password: '',
+    confirmPassword: '',
+    role: 'Operador'
+  });
+
+  const [users, setUsers] = useState([]);
+  const [showForm, setShowForm] = useState(false);
+  const [editingUser, setEditingUser] = useState(null);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(null);
+  const [showMoreOptions, setShowMoreOptions] = useState(null);
+
+  // Traer usuarios desde la API
+  useEffect(() => {
+    const fetchUsers = async () => {
+      setIsFetchingUsers(true);
+      try {
+        const API_BASE_URL = process.env.REACT_APP_API_URL || 'https://api.envyguard.crudzaso.com/api';
+        const token = localStorage.getItem('authToken');
+        
+        console.log('🔍 Intentando traer usuarios de:', `${API_BASE_URL}/auth/users`);
+        console.log('📌 Token presente:', token ? '✅' : '❌');
+
+        const response = await fetch(`${API_BASE_URL}/auth/users`, {
+          method: 'GET',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`
+          }
+        });
+
+        console.log('📊 Respuesta status:', response.status);
+        console.log('📊 Content-Type:', response.headers.get('content-type'));
+
+        if (!response.ok) {
+          const errorText = await response.text();
+          console.error('❌ Respuesta error:', errorText);
+          throw new Error(`Error ${response.status}: ${response.statusText}`);
+        }
+
+        const contentType = response.headers.get('content-type');
+        let data;
+        
+        if (contentType && contentType.includes('application/json')) {
+          data = await response.json();
+        } else {
+          const text = await response.text();
+          console.error('❌ Respuesta no es JSON:', text.substring(0, 200));
+          throw new Error('La respuesta del servidor no es JSON válido');
+        }
+
+        console.log('✅ Usuarios traídos de la API:', data);
+
+        // Mapear los usuarios de la API a la estructura de la tabla
+        const mappedUsers = Array.isArray(data) ? data.map((user, index) => ({
+          id: user.id || index + 1,
+          name: `${user.firstName || user.nombre || ''} ${user.lastName || user.apellido || ''}`.trim() || 'Usuario sin nombre',
+          email: user.email || '',
+          role: user.role || user.rol || 'Admin', // Rol por defecto es Admin
+          status: user.enabled === false ? 'Inactivo' : 'Activo',
+          createdAt: user.createdAt ? new Date(user.createdAt).toISOString().split('T')[0] : new Date().toISOString().split('T')[0],
+          avatarId: (index % 8) + 1, // Distribuir avatares entre los usuarios
+        })) : [];
+
+        console.log('✅ Usuarios mapeados:', mappedUsers);
+        setUsers(mappedUsers);
+      } catch (error) {
+        console.error('❌ Error completo al traer usuarios:', error);
+        setToast({ type: 'error', msg: `Error al cargar usuarios: ${error.message}` });
+        setUsers([]); // Mostrar lista vacía en caso de error
+      } finally {
+        setIsFetchingUsers(false);
+      }
+    };
+
+    fetchUsers();
+  }, []); // Se ejecuta una sola vez al montar el componente
+  
+  // Validar formulario
+  const validateForm = () => {
+    // Validación para crear nuevo usuario (todos los campos obligatorios)
+    if (!editingUser) {
+      if (!formData.firstName.trim()) {
+        setToast({ type: 'warn', msg: 'El nombre es requerido' });
+        return false;
+      }
+      if (!formData.lastName.trim()) {
+        setToast({ type: 'warn', msg: 'El apellido es requerido' });
+        return false;
+      }
+      if (!formData.email.match(/^[^\s@]+@[^\s@]+\.[^\s@]+$/)) {
+        setToast({ type: 'warn', msg: 'Email inválido' });
+        return false;
+      }
+      if (formData.password.length < 8) {
+        setToast({ type: 'warn', msg: 'La contraseña debe tener al menos 8 caracteres' });
+        return false;
+      }
+      if (formData.password !== formData.confirmPassword) {
+        setToast({ type: 'warn', msg: 'Las contraseñas no coinciden' });
+        return false;
+      }
+      return true;
+    }
+
+    // Validación para editar usuario (más flexible)
+    if (!formData.firstName.trim()) {
+      setToast({ type: 'warn', msg: 'El nombre es requerido' });
+      return false;
+    }
+    if (!formData.lastName.trim()) {
+      setToast({ type: 'warn', msg: 'El apellido es requerido' });
+      return false;
+    }
+    if (!formData.email.match(/^[^\s@]+@[^\s@]+\.[^\s@]+$/)) {
+      setToast({ type: 'warn', msg: 'Email inválido' });
+      return false;
+    }
+
+    // Si cambio la contraseña, debe cumplir con requisitos
+    if (formData.password.length > 0) {
+      if (formData.password.length < 8) {
+        setToast({ type: 'warn', msg: 'La contraseña debe tener al menos 8 caracteres' });
+        return false;
+      }
+      if (formData.password !== formData.confirmPassword) {
+        setToast({ type: 'warn', msg: 'Las contraseñas no coinciden' });
+        return false;
+      }
+    }
+    // Si no cambio contraseña, no hay validación de contraseña
+    return true;
+  };
+
+  // Manejar cambios en inputs
+  const handleInputChange = (e) => {
+    const { name, value } = e.target;
+    setFormData(prev => ({
+      ...prev,
+      [name]: value
+    }));
+  };
+
+  // Crear usuario
+  const handleCreateUser = async (e) => {
+    e.preventDefault();
+    
+    // Si estamos editando, llamar a la función de actualización
+    if (editingUser) {
+      return handleSaveUserChanges(e);
+    }
+
+    if (!validateForm()) return;
+
+    setIsLoading(true);
+    try {
+      const response = await AuthService.register({
+        email: formData.email,
+        password: formData.password,
+        firstName: formData.firstName,
+        lastName: formData.lastName,
+        role: formData.role,
+      });
+
+      // Agregar usuario a la lista
+      const newUser = {
+        id: users.length + 1,
+        name: `${formData.firstName} ${formData.lastName}`,
+        email: formData.email,
+        role: formData.role,
+        status: 'Activo',
+        createdAt: new Date().toISOString().split('T')[0],
+        avatarId: newUserAvatarId,
+      };
+
+      setUsers([...users, newUser]);
+      setToast({ type: 'success', msg: 'Usuario creado exitosamente' });
+      
+      // Limpiar formulario
+      setFormData({
+        firstName: '',
+        lastName: '',
+        email: '',
+        password: '',
+        confirmPassword: '',
+        role: 'Operador'
+      });
+      setNewUserAvatarId(1);
+      setShowForm(false);
+    } catch (error) {
+      const errorMsg = error.message || 'Error al crear usuario';
+      setToast({ type: 'error', msg: errorMsg });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  // Función para editar usuario
+  const handleEditUser = (user) => {
+    setEditingUser(user);
+    setFormData({
+      firstName: user.name.split(' ')[0],
+      lastName: user.name.split(' ').slice(1).join(' '),
+      email: user.email,
+      password: '',
+      confirmPassword: '',
+      role: user.role
+    });
+    setShowForm(true);
+  };
+
+  // Función para guardar cambios de usuario (actualizar)
+  const handleSaveUserChanges = async (e) => {
+    e.preventDefault();
+    
+    if (!editingUser) {
+      // Si no hay usuario en edición, es crear nuevo
+      return handleCreateUser(e);
+    }
+
+    setIsLoading(true);
+    try {
+      const API_BASE_URL = process.env.REACT_APP_API_URL || 'https://api.envyguard.crudzaso.com/api';
+      const token = localStorage.getItem('authToken');
+
+      console.log(`🔄 Actualizando usuario ${editingUser.id}...`);
+      console.log(`📍 URL: ${API_BASE_URL}/auth/users/${editingUser.id}`);
+
+      // Construir payload
+      const payload = {
+        firstName: formData.firstName,
+        lastName: formData.lastName,
+        email: formData.email
+      };
+
+      // Solo agregar password si se cambió
+      if (formData.password && formData.password.trim().length > 0) {
+        payload.password = formData.password;
+      }
+
+      console.log('📦 Payload enviando:', JSON.stringify(payload, null, 2));
+
+      // Intentar primero con PUT
+      let response = await fetch(`${API_BASE_URL}/auth/users/${editingUser.id}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify(payload)
+      });
+
+      console.log(`📊 Status response (PUT): ${response.status}`);
+
+      // Si PUT falla con 403, intentar con PATCH
+      if (!response.ok && response.status === 403) {
+        console.warn('⚠️  PUT devolvió 403, intentando con PATCH...');
+        
+        response = await fetch(`${API_BASE_URL}/auth/users/${editingUser.id}`, {
+          method: 'PATCH',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`
+          },
+          body: JSON.stringify(payload)
+        });
+
+        console.log(`📊 Status response (PATCH): ${response.status}`);
+      }
+
+      if (!response.ok) {
+        const errorData = await response.text();
+        console.error('❌ Error response body:', errorData);
+        console.error('❌ Status:', response.status);
+        throw new Error(`Error ${response.status}: ${errorData}`);
+      }
+
+      const updatedUser = await response.json();
+      console.log('✅ Usuario actualizado:', updatedUser);
+
+      // Actualizar en la lista local
+      setUsers(users.map(u => u.id === editingUser.id ? {
+        ...u,
+        name: `${formData.firstName} ${formData.lastName}`,
+        email: formData.email
+      } : u));
+
+      setToast({ type: 'success', msg: 'Usuario actualizado exitosamente' });
+      clearForm();
+      setShowForm(false);
+    } catch (error) {
+      console.error('❌ Error al actualizar usuario:', error);
+      
+      // Mostrar mensaje detallado
+      let mensajeError = `Error al actualizar: ${error.message}`;
+      if (error.message.includes('403')) {
+        mensajeError = 'No tienes permisos para actualizar este usuario. Verifica con el equipo de backend el endpoint correcto.';
+      }
+      
+      setToast({ type: 'error', msg: mensajeError });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  // Función para eliminar usuario
+  const handleDeleteUser = async (userId) => {
+    setShowDeleteConfirm(null);
+    setIsLoading(true);
+    try {
+      const API_BASE_URL = process.env.REACT_APP_API_URL || 'https://api.envyguard.crudzaso.com/api';
+      const token = localStorage.getItem('authToken');
+
+      console.log(`🗑️ Eliminando usuario ${userId}...`);
+
+      const response = await fetch(`${API_BASE_URL}/auth/users/${userId}`, {
+        method: 'DELETE',
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+
+      if (!response.ok) {
+        const errorData = await response.text();
+        throw new Error(`Error ${response.status}: ${errorData}`);
+      }
+
+      console.log('✅ Usuario eliminado');
+      setUsers(users.filter(u => u.id !== userId));
+      setToast({ type: 'success', msg: 'Usuario eliminado exitosamente' });
+    } catch (error) {
+      console.error('❌ Error al eliminar usuario:', error);
+      setToast({ type: 'error', msg: `Error al eliminar usuario: ${error.message}` });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  // Función para desactivar/activar usuario
+  const handleToggleStatus = async (userId, currentStatus) => {
+    setShowMoreOptions(null);
+    setIsLoading(true);
+    try {
+      const API_BASE_URL = process.env.REACT_APP_API_URL || 'https://api.envyguard.crudzaso.com/api';
+      const token = localStorage.getItem('authToken');
+      const newEnabled = currentStatus === 'Activo' ? false : true;
+
+      console.log(`🔄 Cambiando estado del usuario ${userId} a enabled=${newEnabled}...`);
+
+      const response = await fetch(`${API_BASE_URL}/auth/users/${userId}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({
+          enabled: newEnabled
+        })
+      });
+
+      if (!response.ok) {
+        const errorData = await response.text();
+        throw new Error(`Error ${response.status}: ${errorData}`);
+      }
+
+      console.log('✅ Estado actualizado');
+      setUsers(users.map(u => u.id === userId ? { ...u, status: newEnabled ? 'Activo' : 'Inactivo' } : u));
+      const newStatus = newEnabled ? 'Activo' : 'Inactivo';
+      setToast({ type: 'success', msg: `Usuario marcado como ${newStatus}` });
+    } catch (error) {
+      console.error('❌ Error al cambiar estado:', error);
+      setToast({ type: 'error', msg: `Error al cambiar estado: ${error.message}` });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  // Limpiar formulario
+  const clearForm = () => {
+    setFormData({
+      firstName: '',
+      lastName: '',
+      email: '',
+      password: '',
+      confirmPassword: '',
+      role: 'Operador'
+    });
+    setEditingUser(null);
+  };
+
   // Filter logic
   const filteredUsers = users.filter(u => {
     const matchesSearch = u.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
@@ -1618,6 +2163,9 @@ const CreateUsersSection = ({ avatarOptions, getAvatarUrl }) => {
 
   return (
     <div className="flex flex-col h-full space-y-6">
+      {/* Toast Reutilizable */}
+      <Toast toast={toast} onClose={() => setToast(null)} />
+
       {/* Header with improved styling */}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 md:gap-4 pb-4 md:pb-6 border-b border-white/5">
         <div>
@@ -1633,7 +2181,8 @@ const CreateUsersSection = ({ avatarOptions, getAvatarUrl }) => {
         </div>
         <button 
           onClick={() => setShowForm(!showForm)}
-          className="group relative px-3 md:px-5 py-2 md:py-2.5 bg-cyan-600 hover:bg-cyan-500 text-black font-bold rounded-lg shadow-[0_0_20px_rgba(6,182,212,0.2)] hover:shadow-[0_0_25px_rgba(6,182,212,0.4)] transition-all flex items-center justify-center gap-2 text-xs md:text-sm overflow-hidden w-full sm:w-auto"
+          className="group relative px-3 md:px-5 py-2 md:py-2.5 bg-cyan-600 hover:bg-cyan-500 text-black font-bold rounded-lg shadow-[0_0_20px_rgba(6,182,212,0.2)] hover:shadow-[0_0_25px_rgba(6,182,212,0.4)] transition-all flex items-center justify-center gap-2 text-xs md:text-sm overflow-hidden w-full sm:w-auto disabled:opacity-50 disabled:cursor-not-allowed"
+          disabled={isLoading}
         >
           <span className="relative z-10 flex items-center gap-2">
             {showForm ? <ChevronDown size={16} /> : <UserPlus size={16} />}
@@ -1647,21 +2196,51 @@ const CreateUsersSection = ({ avatarOptions, getAvatarUrl }) => {
 
       <AnimatePresence>
         {showForm && (
-          <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: "auto", opacity: 1 }} exit={{ height: 0, opacity: 0 }} className="overflow-hidden">
-            <div className="p-6 bg-[#0a0a0a] border border-cyan-500/20 rounded-xl mb-6 shadow-xl relative overflow-hidden">
+          <>
+            {/* Overlay - Cubre toda la pantalla y centra */}
+            <motion.div 
+              initial={{ opacity: 0 }} 
+              animate={{ opacity: 1 }} 
+              exit={{ opacity: 0 }}
+              onClick={() => setShowForm(false)}
+              className="fixed inset-0 bg-black/80 backdrop-blur-sm z-[9998] flex items-center justify-center p-4"
+            />
+            {/* Modal - Centrado como el del perfil */}
+            <motion.div
+              initial={{ opacity: 0, scale: 0.8, y: 20 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.8, y: 20 }}
+              transition={{ type: "spring", stiffness: 300, damping: 30 }}
+              onClick={(e) => e.stopPropagation()}
+              className="fixed inset-0 z-[9999] flex items-center justify-center p-4 pointer-events-none"
+            >
+              <div className="bg-[#0a0a0a] border border-cyan-500/30 rounded-2xl shadow-2xl w-full max-w-4xl overflow-hidden max-h-[95vh] pointer-events-auto"
+              >
+              <div className="p-8 md:p-10 relative overflow-y-auto max-h-[95vh] custom-scrollbar">
                {/* Decorative bg */}
                <div className="absolute top-0 right-0 w-64 h-64 bg-cyan-500/5 blur-[80px] pointer-events-none" />
                
-               <h3 className="text-cyan-400 font-mono text-xs font-bold uppercase tracking-widest mb-6 flex items-center gap-2">
-                   <Lock size={12}/> NUEVA CREDENCIAL DE ACCESO
+               {/* Close Button */}
+               <motion.button
+                 onClick={() => setShowForm(false)}
+                 className="absolute top-4 right-4 p-2 text-gray-400 hover:text-white hover:bg-white/10 rounded-lg transition-all z-50"
+                 whileHover={{ scale: 1.1 }}
+                 whileTap={{ scale: 0.95 }}
+               >
+                 <X size={20} />
+               </motion.button>
+               
+               <h3 className="text-cyan-400 font-mono text-sm md:text-base font-bold uppercase tracking-widest mb-6 flex items-center gap-3 relative z-10">
+                   <Lock size={16}/> NUEVA CREDENCIAL DE ACCESO
                </h3>
                
-               <form className="flex flex-col gap-6">
-                 <div className="flex flex-col sm:flex-row items-start gap-6">
+               <form onSubmit={handleCreateUser} className="flex flex-col gap-5 md:gap-6 relative z-10">
+                 {/* Avatar y Datos Principales */}
+                 <div className="flex flex-col lg:flex-row items-start gap-6 lg:gap-8">
                     {/* Avatar Selection for New User */}
                     <div className="shrink-0">
-                        <label className="block text-[10px] md:text-xs font-mono text-gray-500 mb-2">AVATAR</label>
-                        <div className="w-20 h-20 rounded-xl border border-white/10 bg-white/5 p-1 relative overflow-hidden group">
+                        <label className="block text-xs md:text-sm font-mono text-gray-500 mb-2.5 uppercase tracking-wide font-semibold">Avatar</label>
+                        <div className="w-28 h-28 rounded-xl border-2 border-cyan-500/30 bg-gradient-to-br from-cyan-500/10 to-blue-500/10 p-2 relative overflow-hidden group hover:border-cyan-500/60 transition-colors">
                             <img 
                                 src={getAvatarUrl(avatarOptions.find(a => a.id === newUserAvatarId))} 
                                 alt="avatar preview" 
@@ -1670,50 +2249,124 @@ const CreateUsersSection = ({ avatarOptions, getAvatarUrl }) => {
                             <button 
                                 type="button"
                                 onClick={() => setNewUserAvatarId(prev => prev >= 8 ? 1 : prev + 1)}
-                                className="absolute inset-0 bg-black/60 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity text-[10px] md:text-xs font-bold text-white cursor-pointer"
+                                disabled={isLoading}
+                                className="absolute inset-0 bg-black/70 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity text-xs font-bold text-white cursor-pointer disabled:opacity-50"
                             >
                                 CAMBIAR
                             </button>
                         </div>
                     </div>
 
-                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 md:gap-4 flex-1 w-full">
+                    <div className="flex-1 grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-5 w-full">
                         <div>
-                            <label className="block text-[10px] md:text-xs font-mono text-gray-500 mb-1.5 ml-1">NOMBRE COMPLETO</label>
-                            <input type="text" placeholder="Ej: John Doe" className="w-full bg-black/40 border border-white/10 rounded-lg px-3 md:px-4 py-2 md:py-2.5 text-xs md:text-sm text-white focus:border-cyan-500 focus:bg-cyan-900/5 outline-none transition-all" />
+                            <label className="block text-xs md:text-sm font-mono text-gray-500 mb-2 uppercase tracking-wide font-semibold">Nombre</label>
+                            <input 
+                              type="text" 
+                              name="firstName"
+                              value={formData.firstName}
+                              onChange={handleInputChange}
+                              placeholder="Ej: Juan" 
+                              disabled={isLoading}
+                              className="w-full bg-black/40 border border-white/10 rounded-lg px-4 py-2.5 text-sm text-white placeholder-gray-600 focus:border-cyan-500 focus:bg-cyan-900/10 outline-none transition-all disabled:opacity-50 hover:border-white/20" 
+                            />
                         </div>
                         <div>
-                            <label className="block text-[10px] md:text-xs font-mono text-gray-500 mb-1.5 ml-1">CORREO CORPORATIVO</label>
-                            <input type="email" placeholder="user@envyguard.com" className="w-full bg-black/40 border border-white/10 rounded-lg px-3 md:px-4 py-2 md:py-2.5 text-xs md:text-sm text-white focus:border-cyan-500 focus:bg-cyan-900/5 outline-none transition-all" />
+                            <label className="block text-xs md:text-sm font-mono text-gray-500 mb-2 uppercase tracking-wide font-semibold">Apellido</label>
+                            <input 
+                              type="text" 
+                              name="lastName"
+                              value={formData.lastName}
+                              onChange={handleInputChange}
+                              placeholder="Ej: Pérez" 
+                              disabled={isLoading}
+                              className="w-full bg-black/40 border border-white/10 rounded-lg px-4 py-2.5 text-sm text-white placeholder-gray-600 focus:border-cyan-500 focus:bg-cyan-900/10 outline-none transition-all disabled:opacity-50 hover:border-white/20" 
+                            />
                         </div>
-                        <div>
-                            <label className="block text-[10px] md:text-xs font-mono text-gray-500 mb-1.5 ml-1">ROL DEL SISTEMA</label>
-                            <select className="w-full bg-black/40 border border-white/10 rounded-lg px-3 md:px-4 py-2 md:py-2.5 text-xs md:text-sm text-gray-300 focus:border-cyan-500 outline-none transition-all appearance-none cursor-pointer">
-                                <option>Admin</option>
-                            </select>
+                        <div className="md:col-span-2">
+                            <label className="block text-xs md:text-sm font-mono text-gray-500 mb-2 uppercase tracking-wide font-semibold">Correo Electrónico</label>
+                            <input 
+                              type="email" 
+                              name="email"
+                              value={formData.email}
+                              onChange={handleInputChange}
+                              placeholder="usuario@envyguard.com" 
+                              disabled={isLoading}
+                              className="w-full bg-black/40 border border-white/10 rounded-lg px-4 py-2.5 text-sm text-white placeholder-gray-600 focus:border-cyan-500 focus:bg-cyan-900/10 outline-none transition-all disabled:opacity-50 hover:border-white/20" 
+                            />
+                        </div>
+                        <div className="md:col-span-2">
+                            <label className="block text-xs md:text-sm font-mono text-gray-500 mb-2 uppercase tracking-wide font-semibold">Rol de Usuario</label>
+                            <div className="w-full bg-black/40 border border-cyan-500/40 rounded-lg px-4 py-2.5 text-sm text-cyan-400 font-semibold flex items-center">
+                                <span>Admin</span>
+                            </div>
                         </div>
                     </div>
                  </div>
 
-                 {/* Contraseña y Confirmación */}
-                 <div className="grid grid-cols-1 md:grid-cols-2 gap-3 md:gap-4">
-                    <div>
-                        <label className="block text-[10px] md:text-xs font-mono text-gray-500 mb-1.5 ml-1">CONTRASEÑA</label>
-                        <input type="password" placeholder="Contraseña segura" className="w-full bg-black/40 border border-white/10 rounded-lg px-3 md:px-4 py-2 md:py-2.5 text-xs md:text-sm text-white focus:border-cyan-500 focus:bg-cyan-900/5 outline-none transition-all" />
-                    </div>
-                    <div>
-                        <label className="block text-[10px] md:text-xs font-mono text-gray-500 mb-1.5 ml-1">CONFIRMAR CONTRASEÑA</label>
-                        <input type="password" placeholder="Confirmar contraseña" className="w-full bg-black/40 border border-white/10 rounded-lg px-3 md:px-4 py-2 md:py-2.5 text-xs md:text-sm text-white focus:border-cyan-500 focus:bg-cyan-900/5 outline-none transition-all" />
+                 {/* Separador */}
+                 <div className="border-t border-white/10" />
+
+                 {/* Credenciales de Seguridad */}
+                 <div>
+                    <h4 className="text-xs md:text-sm font-mono text-cyan-400 mb-4 uppercase tracking-wide font-semibold flex items-center gap-2">
+                        <Lock size={14} /> Credenciales de Seguridad
+                    </h4>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-5">
+                        <div>
+                            <label className="block text-xs md:text-sm font-mono text-gray-500 mb-2 uppercase tracking-wide font-semibold">
+                              Contraseña 
+                              {editingUser ? (
+                                <span className="text-yellow-400 ml-1">(Opcional)</span>
+                              ) : (
+                                <span className="text-cyan-400 ml-1">(Mínimo 8 caracteres)</span>
+                              )}
+                            </label>
+                            <input 
+                              type="password" 
+                              name="password"
+                              value={formData.password}
+                              onChange={handleInputChange}
+                              placeholder={editingUser ? "Dejar vacío para no cambiar" : "••••••••••••"} 
+                              disabled={isLoading}
+                              className="w-full bg-black/40 border border-white/10 rounded-lg px-4 py-2.5 text-sm text-white placeholder-gray-600 focus:border-cyan-500 focus:bg-cyan-900/10 outline-none transition-all disabled:opacity-50 hover:border-white/20" 
+                            />
+                        </div>
+                        <div>
+                            <label className="block text-xs md:text-sm font-mono text-gray-500 mb-2 uppercase tracking-wide font-semibold">
+                              Confirmar Contraseña
+                              {editingUser && formData.password && (
+                                <span className="text-yellow-400 ml-1">(Requerido si cambias contraseña)</span>
+                              )}
+                            </label>
+                            <input 
+                              type="password" 
+                              name="confirmPassword"
+                              value={formData.confirmPassword}
+                              onChange={handleInputChange}
+                              placeholder={editingUser ? "Dejar vacío para no cambiar" : "••••••••••••"} 
+                              disabled={isLoading}
+                              className="w-full bg-black/40 border border-white/10 rounded-lg px-4 py-2.5 text-sm text-white placeholder-gray-600 focus:border-cyan-500 focus:bg-cyan-900/10 outline-none transition-all disabled:opacity-50 hover:border-white/20" 
+
+                            />
+                        </div>
                     </div>
                  </div>
+
+                 {/* Separador */}
+                 <div className="border-t border-white/10" />
                  
-                 <div className="flex flex-col-reverse sm:flex-row justify-end gap-2 md:gap-3 pt-4 border-t border-white/5">
+                 {/* Botones de Acción */}
+                 <div className="flex flex-col-reverse sm:flex-row justify-end gap-4">
                     <motion.button 
                         type="button" 
-                        onClick={() => setShowForm(false)}
+                        onClick={() => {
+                          setShowForm(false);
+                          clearForm();
+                        }}
                         whileHover={{ scale: 1.05, y: -2 }}
                         whileTap={{ scale: 0.95 }}
-                        className="px-4 md:px-6 py-2 md:py-2.5 text-[10px] md:text-xs font-bold uppercase tracking-wider rounded-lg border border-red-500/40 text-red-400 hover:text-red-300 hover:bg-red-500/10 transition-all"
+                        disabled={isLoading}
+                        className="px-6 py-2.5 text-xs md:text-sm font-bold uppercase tracking-wider rounded-lg border-2 border-red-500/40 text-red-400 hover:text-red-300 hover:bg-red-500/10 transition-all disabled:opacity-50"
                     >
                         CANCELAR
                     </motion.button>
@@ -1721,39 +2374,32 @@ const CreateUsersSection = ({ avatarOptions, getAvatarUrl }) => {
                         type="submit"
                         whileHover={{ scale: 1.08, y: -3 }}
                         whileTap={{ scale: 0.92 }}
-                        className="px-4 md:px-8 py-2 md:py-2.5 bg-gradient-to-r from-cyan-500 to-blue-600 text-black font-bold rounded-lg text-[10px] md:text-xs uppercase tracking-widest transition-all flex items-center justify-center gap-2 border border-cyan-400/50 hover:border-cyan-300"
+                        disabled={isLoading}
+                        className="px-8 py-2.5 bg-gradient-to-r from-cyan-500 to-blue-600 text-black font-bold rounded-lg text-xs md:text-sm uppercase tracking-widest transition-all flex items-center justify-center gap-3 border-2 border-cyan-400/50 hover:border-cyan-300 disabled:opacity-50 disabled:cursor-not-allowed hover:shadow-lg hover:shadow-cyan-500/20"
                     >
-                        <UserPlus size={14} />
-                        CREAR USUARIO
+                        {isLoading ? (
+                          <>
+                            <RotateCw size={16} className="animate-spin" />
+                            {editingUser ? 'GUARDANDO...' : 'CREANDO USUARIO...'}
+                          </>
+                        ) : (
+                          <>
+                            {editingUser ? <Edit2 size={16} /> : <UserPlus size={16} />}
+                            {editingUser ? 'GUARDAR CAMBIOS' : 'CREAR USUARIO'}
+                          </>
+                        )}
                     </motion.button>
                  </div>
                </form>
-            </div>
-          </motion.div>
+              </div>
+              </div>
+            </motion.div>
+          </>
         )}
       </AnimatePresence>
 
       {/* Toolbar & Filters */}
       <div className="flex flex-col gap-3 md:gap-4 bg-[#0a0a0a] p-2 md:p-3 rounded-xl border border-white/5">
-         {/* Role Tabs */}
-         <div className="flex p-1 bg-black/40 rounded-lg border border-white/5 w-full overflow-x-auto">
-            {[
-                { id: "all", label: "Todos" }
-            ].map(tab => (
-                <button
-                    key={tab.id}
-                    onClick={() => setRoleFilter(tab.id)}
-                    className={`px-3 md:px-4 py-1 md:py-1.5 text-xs md:text-sm font-medium rounded-md transition-all whitespace-nowrap ${
-                        roleFilter === tab.id 
-                        ? "bg-white/10 text-white shadow-sm border border-white/10" 
-                        : "text-gray-500 hover:text-gray-300 hover:bg-white/5"
-                    }`}
-                >
-                    {tab.label}
-                </button>
-            ))}
-         </div>
-
          {/* Search */}
          <div className="flex items-center gap-2 md:gap-3 bg-black/40 px-2 md:px-3 py-1.5 md:py-2 rounded-lg border border-white/5 w-full focus-within:border-cyan-500/50 transition-colors">
             <Search size={14} className="text-gray-500 shrink-0" />
@@ -1779,65 +2425,128 @@ const CreateUsersSection = ({ avatarOptions, getAvatarUrl }) => {
             </tr>
           </thead>
           <tbody className="divide-y divide-white/5 text-sm">
-            {filteredUsers.map((user) => (
-              <tr key={user.id} className="hover:bg-white/[0.02] transition-colors group">
-                <td className="p-4">
-                  <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-lg bg-white/5 p-0.5 border border-white/10 overflow-hidden">
-                        <img 
-                            src={getAvatarUrl(avatarOptions.find(a => a.id === user.avatarId) || avatarOptions[0])} 
-                            alt={user.name}
-                            className="w-full h-full object-cover rounded-md"
-                        />
-                    </div>
-                    <div>
-                        <div className="font-bold text-gray-200 text-sm">{user.name}</div>
-                        <div className="text-[10px] text-gray-500 font-mono tracking-tight">{user.email}</div>
-                    </div>
-                  </div>
-                </td>
-                <td className="p-4">
-                   <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-[10px] font-bold border uppercase tracking-wider ${
-                     user.role === 'Admin' 
-                        ? 'border-cyan-500/30 text-cyan-400 bg-cyan-500/5 shadow-[0_0_10px_rgba(6,182,212,0.1)]' 
-                        : user.role === 'Agente'
-                            ? 'border-purple-500/30 text-purple-400 bg-purple-500/5'
-                            : 'border-white/20 text-gray-400 bg-white/5'
-                   }`}>
-                     {user.role === 'Admin' && <Shield size={10} />}
-                     {user.role}
-                   </span>
-                </td>
-                <td className="p-4">
-                  <div className="flex items-center gap-2">
-                    <div className={`relative w-2 h-2 rounded-full ${user.status === 'Activo' ? 'bg-green-500 shadow-[0_0_8px_rgba(34,197,94,0.6)]' : 'bg-gray-600'}`}>
-                        {user.status === 'Activo' && <div className="absolute inset-0 rounded-full bg-green-500 animate-ping opacity-75" />}
-                    </div>
-                    <span className={`text-xs ${user.status === 'Activo' ? 'text-gray-300' : 'text-gray-600'}`}>{user.status}</span>
-                  </div>
-                </td>
-                <td className="p-4">
-                    <div className="flex flex-col">
-                        <span className="text-gray-400 font-mono text-xs">{user.createdAt}</span>
-                        <span className="text-[10px] text-gray-600">Registro</span>
-                    </div>
-                </td>
-                <td className="p-4 text-right">
-                  <div className="flex justify-end gap-1 opacity-60 group-hover:opacity-100 transition-opacity">
-                    <button className="p-2 hover:bg-cyan-500/10 hover:text-cyan-400 rounded-lg transition-colors" title="Editar"><Edit2 size={14} /></button>
-                    <button className="p-2 hover:bg-red-500/10 hover:text-red-400 rounded-lg transition-colors" title="Eliminar"><Trash2 size={14} /></button>
-                    <button className="p-2 hover:bg-white/10 text-gray-400 hover:text-white rounded-lg transition-colors"><MoreVertical size={14} /></button>
+            {isFetchingUsers ? (
+              <tr>
+                <td colSpan="5" className="p-8 text-center">
+                  <div className="flex items-center justify-center gap-3">
+                    <Loader size={16} className="text-cyan-400 animate-spin" />
+                    <span className="text-gray-400 font-mono text-sm">Cargando usuarios...</span>
                   </div>
                 </td>
               </tr>
-            ))}
+            ) : filteredUsers.length === 0 ? (
+              <tr>
+                <td colSpan="5" className="p-8 text-center">
+                  <span className="text-gray-500 font-mono text-sm">No hay usuarios disponibles</span>
+                </td>
+              </tr>
+            ) : (
+              filteredUsers.map((user) => (
+                <tr key={user.id} className="hover:bg-white/[0.02] transition-colors group">
+                  <td className="p-4">
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 rounded-lg bg-white/5 p-0.5 border border-white/10 overflow-hidden">
+                          <img 
+                              src={getAvatarUrl(avatarOptions.find(a => a.id === user.avatarId) || avatarOptions[0])} 
+                              alt={user.name}
+                              className="w-full h-full object-cover rounded-md"
+                          />
+                      </div>
+                      <div>
+                          <div className="font-bold text-gray-200 text-sm">{user.name}</div>
+                          <div className="text-[10px] text-gray-500 font-mono tracking-tight">{user.email}</div>
+                      </div>
+                    </div>
+                  </td>
+                  <td className="p-4">
+                     <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-[10px] font-bold border uppercase tracking-wider ${
+                       user.role === 'Admin' 
+                          ? 'border-cyan-500/30 text-cyan-400 bg-cyan-500/5 shadow-[0_0_10px_rgba(6,182,212,0.1)]' 
+                          : user.role === 'Agente'
+                              ? 'border-purple-500/30 text-purple-400 bg-purple-500/5'
+                              : 'border-white/20 text-gray-400 bg-white/5'
+                     }`}>
+                       {user.role === 'Admin' && <Shield size={10} />}
+                       {user.role}
+                     </span>
+                  </td>
+                  <td className="p-4">
+                    <div className="flex items-center gap-2">
+                      <div className={`relative w-2 h-2 rounded-full ${user.status === 'Activo' ? 'bg-green-500 shadow-[0_0_8px_rgba(34,197,94,0.6)]' : 'bg-gray-600'}`}>
+                          {user.status === 'Activo' && <div className="absolute inset-0 rounded-full bg-green-500 animate-ping opacity-75" />}
+                      </div>
+                      <span className={`text-xs ${user.status === 'Activo' ? 'text-gray-300' : 'text-gray-600'}`}>{user.status}</span>
+                    </div>
+                  </td>
+                  <td className="p-4">
+                      <div className="flex flex-col">
+                          <span className="text-gray-400 font-mono text-xs">{user.createdAt}</span>
+                          <span className="text-[10px] text-gray-600">Registro</span>
+                      </div>
+                  </td>
+                  <td className="p-4 text-right">
+                    <div className="flex justify-end gap-1 opacity-60 group-hover:opacity-100 transition-opacity">
+                      <button 
+                        onClick={() => handleEditUser(user)}
+                        disabled={isLoading}
+                        className="p-2 hover:bg-cyan-500/10 hover:text-cyan-400 rounded-lg transition-colors disabled:opacity-50" 
+                        title="Editar"
+                      >
+                        <Edit2 size={14} />
+                      </button>
+                      <button 
+                        onClick={() => setShowDeleteConfirm(user.id)}
+                        disabled={isLoading}
+                        className="p-2 hover:bg-red-500/10 hover:text-red-400 rounded-lg transition-colors disabled:opacity-50" 
+                        title="Eliminar"
+                      >
+                        <Trash2 size={14} />
+                      </button>
+                      <div className="relative">
+                        <button 
+                          onClick={() => setShowMoreOptions(showMoreOptions === user.id ? null : user.id)}
+                          disabled={isLoading}
+                          className="p-2 hover:bg-white/10 text-gray-400 hover:text-white rounded-lg transition-colors disabled:opacity-50"
+                        >
+                          <MoreVertical size={14} />
+                        </button>
+                        <AnimatePresence>
+                          {showMoreOptions === user.id && (
+                            <motion.div
+                              initial={{ opacity: 0, y: -10 }}
+                              animate={{ opacity: 1, y: 0 }}
+                              exit={{ opacity: 0, y: -10 }}
+                              className="absolute right-0 top-full mt-2 bg-black border border-white/10 rounded-lg shadow-lg z-50"
+                            >
+                              <button
+                                onClick={() => handleToggleStatus(user.id, user.status)}
+                                className="block w-full text-left px-4 py-2 text-xs text-gray-300 hover:text-cyan-400 hover:bg-white/5 rounded-lg"
+                              >
+                                {user.status === 'Activo' ? 'Desactivar' : 'Activar'}
+                              </button>
+                            </motion.div>
+                          )}
+                        </AnimatePresence>
+                      </div>
+                    </div>
+                  </td>
+                </tr>
+              ))
+            )}
           </tbody>
         </table>
       </ScrollArea>
 
       {/* Users Mobile Cards - Mobile */}
       <div className="flex md:hidden flex-1 flex-col gap-3 overflow-y-auto">
-        {filteredUsers.length === 0 ? (
+        {isFetchingUsers ? (
+          <div className="flex items-center justify-center h-40">
+            <div className="flex items-center gap-3">
+              <Loader size={16} className="text-cyan-400 animate-spin" />
+              <span className="text-gray-400 font-mono text-sm">Cargando usuarios...</span>
+            </div>
+          </div>
+        ) : filteredUsers.length === 0 ? (
           <div className="flex items-center justify-center h-40 text-gray-500 text-xs">
             No hay usuarios
           </div>
@@ -1891,33 +2600,100 @@ const CreateUsersSection = ({ avatarOptions, getAvatarUrl }) => {
               {/* Actions Row */}
               <div className="flex justify-end gap-2">
                 <motion.button
+                  onClick={() => handleEditUser(user)}
+                  disabled={isLoading}
                   whileHover={{ scale: 1.1 }}
                   whileTap={{ scale: 0.9 }}
-                  className="p-2 hover:bg-cyan-500/10 hover:text-cyan-400 rounded-lg transition-colors"
+                  className="p-2 hover:bg-cyan-500/10 hover:text-cyan-400 rounded-lg transition-colors disabled:opacity-50"
                   title="Editar"
                 >
                   <Edit2 size={14} />
                 </motion.button>
                 <motion.button
+                  onClick={() => setShowDeleteConfirm(user.id)}
+                  disabled={isLoading}
                   whileHover={{ scale: 1.1 }}
                   whileTap={{ scale: 0.9 }}
-                  className="p-2 hover:bg-red-500/10 hover:text-red-400 rounded-lg transition-colors"
+                  className="p-2 hover:bg-red-500/10 hover:text-red-400 rounded-lg transition-colors disabled:opacity-50"
                   title="Eliminar"
                 >
                   <Trash2 size={14} />
                 </motion.button>
-                <motion.button
-                  whileHover={{ scale: 1.1 }}
-                  whileTap={{ scale: 0.9 }}
-                  className="p-2 hover:bg-white/10 text-gray-400 hover:text-white rounded-lg transition-colors"
-                >
-                  <MoreVertical size={14} />
-                </motion.button>
+                <div className="relative">
+                  <motion.button
+                    onClick={() => setShowMoreOptions(showMoreOptions === user.id ? null : user.id)}
+                    disabled={isLoading}
+                    whileHover={{ scale: 1.1 }}
+                    whileTap={{ scale: 0.9 }}
+                    className="p-2 hover:bg-white/10 text-gray-400 hover:text-white rounded-lg transition-colors disabled:opacity-50"
+                  >
+                    <MoreVertical size={14} />
+                  </motion.button>
+                  <AnimatePresence>
+                    {showMoreOptions === user.id && (
+                      <motion.div
+                        initial={{ opacity: 0, y: -10 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        exit={{ opacity: 0, y: -10 }}
+                        className="absolute right-0 top-full mt-2 bg-black border border-white/10 rounded-lg shadow-lg z-50"
+                      >
+                        <button
+                          onClick={() => handleToggleStatus(user.id, user.status)}
+                          className="block w-full text-left px-4 py-2 text-xs text-gray-300 hover:text-cyan-400 hover:bg-white/5 rounded-lg"
+                        >
+                          {user.status === 'Activo' ? 'Desactivar' : 'Activar'}
+                        </button>
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
+                </div>
               </div>
             </div>
           ))
         )}
       </div>
+
+      {/* Modal de confirmación para eliminar */}
+      <AnimatePresence>
+        {showDeleteConfirm && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            onClick={() => setShowDeleteConfirm(null)}
+            className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-[9999] p-4"
+          >
+            <motion.div
+              initial={{ scale: 0.8, y: 20 }}
+              animate={{ scale: 1, y: 0 }}
+              exit={{ scale: 0.8, y: 20 }}
+              onClick={(e) => e.stopPropagation()}
+              className="bg-[#0f0f0f] border border-red-500/30 rounded-2xl shadow-2xl max-w-sm w-full"
+            >
+              <div className="p-6">
+                <h3 className="text-lg font-bold text-white mb-2">Confirmar eliminación</h3>
+                <p className="text-gray-400 text-sm mb-6">¿Estás seguro de que deseas eliminar este usuario? Esta acción no se puede deshacer.</p>
+                <div className="flex gap-3 justify-end">
+                  <button
+                    onClick={() => setShowDeleteConfirm(null)}
+                    className="px-4 py-2 rounded-lg border border-gray-500/30 text-gray-300 hover:bg-gray-500/10 transition-colors"
+                  >
+                    Cancelar
+                  </button>
+                  <button
+                    onClick={() => handleDeleteUser(showDeleteConfirm)}
+                    disabled={isLoading}
+                    className="px-4 py-2 rounded-lg bg-red-600 hover:bg-red-700 text-white font-medium transition-colors disabled:opacity-50 flex items-center gap-2"
+                  >
+                    {isLoading ? <RotateCw size={14} className="animate-spin" /> : null}
+                    Eliminar
+                  </button>
+                </div>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 };
@@ -1997,19 +2773,8 @@ const BlockingSitesSection = () => {
 
   return (
     <div className="flex flex-col h-full space-y-2 md:space-y-4">
-      {/* Toast */}
-      <AnimatePresence>
-        {toast && (
-          <motion.div initial={{ y: -20, opacity: 0 }} animate={{ y: 0, opacity: 1 }} exit={{ y: -20, opacity: 0 }} 
-            className={`self-center px-4 py-2 rounded-md text-sm font-mono border ${
-              toast.type === 'success' ? 'text-green-300 border-green-500/30 bg-green-500/10' : 
-              toast.type === 'warn' ? 'text-yellow-300 border-yellow-500/30 bg-yellow-500/10' : 
-              'text-red-300 border-red-500/30 bg-red-500/10'
-            }`}>
-            {toast.msg}
-          </motion.div>
-        )}
-      </AnimatePresence>
+      {/* Toast Reutilizable */}
+      <Toast toast={toast} onClose={() => setToast(null)} />
 
       {/* Header */}
       <div className="flex flex-col md:flex-row justify-between items-end md:items-center gap-4 pb-6 border-b border-white/5">
@@ -3450,6 +4215,7 @@ const DashboardContent = ({ currentPage, avatarOptions, getAvatarUrl, showDeploy
 };
 
 const DashboardLayout = () => {
+  const navigate = useNavigate();
   const [open, setOpen] = useState(false);
   const [currentPage, setCurrentPage] = useState("dashboard");
   const [showProfileModal, setShowProfileModal] = useState(false);
@@ -3474,7 +4240,63 @@ const DashboardLayout = () => {
     }
   };
   
-  const currentUser = { name: "Juan Pérez", role: "Admin Principal", avatar: selectedAvatar };
+  // Obtener datos del usuario autenticado
+  const authenticatedUser = AuthService.getCurrentUser();
+  
+  // Construir objeto del usuario actual - MEJORADO
+  const getFullName = () => {
+    if (!authenticatedUser) return "Usuario";
+    
+    // Intentar firstName + lastName
+    const firstName = (authenticatedUser.firstName || "").trim();
+    const lastName = (authenticatedUser.lastName || "").trim();
+    if (firstName && lastName) {
+      return `${firstName} ${lastName}`;
+    }
+    
+    // Intentar nombre + apellido (Spanish)
+    const nombre = (authenticatedUser.nombre || "").trim();
+    const apellido = (authenticatedUser.apellido || "").trim();
+    if (nombre && apellido) {
+      return `${nombre} ${apellido}`;
+    }
+    
+    // Intentar solo firstName o nombre
+    if (firstName) return firstName;
+    if (nombre) return nombre;
+    
+    // Fallback a email
+    const email = (authenticatedUser.email || "").trim();
+    if (email) return email;
+    
+    // Último recurso
+    return "Usuario";
+  };
+  
+  const currentUser = { 
+    name: getFullName(),
+    role: authenticatedUser?.role || authenticatedUser?.rol || "Admin Principal", 
+    email: authenticatedUser?.email || "",
+    avatar: selectedAvatar 
+  };
+  
+  // Debug log en el montaje del componente
+  useEffect(() => {
+    console.log('=== DASHBOARD MONTADO ===');
+    console.log('Datos de AuthService.getCurrentUser():', authenticatedUser);
+    console.log('localStorage.getItem("user"):', localStorage.getItem('user'));
+    console.log('Nombre resuelto:', currentUser.name);
+    console.log('currentUser completo:', currentUser);
+  }, []);
+
+  // 🚪 Función para cerrar sesión
+  const handleLogout = () => {
+    // Limpiar datos de sesión (preservar avatar seleccionado)
+    localStorage.removeItem('authToken');
+    localStorage.removeItem('user');
+    // Redirigir a login
+    navigate('/');
+  };
 
   // Lista de avatares con tema cibernético para EnvyGuard
   const avatarOptions = [
@@ -3585,6 +4407,7 @@ const DashboardLayout = () => {
             selectedAvatar={selectedAvatar}
             setSelectedAvatar={setSelectedAvatar}
             getAvatarUrl={getAvatarUrl}
+            onLogout={handleLogout}
           />
         </SidebarBody>
       </Sidebar>
