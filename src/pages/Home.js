@@ -1,6 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import iconLogo from '../assets/icons/icon.png';
+import { useNavigate } from 'react-router-dom';
 import { 
   Terminal, 
   Activity, 
@@ -18,6 +19,7 @@ import {
 // Importar hooks desde la carpeta correcta
 import { useMousePosition } from '../hooks/useMousePosition';
 import { useScrambleText } from '../hooks/useScrambleText';
+import AuthService from '../services/AuthService';
 
 // --- VISUAL COMPONENTS ---
 
@@ -27,18 +29,25 @@ const CustomCursor = () => {
   
   return (
     <>
+      {/* Cursor tipo flecha minimalista */}
       <motion.div 
-        className="fixed top-0 left-0 w-8 h-8 border border-cyan-500 rounded-full pointer-events-none z-[9999] hidden md:flex items-center justify-center mix-blend-difference"
-        animate={{ x: mouse.x - 16, y: mouse.y - 16 }}
-        transition={{ type: "spring", stiffness: 500, damping: 28 }}
+        className="fixed top-0 left-0 pointer-events-none z-[9999] hidden md:block"
+        animate={{ x: mouse.x, y: mouse.y }}
+        transition={{ type: "spring", stiffness: 500, damping: 30 }}
       >
-        <div className="w-2 h-2 bg-cyan-400 rounded-full shadow-lg shadow-cyan-500/80" />
+        {/* Flecha hacia arriba-izquierda */}
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" className="drop-shadow-lg">
+          {/* Trazo principal */}
+          <path 
+            d="M18 18L6 6M6 6L6 14M6 6L14 6" 
+            stroke="currentColor" 
+            strokeWidth="1.5" 
+            strokeLinecap="round" 
+            strokeLinejoin="round"
+            className="text-gray-200 opacity-80"
+          />
+        </svg>
       </motion.div>
-      <motion.div 
-         className="fixed top-0 left-0 w-2 h-2 bg-white rounded-full pointer-events-none z-[9999] hidden md:block mix-blend-difference"
-         animate={{ x: mouse.x - 4, y: mouse.y - 4 }}
-         transition={{ type: "spring", stiffness: 1500, damping: 28 }}
-      />
     </>
   );
 };
@@ -270,7 +279,10 @@ const TerminalPreview = () => {
 const LoginModal = ({ isOpen, onClose, buttonRef }) => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
   const mouse = useMousePosition();
+  const navigate = useNavigate();
 
   // 1. Calcular la posición del botón para la animación de origen/destino
   const getButtonPosition = () => {
@@ -311,10 +323,56 @@ const LoginModal = ({ isOpen, onClose, buttonRef }) => {
     }
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    console.log(`Intentando iniciar sesión con: ${email}`);
-    onClose();
+    setError('');
+    setLoading(true);
+    
+    try {
+      // Validar que los campos no estén vacíos
+      if (!email || !password) {
+        setError('Por favor completa todos los campos');
+        setLoading(false);
+        return;
+      }
+
+      // Llamar a AuthService.login
+      const response = await AuthService.login(email, password);
+      
+      console.log('=== DATOS DESPUÉS DEL LOGIN ===');
+      console.log('Response completa:', response);
+      console.log('Response.user:', response.user);
+      console.log('Campos del usuario:', Object.keys(response.user || {}));
+      
+      // Verificar localStorage después del login
+      const storedUser = localStorage.getItem('user');
+      console.log('User en localStorage (string):', storedUser);
+      if (storedUser) {
+        try {
+          const parsedUser = JSON.parse(storedUser);
+          console.log('User parseado:', parsedUser);
+          console.log('Valores de nombre:');
+          console.log('  - firstName:', parsedUser.firstName);
+          console.log('  - lastName:', parsedUser.lastName);
+          console.log('  - nombre:', parsedUser.nombre);
+          console.log('  - apellido:', parsedUser.apellido);
+          console.log('  - email:', parsedUser.email);
+          console.log('  - role:', parsedUser.role);
+          console.log('  - rol:', parsedUser.rol);
+        } catch (e) {
+          console.error('Error al parsear user:', e);
+        }
+      }
+      
+      // Cerrar modal y redirigir al dashboard
+      onClose();
+      navigate('/dashboard');
+      
+    } catch (err) {
+      console.error('Error de login:', err);
+      setError(err.message || 'Error al iniciar sesión. Verifica tus credenciales.');
+      setLoading(false);
+    }
   };
 
   return (
@@ -337,7 +395,7 @@ const LoginModal = ({ isOpen, onClose, buttonRef }) => {
             initial="hidden"
             animate="visible"
             exit="exit"
-            className="fixed inset-0 sm:top-0 sm:right-0 sm:h-screen sm:w-96 md:w-[500px] z-[300] overflow-y-auto sm:overflow-y-visible"
+            className="fixed inset-y-0 right-0 sm:w-96 md:w-[500px] z-[300] overflow-y-auto"
           >
             {/* Panel del modal */}
             <div className="w-full h-full bg-gradient-to-br from-gray-950 via-gray-900 to-gray-950 border-0 sm:border-l border-gray-700/50 backdrop-blur-2xl flex flex-col p-6 sm:p-10 relative overflow-hidden shadow-2xl shadow-gray-600/10">
@@ -437,6 +495,17 @@ const LoginModal = ({ isOpen, onClose, buttonRef }) => {
                   onSubmit={handleSubmit}
                   className="flex-1 flex flex-col gap-4 sm:gap-6 mb-6 sm:mb-8"
                 >
+                  {/* Error Message */}
+                  {error && (
+                    <motion.div
+                      initial={{ opacity: 0, y: -10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      className="bg-red-500/20 border border-red-500/50 rounded-lg px-3 sm:px-4 py-2 sm:py-3 text-red-400 text-xs sm:text-sm font-mono"
+                    >
+                      ❌ {error}
+                    </motion.div>
+                  )}
+
                   {/* Email Input */}
                   <motion.div
                     initial={{ opacity: 0, y: 15 }}
@@ -454,7 +523,8 @@ const LoginModal = ({ isOpen, onClose, buttonRef }) => {
                         value={email}
                         onChange={(e) => setEmail(e.target.value)}
                         placeholder="admin@envyguard"
-                        className="w-full bg-black/40 border border-cyan-500/30 rounded-lg px-3 sm:px-4 py-2 sm:py-3 text-white text-sm placeholder-gray-600 focus:outline-none focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500/50 transition-all font-mono group-focus-within:shadow-[0_0_20px_rgba(6,182,212,0.2)]"
+                        disabled={loading}
+                        className="w-full bg-black/40 border border-cyan-500/30 rounded-lg px-3 sm:px-4 py-2 sm:py-3 text-white text-sm placeholder-gray-600 focus:outline-none focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500/50 transition-all font-mono group-focus-within:shadow-[0_0_20px_rgba(6,182,212,0.2)] disabled:opacity-50 disabled:cursor-not-allowed"
                       />
                       <div className="absolute right-3 top-1/2 transform -translate-y-1/2 text-cyan-500/30 group-focus-within:text-cyan-500/60 transition-colors">
                         <Terminal size={16} />
@@ -479,7 +549,8 @@ const LoginModal = ({ isOpen, onClose, buttonRef }) => {
                         value={password}
                         onChange={(e) => setPassword(e.target.value)}
                         placeholder="••••••••••••••••"
-                        className="w-full bg-black/40 border border-cyan-500/30 rounded-lg px-3 sm:px-4 py-2 sm:py-3 text-white text-sm placeholder-gray-600 focus:outline-none focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500/50 transition-all font-mono group-focus-within:shadow-[0_0_20px_rgba(6,182,212,0.2)]"
+                        disabled={loading}
+                        className="w-full bg-black/40 border border-cyan-500/30 rounded-lg px-3 sm:px-4 py-2 sm:py-3 text-white text-sm placeholder-gray-600 focus:outline-none focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500/50 transition-all font-mono group-focus-within:shadow-[0_0_20px_rgba(6,182,212,0.2)] disabled:opacity-50 disabled:cursor-not-allowed"
                       />
                       <div className="absolute right-3 top-1/2 transform -translate-y-1/2 text-cyan-500/30 group-focus-within:text-cyan-500/60 transition-colors">
                         <Lock size={16} />
@@ -492,17 +563,33 @@ const LoginModal = ({ isOpen, onClose, buttonRef }) => {
                     initial={{ opacity: 0, y: 15 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ delay: 0.5, duration: 0.4 }}
-                    whileHover={{ 
+                    whileHover={!loading ? { 
                       scale: 1.02,
                       boxShadow: "0 0 40px rgba(6, 182, 212, 1), inset 0 0 20px rgba(34, 211, 238, 0.3)"
-                    }}
-                    whileTap={{ scale: 0.98 }}
+                    } : {}}
+                    whileTap={!loading ? { scale: 0.98 } : {}}
                     type="submit"
-                    className="w-full bg-gradient-to-r from-cyan-600 via-cyan-500 to-blue-600 text-white font-bold py-2 sm:py-3 px-4 rounded-lg hover:shadow-2xl transition-all flex items-center justify-center gap-2 sm:gap-3 mt-2 sm:mt-4 font-sans text-sm sm:text-base tracking-wider border border-cyan-400/50 relative overflow-hidden group"
+                    disabled={loading}
+                    className="w-full bg-gradient-to-r from-cyan-600 via-cyan-500 to-blue-600 text-white font-bold py-2 sm:py-3 px-4 rounded-lg hover:shadow-2xl transition-all flex items-center justify-center gap-2 sm:gap-3 mt-2 sm:mt-4 font-sans text-sm sm:text-base tracking-wider border border-cyan-400/50 relative overflow-hidden group disabled:opacity-50 disabled:cursor-not-allowed"
                   >
                     <div className="absolute inset-0 bg-white/10 translate-y-full group-hover:translate-y-0 transition-transform duration-300" />
-                    <Lock size={16} className="sm:w-[18px] sm:h-[18px] relative" />
-                    <span className="relative">INICIAR SESIÓN</span>
+                    {loading ? (
+                      <>
+                        <motion.div
+                          animate={{ rotate: 360 }}
+                          transition={{ repeat: Infinity, duration: 1 }}
+                          className="relative"
+                        >
+                          <Lock size={16} className="sm:w-[18px] sm:h-[18px]" />
+                        </motion.div>
+                        <span className="relative">CONECTANDO...</span>
+                      </>
+                    ) : (
+                      <>
+                        <Lock size={16} className="sm:w-[18px] sm:h-[18px] relative" />
+                        <span className="relative">INICIAR SESIÓN</span>
+                      </>
+                    )}
                   </motion.button>
 
                 </motion.form>
