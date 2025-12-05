@@ -57,7 +57,9 @@ import {
   Menu,
   Eye,
   RefreshCw,
-  Maximize2
+  Maximize2,
+  AlertTriangle as AlertIcon,
+  Bell,
 } from "lucide-react";
 import iconLogo from "../assets/icons/icon.png";
 import { deviceService, WebSocketService, RabbitMQService, AuthService } from "../services";
@@ -667,6 +669,165 @@ const UserProfile = ({
   );
 };
 
+// --- COMPONENTE: MODAL DE REPORTE DE PROBLEMAS ---
+const ReportProblemModal = ({ isOpen, onClose, selectedPC, selectedSala, onSubmit }) => {
+  const [description, setDescription] = useState('');
+  const [severity, setSeverity] = useState('medium');
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    
+    if (!description.trim() || description.length < 10) {
+      alert('La descripción debe tener al menos 10 caracteres');
+      return;
+    }
+
+    if (description.length > 500) {
+      alert('La descripción no puede exceder 500 caracteres');
+      return;
+    }
+
+    setIsSubmitting(true);
+    
+    try {
+      await onSubmit({
+        description: description.trim(),
+        severity,
+        timestamp: new Date().toISOString(),
+        device: selectedPC.id,
+        ip: selectedPC.ip,
+        sala: selectedSala,
+        cpuCode: selectedPC.cpuCode
+      });
+      
+      setDescription('');
+      setSeverity('medium');
+      onClose();
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  if (!isOpen || !selectedPC) return null;
+
+  const severityStyles = {
+    low: { bg: 'bg-yellow-500/10', border: 'border-yellow-500/30', text: 'text-yellow-400', label: '🟡 Baja' },
+    medium: { bg: 'bg-orange-500/10', border: 'border-orange-500/30', text: 'text-orange-400', label: '🟠 Media' },
+    high: { bg: 'bg-red-500/10', border: 'border-red-500/30', text: 'text-red-400', label: '🔴 Alta' },
+  };
+
+  const styles = severityStyles[severity];
+
+  return (
+    <AnimatePresence>
+      <motion.div
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        exit={{ opacity: 0 }}
+        onClick={onClose}
+        className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-[150] p-4"
+      >
+        <motion.div
+          initial={{ scale: 0.9, y: 20 }}
+          animate={{ scale: 1, y: 0 }}
+          exit={{ scale: 0.9, y: 20 }}
+          onClick={(e) => e.stopPropagation()}
+          className="bg-[#0f0f0f] border border-orange-500/30 rounded-2xl shadow-2xl max-w-md w-full overflow-hidden"
+        >
+          {/* Header */}
+          <div className="bg-gradient-to-r from-orange-900/20 to-transparent p-6 border-b border-white/5">
+            <h3 className="text-xl font-bold text-white font-mono flex items-center gap-2">
+              <AlertCircle size={20} className="text-orange-400" />
+              Reportar Problema
+            </h3>
+            <div className="mt-2 space-y-1 text-xs text-orange-400 font-mono">
+              <p><strong>Sala:</strong> {selectedSala.replace('sala', 'Sala ')}</p>
+              <p><strong>ID:</strong> {selectedPC.cpuCode}</p>
+              <p><strong>IP:</strong> {selectedPC.ip}</p>
+            </div>
+          </div>
+
+          {/* Body */}
+          <form onSubmit={handleSubmit} className="p-6 space-y-4">
+            {/* Descripción */}
+            <div>
+              <label className="block text-xs font-bold text-gray-400 uppercase mb-2">Descripción del Problema</label>
+              <textarea
+                value={description}
+                onChange={(e) => setDescription(e.target.value)}
+                placeholder="Describe brevemente qué problema experimentas con este equipo..."
+                disabled={isSubmitting}
+                maxLength={500}
+                className="w-full h-24 px-4 py-3 bg-black/40 border border-white/10 rounded-lg text-white text-sm placeholder-gray-600 focus:border-orange-500/50 focus:bg-orange-900/10 outline-none transition-all resize-none disabled:opacity-50"
+              />
+              <div className="mt-1 text-xs text-gray-500 text-right">
+                {description.length}/500 caracteres
+              </div>
+            </div>
+
+            {/* Severidad */}
+            <div>
+              <label className="block text-xs font-bold text-gray-400 uppercase mb-2">Severidad</label>
+              <div className="grid grid-cols-3 gap-2">
+                {['low', 'medium', 'high'].map(level => (
+                  <button
+                    key={level}
+                    type="button"
+                    onClick={() => setSeverity(level)}
+                    className={`px-3 py-2 rounded-lg text-xs font-bold uppercase transition-all border ${
+                      severity === level
+                        ? `${severityStyles[level].bg} ${severityStyles[level].border} ${severityStyles[level].text}`
+                        : 'border-white/10 bg-white/5 text-gray-400 hover:bg-white/10'
+                    }`}
+                  >
+                    {severityStyles[level].label}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Info */}
+            <div className="bg-black/40 p-3 rounded-lg border border-white/5 text-xs text-gray-400 space-y-1">
+              <p><strong>IP:</strong> {selectedPC.ip}</p>
+              <p><strong>Hora:</strong> {new Date().toLocaleTimeString('es-ES')}</p>
+            </div>
+
+            {/* Botones */}
+            <div className="flex gap-3">
+              <button
+                type="button"
+                onClick={onClose}
+                disabled={isSubmitting}
+                className="flex-1 px-4 py-2 border border-gray-500/30 text-gray-300 rounded-lg hover:bg-gray-500/10 transition-colors disabled:opacity-50 text-sm font-bold"
+              >
+                Cancelar
+              </button>
+              <button
+                type="submit"
+                disabled={isSubmitting || description.length < 10}
+                className="flex-1 px-4 py-2 bg-gradient-to-r from-orange-500 to-red-600 text-white rounded-lg hover:shadow-lg hover:shadow-orange-500/20 transition-all disabled:opacity-50 text-sm font-bold flex items-center justify-center gap-2"
+              >
+                {isSubmitting ? (
+                  <>
+                    <RotateCw size={14} className="animate-spin" />
+                    Enviando...
+                  </>
+                ) : (
+                  <>
+                    <AlertCircle size={14} />
+                    Reportar
+                  </>
+                )}
+              </button>
+            </div>
+          </form>
+        </motion.div>
+      </motion.div>
+    </AnimatePresence>
+  );
+};
+
 // --- DASHBOARD SECTIONS ---
 
 // 1. OVERVIEW SECTION (PANEL PRINCIPAL)
@@ -748,12 +909,11 @@ const OverviewSection = () => {
           </motion.div>
         ))}
       </motion.div>
-
       {/* Charts & Logs Area */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 md:gap-6 h-full">
         
         {/* Logs Terminal */}
-        <motion.div 
+        <motion.div
           initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.2 }}
           className="lg:col-span-2 rounded-2xl border border-cyan-500/20 bg-black/60 backdrop-blur-md flex flex-col overflow-hidden"
         >
@@ -824,7 +984,7 @@ const OverviewSection = () => {
 };
 
 // 2. MONITORING SECTION (SALAS)
-const ComputerMonitoringSection = ({ showDeployModal, setShowDeployModal, deployTargetPCs, setDeployTargetPCs }) => {
+const ComputerMonitoringSection = ({ showDeployModal, setShowDeployModal, deployTargetPCs, setDeployTargetPCs, problemReports, setProblemReports }) => {
   const [selectedPC, setSelectedPC] = useState(null);
   const [actionLoading, setActionLoading] = useState(null);
   const [selectedSala, setSelectedSala] = useState("sala1");
@@ -835,6 +995,8 @@ const ComputerMonitoringSection = ({ showDeployModal, setShowDeployModal, deploy
   const [toast, setToast] = useState(null);
   const [loadingDevices, setLoadingDevices] = useState(false);
   const [deviceStatusOverrides, setDeviceStatusOverrides] = useState({}); // ip -> {status, meta}
+  const [showReportModal, setShowReportModal] = useState(false);
+  const [selectedPCForReport, setSelectedPCForReport] = useState(null);
 
   // Configuración de Salas - DATOS COMPLETOS
   const salas = {
@@ -1134,7 +1296,33 @@ const ComputerMonitoringSection = ({ showDeployModal, setShowDeployModal, deploy
     }
   };
 
+  const handleReportSubmit = (reportData) => {
+    const location = getLocationFromPC(reportData.device, reportData.sala);
+    const newReport = {
+      id: Math.random().toString(36).substr(2, 9),
+      ...reportData,
+      displayTimestamp: new Date(reportData.timestamp).toLocaleString('es-ES'),
+      status: 'open',
+      type: 'Reporte',
+      sector: location.sector,
+      ubicacion: location.ubicacion,
+      posicion: location.posicion
+    };
+    setProblemReports(prev => [newReport, ...prev]);
+    setShowReportModal(false);
+    setSelectedPCForReport(null);
+    setToast({ type: 'success', msg: `Problema reportado en ${reportData.device}` });
+  };
+
   const handleAction = async (action, pcId, ip) => {
+    // Si la acción es reportar problema, abre el modal
+    if (action === 'report') {
+      setSelectedPCForReport({ id: pcId, ip });
+      setShowReportModal(true);
+      setSelectedPC(null);
+      return;
+    }
+
     // Si la acción es instalar apps, abre el modal de despliegue
     if (action === 'install') {
       setDeployTargetPCs([{ id: pcId, ip }]);
@@ -1265,6 +1453,38 @@ const ComputerMonitoringSection = ({ showDeployModal, setShowDeployModal, deploy
         )}
       </motion.div>
     );
+  };
+
+  // Función para obtener la ubicación completa del PC basándose en los mapas de las salas
+  const getLocationFromPC = (pcId, sala) => {
+    const salaData = salas[sala];
+    if (!salaData) return { sector: 'Desconocido', ubicacion: 'No disponible' };
+
+    // Buscar en el layout de la sala
+    for (const section of salaData.layout) {
+      for (const pc of section.pcs) {
+        if (pc.id === pcId) {
+          let sectorName = '';
+          if (section.col) {
+            const colLetters = ['A', 'B', 'C', 'D', 'E', 'F'];
+            sectorName = `Columna ${colLetters[section.col - 1] || section.col}`;
+          } else if (section.row) {
+            sectorName = `Fila ${section.row}`;
+          }
+          
+          // Determinar la posición dentro del sector (1, 2, 3, 4...)
+          const posInSector = section.pcs.indexOf(pc) + 1;
+          
+          return {
+            sector: sectorName,
+            posicion: posInSector,
+            ubicacion: `${sectorName} - Posición ${posInSector}`
+          };
+        }
+      }
+    }
+
+    return { sector: 'Desconocido', ubicacion: 'No disponible' };
   };
 
   const currentRoom = salas[selectedSala];
@@ -1640,10 +1860,19 @@ const ComputerMonitoringSection = ({ showDeployModal, setShowDeployModal, deploy
                   { id: 'format', label: 'Limpiar', icon: HardDrive, color: 'hover:bg-yellow-500/20 hover:text-yellow-400', span: false },
                   { id: 'install', label: 'Instalar Apps', icon: Package, color: 'hover:bg-purple-500/20 hover:text-purple-400', span: true },
                   { id: 'logs', label: 'Ver Logs', icon: FileText, color: 'hover:bg-gray-500/20 hover:text-gray-300', span: true },
+                  { id: 'report', label: 'Reportar Problema', icon: AlertCircle, color: 'hover:bg-orange-500/20 hover:text-orange-400', span: true },
                 ].map(action => (
                   <button
                     key={action.id}
-                    onClick={() => handleAction(action.id, selectedPC.id, selectedPC.ip)}
+                    onClick={() => {
+                      if (action.id === 'report') {
+                        setSelectedPCForReport(selectedPC);
+                        setShowReportModal(true);
+                        setSelectedPC(null);
+                      } else {
+                        handleAction(action.id, selectedPC.id, selectedPC.ip);
+                      }
+                    }}
                     disabled={actionLoading !== null}
                     className={`p-2 md:p-3 rounded-lg border border-white/5 bg-black/40 text-gray-400 transition-all flex items-center justify-center gap-2 text-xs md:text-sm font-medium ${action.color} ${action.span ? 'col-span-2' : ''}`}
                   >
@@ -1746,6 +1975,18 @@ const ComputerMonitoringSection = ({ showDeployModal, setShowDeployModal, deploy
           </motion.div>
         )}
       </AnimatePresence>
+
+      {/* Report Problem Modal */}
+      <ReportProblemModal
+        isOpen={showReportModal}
+        onClose={() => {
+          setShowReportModal(false);
+          setSelectedPCForReport(null);
+        }}
+        selectedPC={selectedPCForReport}
+        selectedSala={selectedSala}
+        onSubmit={handleReportSubmit}
+      />
     </div>
   );
 };
@@ -3073,8 +3314,202 @@ const BlockingSitesSection = () => {
   );
 };
 
+// 3.5 NOVEDADES SECTION
+const NovedadesSection = ({ problemReports = [], setProblemReports }) => {
+  const [filterSeverity, setFilterSeverity] = useState('all');
+
+  const sortedReports = [...problemReports].sort((a, b) => 
+    new Date(b.timestamp) - new Date(a.timestamp)
+  );
+
+  const filteredReports = filterSeverity === 'all' 
+    ? sortedReports 
+    : sortedReports.filter(r => r.severity === filterSeverity);
+
+  const getSeverityColor = (severity) => {
+    switch(severity) {
+      case 'low': return { 
+        bg: 'bg-yellow-500/5', 
+        border: 'border-yellow-500/20', 
+        text: 'text-yellow-400',
+        badge: 'bg-yellow-500/15 text-yellow-300 border border-yellow-500/30',
+        icon: '🟡' 
+      };
+      case 'medium': return { 
+        bg: 'bg-orange-500/5', 
+        border: 'border-orange-500/20', 
+        text: 'text-orange-400',
+        badge: 'bg-orange-500/15 text-orange-300 border border-orange-500/30',
+        icon: '🟠' 
+      };
+      case 'high': return { 
+        bg: 'bg-red-500/5', 
+        border: 'border-red-500/20', 
+        text: 'text-red-400',
+        badge: 'bg-red-500/15 text-red-300 border border-red-500/30',
+        icon: '🔴' 
+      };
+      default: return { 
+        bg: 'bg-gray-500/5', 
+        border: 'border-gray-500/20', 
+        text: 'text-gray-400',
+        badge: 'bg-gray-500/15 text-gray-300 border border-gray-500/30',
+        icon: '⚪' 
+      };
+    }
+  };
+
+  const handleMarkAsDone = (reportId) => {
+    setProblemReports(prev => 
+      prev.map(report => 
+        report.id === reportId ? { ...report, status: 'closed' } : report
+      )
+    );
+  };
+
+  return (
+    <div className="flex flex-col h-full space-y-6">
+      {/* Header */}
+      <div className="flex flex-col gap-6 pb-6 border-b border-white/5">
+        <div className="flex items-start gap-4">
+          <div className="p-3.5 bg-gradient-to-br from-orange-500/15 to-orange-500/5 rounded-xl border border-orange-500/25 shadow-lg shadow-orange-500/10">
+            <AlertCircle className="text-orange-400" size={32} />
+          </div>
+          <div className="flex-1">
+            <h2 className="text-4xl font-bold text-white tracking-tight">Novedades</h2>
+            <p className="text-gray-400 text-sm mt-2">Gestión centralizada de reportes y problemas en equipos</p>
+          </div>
+        </div>
+
+        {/* Filter Section */}
+        <div className="flex flex-col sm:flex-row gap-3 items-start sm:items-center justify-between">
+          <div></div>
+          <div className="flex gap-2 flex-wrap justify-end">
+            {[
+              { id: 'all', label: 'Todos', count: sortedReports.length },
+              { id: 'low', label: 'Baja', count: sortedReports.filter(r => r.severity === 'low').length },
+              { id: 'medium', label: 'Media', count: sortedReports.filter(r => r.severity === 'medium').length },
+              { id: 'high', label: 'Alta', count: sortedReports.filter(r => r.severity === 'high').length },
+            ].map(f => (
+              <motion.button
+                key={f.id}
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
+                onClick={() => setFilterSeverity(f.id)}
+                className={`px-3.5 py-2 rounded-lg text-xs font-semibold transition-all backdrop-blur-sm ${
+                  filterSeverity === f.id 
+                    ? "bg-gradient-to-r from-orange-500/30 to-orange-500/15 text-orange-300 border border-orange-500/50 shadow-lg shadow-orange-500/20" 
+                    : "text-gray-400 hover:text-gray-300 bg-white/5 border border-white/10 hover:bg-white/10"
+                }`}
+              >
+                {f.label} {f.count > 0 && <span className="ml-2 text-[10px] opacity-70">({f.count})</span>}
+              </motion.button>
+            ))}
+          </div>
+        </div>
+      </div>
+
+      {/* Reports Grid */}
+      <div className="flex-1 overflow-y-auto space-y-3 scrollbar-hide pr-2">
+        {filteredReports.length === 0 ? (
+          <div className="h-full flex items-center justify-center">
+            <div className="text-center space-y-3">
+              <div className="p-4 bg-white/5 rounded-full w-20 h-20 flex items-center justify-center mx-auto">
+                <AlertCircle size={40} className="text-gray-600" />
+              </div>
+              <p className="text-gray-500 text-sm font-medium">No hay reportes de problemas</p>
+              <p className="text-gray-600 text-xs">Los nuevos reportes aparecerán aquí</p>
+            </div>
+          </div>
+        ) : (
+          filteredReports.map(report => {
+            const severity = getSeverityColor(report.severity);
+            return (
+              <motion.div
+                key={report.id}
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                whileHover={{ y: -3, transition: { duration: 0.2 } }}
+                className={`p-5 rounded-xl border ${severity.border} ${severity.bg} hover:shadow-xl transition-all backdrop-blur-sm overflow-hidden relative`}
+                style={{
+                  boxShadow: report.severity === 'high' 
+                    ? '0 0 25px rgba(239, 68, 68, 0.08)' 
+                    : report.severity === 'medium'
+                    ? '0 0 25px rgba(249, 115, 22, 0.08)'
+                    : '0 0 25px rgba(234, 179, 8, 0.08)'
+                }}
+              >
+                {/* Gradient accent line */}
+                <div className={`absolute top-0 left-0 right-0 h-1 bg-gradient-to-r ${
+                  report.severity === 'high' ? 'from-red-500 to-red-500/30'
+                  : report.severity === 'medium' ? 'from-orange-500 to-orange-500/30'
+                  : 'from-yellow-500 to-yellow-500/30'
+                }`} />
+                {/* Header del reporte */}
+                <div className="flex items-start justify-between mb-4">
+                  <div className="flex-1">
+                    <div className="flex items-center gap-2 mb-2">
+                      <span className="text-lg">{severity.icon}</span>
+                      <span className={`text-xs font-bold uppercase ${severity.badge} px-2.5 py-1 rounded-md`}>
+                        {report.severity === 'low' ? 'Baja' : report.severity === 'medium' ? 'Media' : 'Alta'}
+                      </span>
+                      <span className="text-xs text-white font-mono font-bold ml-3">ID: {report.cpuCode}</span>
+                      <span className="text-xs text-gray-500 ml-auto">{report.displayTimestamp}</span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Info de ubicación clara */}
+                <div className="mb-4 p-3.5 bg-white/[0.02] rounded-lg border border-white/10 space-y-2">
+                  <div className="space-y-1">
+                    <p className="text-gray-600 text-[10px] uppercase tracking-widest font-bold">Ubicación</p>
+                    <div className="flex items-baseline gap-2">
+                      <p className="text-white font-bold font-mono text-sm">{report.sala.replace('sala', 'Sala ')}</p>
+                      <span className="text-gray-600 text-xs">•</span>
+                      <p className="text-orange-300 font-bold font-mono text-sm">{report.ubicacion}</p>
+                    </div>
+                  </div>
+                  <div className="flex gap-3 text-xs">
+                    <div>
+                      <p className="text-gray-600 uppercase tracking-widest font-bold text-[10px]">IP</p>
+                      <p className="text-gray-400 font-mono mt-0.5">{report.ip}</p>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Descripción */}
+                <div className="p-3.5 bg-white/[0.02] rounded-lg border border-white/10 mb-4">
+                  <p className="text-sm text-gray-300 break-words leading-relaxed">{report.description}</p>
+                </div>
+
+                {/* Footer con estado y botón */}
+                <div className="flex justify-between items-center gap-3 text-xs pt-4 border-t border-white/5">
+                  <span className={`px-3 py-1.5 rounded-full font-semibold transition-all ${report.status === 'open' ? 'bg-orange-500/20 text-orange-300 border border-orange-500/30' : 'bg-green-500/20 text-green-300 border border-green-500/30'}`}>
+                    {report.status === 'open' ? '🔴 Abierto' : '✅ Resuelto'}
+                  </span>
+                  {report.status === 'open' && (
+                    <motion.button
+                      whileHover={{ scale: 1.05 }}
+                      whileTap={{ scale: 0.95 }}
+                      onClick={() => handleMarkAsDone(report.id)}
+                      className="ml-auto px-4 py-1.5 bg-gradient-to-r from-green-500/30 to-green-500/10 hover:from-green-500/40 hover:to-green-500/20 text-green-300 rounded-lg border border-green-500/40 font-semibold transition-all shadow-lg shadow-green-500/10 hover:shadow-green-500/20 flex items-center gap-2 text-xs"
+                    >
+                      <CheckCircle size={14} className="drop-shadow" />
+                      Marcar Hecho
+                    </motion.button>
+                  )}
+                </div>
+              </motion.div>
+            );
+          })
+        )}
+      </div>
+    </div>
+  );
+};
+
 // 3.6 LOGS & TRAFFIC SECTION
-const LogsAndTrafficSection = () => {
+const LogsAndTrafficSection = ({ problemReports = [] }) => {
   const [activeTab, setActiveTab] = useState('traffic');
   const [dateRange, setDateRange] = useState('24h');
   const [filterType, setFilterType] = useState('all');
@@ -3131,12 +3566,28 @@ const LogsAndTrafficSection = () => {
     { site: 'twitter.com', blocks: 32 },
   ];
 
-  const filteredLogs = logs.filter(log => {
-    const matchesSearch = log.device.toLowerCase().includes(searchLog.toLowerCase()) || 
-                         log.action.toLowerCase().includes(searchLog.toLowerCase());
-    const matchesType = filterType === 'all' || log.type === filterType;
-    return matchesSearch && matchesType;
-  });
+  const filteredLogs = (() => {
+    // Combinar logs del sistema con reportes de problemas
+    const combinedLogs = [
+      ...logs,
+      ...problemReports.map(report => ({
+        id: report.id,
+        timestamp: report.displayTimestamp,
+        device: report.device,
+        action: `Problema reportado: ${report.description}`,
+        type: 'Reporte',
+        status: report.status === 'open' ? 'warning' : 'success'
+      }))
+    ];
+    
+    // Aplicar filtros
+    return combinedLogs.filter(log => {
+      const matchesSearch = log.device.toLowerCase().includes(searchLog.toLowerCase()) || 
+                           log.action.toLowerCase().includes(searchLog.toLowerCase());
+      const matchesType = filterType === 'all' || log.type === filterType;
+      return matchesSearch && matchesType;
+    }).sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
+  })();
 
   return (
     <div className="flex flex-col h-full space-y-6">
@@ -3366,6 +3817,7 @@ const LogsAndTrafficSection = () => {
                 { id: 'Seguridad', label: 'Seguridad' },
                 { id: 'Sistema', label: 'Sistema' },
                 { id: 'Red', label: 'Red' },
+                { id: 'Reporte', label: 'Reportes' },
               ].map(f => (
                 <button
                   key={f.id}
@@ -3391,6 +3843,7 @@ const LogsAndTrafficSection = () => {
                   <th className="p-4 font-normal">Dispositivo</th>
                   <th className="p-4 font-normal">Acción</th>
                   <th className="p-4 font-normal">Tipo</th>
+                  <th className="p-4 font-normal">Severidad</th>
                   <th className="p-4 font-normal">Estado</th>
                 </tr>
               </thead>
@@ -3409,10 +3862,24 @@ const LogsAndTrafficSection = () => {
                       <span className={`text-xs px-2 py-1 rounded-full font-mono font-bold ${
                         log.type === 'Seguridad' ? 'bg-red-500/10 text-red-400' :
                         log.type === 'Sistema' ? 'bg-blue-500/10 text-blue-400' :
+                        log.type === 'Reporte' ? 'bg-orange-500/10 text-orange-400' :
                         'bg-cyan-500/10 text-cyan-400'
                       }`}>
                         {log.type}
                       </span>
+                    </td>
+                    <td className="p-4">
+                      {log.severity ? (
+                        <span className={`text-xs px-2 py-1 rounded-full font-mono font-bold ${
+                          log.severity === 'low' ? 'bg-yellow-500/10 text-yellow-400' :
+                          log.severity === 'medium' ? 'bg-orange-500/10 text-orange-400' :
+                          'bg-red-500/10 text-red-400'
+                        }`}>
+                          {log.severity === 'low' ? '🟡 Baja' : log.severity === 'medium' ? '🟠 Media' : '🔴 Alta'}
+                        </span>
+                      ) : (
+                        <span className="text-xs text-gray-600">-</span>
+                      )}
                     </td>
                     <td className="p-4">
                       <div className="flex items-center gap-2">
@@ -4155,17 +4622,18 @@ const PlaceholderSection = ({ title, icon: Icon, description }) => (
 
 // --- MAIN LAYOUT LOGIC ---
 
-const DashboardContent = ({ currentPage, avatarOptions, getAvatarUrl, showDeployModal, setShowDeployModal, deployTargetPCs, setDeployTargetPCs }) => {
+const DashboardContent = ({ currentPage, avatarOptions, getAvatarUrl, showDeployModal, setShowDeployModal, deployTargetPCs, setDeployTargetPCs, problemReports, setProblemReports }) => {
   const containerClass = "flex flex-1 flex-col gap-4 md:gap-6 rounded-tl-3xl border-l border-t border-white/10 bg-[#080808] p-3 md:p-8 backdrop-blur-xl overflow-y-auto shadow-[-20px_-20px_50px_rgba(0,0,0,0.5)] relative z-10 h-full w-full scrollbar-hide md:rounded-tl-3xl rounded-none";
   
   const renderContent = () => {
     switch(currentPage) {
       case 'dashboard': return <OverviewSection />;
-      case 'computers': return <ComputerMonitoringSection showDeployModal={showDeployModal} setShowDeployModal={setShowDeployModal} deployTargetPCs={deployTargetPCs} setDeployTargetPCs={setDeployTargetPCs} />;
+      case 'computers': return <ComputerMonitoringSection showDeployModal={showDeployModal} setShowDeployModal={setShowDeployModal} deployTargetPCs={deployTargetPCs} setDeployTargetPCs={setDeployTargetPCs} problemReports={problemReports} setProblemReports={setProblemReports} />;
       case 'screens': return <ScreenMonitoringSection />;
       case 'users': return <CreateUsersSection avatarOptions={avatarOptions} getAvatarUrl={getAvatarUrl} />;
       case 'blocking': return <BlockingSitesSection />;
-      case 'logs': return <LogsAndTrafficSection />;
+      case 'novedades': return <NovedadesSection problemReports={problemReports} setProblemReports={setProblemReports} />;
+      case 'logs': return <LogsAndTrafficSection problemReports={problemReports} />;
       case 'settings': return <PlaceholderSection title="Configuración del Sistema" icon={Settings} description="Ajustes globales, conexiones a bases de datos y preferencias de interfaz." />;
       default: return <OverviewSection />;
     }
@@ -4215,6 +4683,7 @@ const DashboardLayout = () => {
   const [showAvatarSelector, setShowAvatarSelector] = useState(false);
   const [showDeployModal, setShowDeployModal] = useState(false);
   const [deployTargetPCs, setDeployTargetPCs] = useState([]);
+  const [problemReports, setProblemReports] = useState([]);
   
   // Estado del avatar con persistencia en localStorage
   const [selectedAvatar, setSelectedAvatarState] = useState(() => {
@@ -4370,6 +4839,7 @@ const DashboardLayout = () => {
     { label: "Vigilancia de Pantallas", href: "#screens", icon: <Eye />, page: "screens" },
     { label: "Bloqueo de Sitios", href: "#blocking", icon: <AlertTriangle />, page: "blocking" },
     { label: "Gestión de Usuarios", href: "#users", icon: <UserPlus />, page: "users" },
+    { label: "Novedades", href: "#novedades", icon: <Bell />, page: "novedades" },
     { label: "Logs y Tráfico", href: "#logs", icon: <FileText />, page: "logs" },
     { label: "Configuración", href: "#settings", icon: <Settings />, page: "settings" },
   ];
@@ -4414,6 +4884,8 @@ const DashboardLayout = () => {
           setShowDeployModal={setShowDeployModal}
           deployTargetPCs={deployTargetPCs}
           setDeployTargetPCs={setDeployTargetPCs}
+          problemReports={problemReports}
+          setProblemReports={setProblemReports}
         />
         <DeploymentModal 
           showDeployModal={showDeployModal}

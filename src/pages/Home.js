@@ -19,7 +19,6 @@ import {
 // Importar hooks desde la carpeta correcta
 import { useMousePosition } from '../hooks/useMousePosition';
 import { useScrambleText } from '../hooks/useScrambleText';
-import useInstallPrompt from '../hooks/useInstallPrompt';
 import AuthService from '../services/AuthService';
 
 // --- VISUAL COMPONENTS ---
@@ -634,7 +633,6 @@ export default function Home() {
   const [loading, setLoading] = useState(true);
   const [showLoginModal, setShowLoginModal] = useState(false);
   const loginButtonRef = useRef(null);
-  const { isInstallable, handleInstall } = useInstallPrompt();
 
   return (
     <div className="min-h-screen bg-black text-white selection:bg-cyan-500/30 overflow-x-hidden font-sans cursor-none">
@@ -719,14 +717,10 @@ export default function Home() {
               </p>
 
               <div className="flex flex-col sm:flex-row gap-3 sm:gap-4">
-                <button 
-                  onClick={handleInstall}
-                  disabled={!isInstallable}
-                  className="relative px-6 sm:px-8 py-3 sm:py-4 bg-cyan-500 text-black font-bold rounded-lg overflow-hidden group cursor-none text-sm sm:text-base disabled:opacity-50 disabled:cursor-not-allowed transition-all"
-                >
+                <button className="relative px-6 sm:px-8 py-3 sm:py-4 bg-cyan-500 text-black font-bold rounded-lg overflow-hidden group cursor-none text-sm sm:text-base">
                   <div className="absolute inset-0 bg-white/20 translate-y-full group-hover:translate-y-0 transition-transform duration-300" />
                   <span className="relative flex items-center justify-center gap-2">
-                    <Download size={18} /> {isInstallable ? 'Instalar aplicación' : 'Ya instalada'}
+                    <Download size={18} /> Descargar
                   </span>
                 </button>
                 <button className="px-6 sm:px-8 py-3 sm:py-4 bg-transparent border border-gray-800 hover:border-cyan-500/50 text-white rounded-lg transition-all flex items-center justify-center gap-2 group hover:bg-cyan-950/10 cursor-none text-sm sm:text-base">
