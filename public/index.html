@@ -25,13 +25,29 @@
     <script>
       // Registrar Service Worker para PWA
       if ('serviceWorker' in navigator) {
-        navigator.serviceWorker.register('%PUBLIC_URL%/service-worker.js', { scope: '/' })
+        // Usar ruta relativa que funciona en desarrollo y producción
+        const swPath = window.location.pathname.startsWith('/dashboard') || 
+                       window.location.pathname.startsWith('/login') ? 
+                       '/' : window.location.pathname;
+        
+        navigator.serviceWorker.register('/service-worker.js', { scope: '/' })
           .then((registration) => {
             console.log('✓ Service Worker registrado:', registration);
+            console.log('✓ PWA lista para instalar');
           })
           .catch((error) => {
-            console.log('Error registrando Service Worker:', error);
+            console.warn('⚠ Error registrando Service Worker:', error);
           });
+      } else {
+        console.warn('⚠ Service Worker no soportado en este navegador');
+      }
+
+      // Cargar script de debug en desarrollo (opcional)
+      if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
+        const debugScript = document.createElement('script');
+        debugScript.src = '/pwa-debug.js';
+        debugScript.async = true;
+        // document.head.appendChild(debugScript);
       }
     </script>
   </body>
