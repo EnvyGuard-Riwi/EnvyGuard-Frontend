@@ -7,6 +7,7 @@ import './styles/global.css';
 import { routes } from './config/routes';
 import ProtectedRoute from './components/ProtectedRoute';
 import { DeviceProvider } from './context/DeviceContext';
+import SpyWall from './pages/SpyWall';
 
 /**
  * Componente principal de la aplicación
@@ -39,6 +40,17 @@ function App() {
                 }
               />
             ))}
+
+            {/* 2. AGREGAR LA RUTA DEL ESPÍA AQUÍ */}
+            {/* La envolvemos en ProtectedRoute para que alumnos no entren */}
+            <Route 
+              path="/spy" 
+              element={
+                <ProtectedRoute requiresAdmin={true}> 
+                  <SpyWall /> 
+                </ProtectedRoute>
+              } 
+            />
 
             {/* Ruta 404 - Redirige a home */}
             <Route path="*" element={<Navigate to="/" />} />

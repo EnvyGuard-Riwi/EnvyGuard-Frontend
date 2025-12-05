@@ -18,6 +18,7 @@
     "react-dom": "^18.2.0",
     "react-router-dom": "^6.30.2",
     "react-scripts": "5.0.1",
+    "sockjs-client": "^1.6.1",
     "three": "^0.181.2"
   },
   "scripts": {
@@ -47,5 +48,10 @@
     "@testing-library/jest-dom": "^5.16.5",
     "@testing-library/react": "^13.4.0",
     "@testing-library/user-event": "^13.5.0"
+  },
+  "browser": {
+    "net": false,
+    "tls": false,
+    "fs": false
   }
 }
