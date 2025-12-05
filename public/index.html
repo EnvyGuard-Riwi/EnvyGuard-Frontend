@@ -8,7 +8,13 @@
       name="description"
       content="EnvyGuard - Control y monitoreo de dispositivos en tiempo real"
     />
-    <link rel="icon" href="%PUBLIC_URL%/favicon.png" />
+    <link rel="icon" href="%PUBLIC_URL%/icon.ico" type="image/x-icon" />
+    <link rel="shortcut icon" href="%PUBLIC_URL%/icon.ico" type="image/x-icon" />
+    <link rel="manifest" href="%PUBLIC_URL%/manifest.json" />
+    <meta name="theme-color" content="#0f172a" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta name="apple-mobile-web-app-title" content="EnvyGuard" />
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet" />
     <script src="https://cdn.tailwindcss.com"></script>
     <title>EnvyGuard</title>
@@ -16,5 +22,17 @@
   <body>
     <noscript>Necesitas habilitar JavaScript para ejecutar esta aplicación.</noscript>
     <div id="root"></div>
+    <script>
+      // Registrar Service Worker para PWA
+      if ('serviceWorker' in navigator) {
+        navigator.serviceWorker.register('%PUBLIC_URL%/service-worker.js', { scope: '/' })
+          .then((registration) => {
+            console.log('✓ Service Worker registrado:', registration);
+          })
+          .catch((error) => {
+            console.log('Error registrando Service Worker:', error);
+          });
+      }
+    </script>
   </body>
 </html>

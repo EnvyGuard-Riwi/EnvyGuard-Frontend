@@ -1843,7 +1843,7 @@ const CreateUsersSection = ({ avatarOptions, getAvatarUrl }) => {
   
   // Validar formulario
   const validateForm = () => {
-    // Validación para crear nuevo usuario (todos los campos obligatorios)
+    // Validación para CREAR nuevo usuario (todos los campos obligatorios)
     if (!editingUser) {
       if (!formData.firstName.trim()) {
         setToast({ type: 'warn', msg: 'El nombre es requerido' });
@@ -1853,11 +1853,11 @@ const CreateUsersSection = ({ avatarOptions, getAvatarUrl }) => {
         setToast({ type: 'warn', msg: 'El apellido es requerido' });
         return false;
       }
-      if (!formData.email.match(/^[^\s@]+@[^\s@]+\.[^\s@]+$/)) {
-        setToast({ type: 'warn', msg: 'Email inválido' });
+      if (!formData.email.trim() || !formData.email.match(/^[^\s@]+@[^\s@]+\.[^\s@]+$/)) {
+        setToast({ type: 'warn', msg: 'Email válido es requerido' });
         return false;
       }
-      if (formData.password.length < 8) {
+      if (!formData.password || formData.password.length < 8) {
         setToast({ type: 'warn', msg: 'La contraseña debe tener al menos 8 caracteres' });
         return false;
       }
@@ -1868,22 +1868,15 @@ const CreateUsersSection = ({ avatarOptions, getAvatarUrl }) => {
       return true;
     }
 
-    // Validación para editar usuario (más flexible)
-    if (!formData.firstName.trim()) {
-      setToast({ type: 'warn', msg: 'El nombre es requerido' });
-      return false;
-    }
-    if (!formData.lastName.trim()) {
-      setToast({ type: 'warn', msg: 'El apellido es requerido' });
-      return false;
-    }
-    if (!formData.email.match(/^[^\s@]+@[^\s@]+\.[^\s@]+$/)) {
+    // Validación para EDITAR usuario (todos opcionales)
+    // Si el usuario proporciona email, validar formato
+    if (formData.email.trim() && !formData.email.match(/^[^\s@]+@[^\s@]+\.[^\s@]+$/)) {
       setToast({ type: 'warn', msg: 'Email inválido' });
       return false;
     }
 
     // Si cambio la contraseña, debe cumplir con requisitos
-    if (formData.password.length > 0) {
+    if (formData.password && formData.password.trim().length > 0) {
       if (formData.password.length < 8) {
         setToast({ type: 'warn', msg: 'La contraseña debe tener al menos 8 caracteres' });
         return false;

@@ -19,6 +19,7 @@ import {
 // Importar hooks desde la carpeta correcta
 import { useMousePosition } from '../hooks/useMousePosition';
 import { useScrambleText } from '../hooks/useScrambleText';
+import useInstallPrompt from '../hooks/useInstallPrompt';
 import AuthService from '../services/AuthService';
 
 // --- VISUAL COMPONENTS ---
@@ -29,24 +30,54 @@ const CustomCursor = () => {
   
   return (
     <>
-      {/* Cursor tipo flecha minimalista */}
       <motion.div 
         className="fixed top-0 left-0 pointer-events-none z-[9999] hidden md:block"
         animate={{ x: mouse.x, y: mouse.y }}
-        transition={{ type: "spring", stiffness: 500, damping: 30 }}
+        transition={{ type: "linear", duration: 0 }}
       >
-        {/* Flecha hacia arriba-izquierda */}
-        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" className="drop-shadow-lg">
-          {/* Trazo principal */}
+        <svg 
+          width="32" 
+          height="32" 
+          viewBox="0 0 24 24" 
+          fill="none" 
+          xmlns="http://www.w3.org/2000/svg"
+          className="filter drop-shadow-[0_0_8px_rgba(6,182,212,0.6)]"
+        >
+          {/* Relleno principal con gradiente cyan */}
+          <defs>
+            <linearGradient id="cursorFill" x1="0%" y1="0%" x2="100%" y2="100%">
+              <stop offset="0%" stopColor="#06B6D4" stopOpacity="1" />
+              <stop offset="100%" stopColor="#0891B2" stopOpacity="0.9" />
+            </linearGradient>
+          </defs>
+          
           <path 
-            d="M18 18L6 6M6 6L6 14M6 6L14 6" 
-            stroke="currentColor" 
-            strokeWidth="1.5" 
-            strokeLinecap="round" 
+            d="M2 2L20.5 9.5L11.5 12.5L8.5 21.5L2 2Z" 
+            fill="url(#cursorFill)"
+            stroke="#FFFFFF"
+            strokeWidth="1.5"
             strokeLinejoin="round"
-            className="text-gray-200 opacity-80"
+            strokeLinecap="round"
+          />
+          
+          {/* Brillo interior sutil */}
+          <path 
+            d="M4 4L18 9L10 11L7 18L4 4Z" 
+            fill="#FFFFFF"
+            opacity="0.2"
+            strokeLinejoin="round"
+            strokeLinecap="round"
           />
         </svg>
+      </motion.div>
+      
+      {/* Aura de seguimiento suave con color cyan */}
+      <motion.div 
+        className="fixed top-0 left-0 w-16 h-16 pointer-events-none z-[9998] hidden md:block"
+        animate={{ x: mouse.x - 32, y: mouse.y - 32 }}
+        transition={{ type: "spring", stiffness: 150, damping: 25, mass: 0.2 }}
+      >
+        <div className="absolute inset-0 rounded-full bg-gradient-to-br from-cyan-500/15 via-cyan-500/5 to-transparent blur-2xl" />
       </motion.div>
     </>
   );
@@ -339,30 +370,13 @@ const LoginModal = ({ isOpen, onClose, buttonRef }) => {
       // Llamar a AuthService.login
       const response = await AuthService.login(email, password);
       
-      console.log('=== DATOS DESPUÉS DEL LOGIN ===');
+      console.log('=== LOGIN EXITOSO ===');
       console.log('Response completa:', response);
       console.log('Response.user:', response.user);
-      console.log('Campos del usuario:', Object.keys(response.user || {}));
       
-      // Verificar localStorage después del login
-      const storedUser = localStorage.getItem('user');
-      console.log('User en localStorage (string):', storedUser);
-      if (storedUser) {
-        try {
-          const parsedUser = JSON.parse(storedUser);
-          console.log('User parseado:', parsedUser);
-          console.log('Valores de nombre:');
-          console.log('  - firstName:', parsedUser.firstName);
-          console.log('  - lastName:', parsedUser.lastName);
-          console.log('  - nombre:', parsedUser.nombre);
-          console.log('  - apellido:', parsedUser.apellido);
-          console.log('  - email:', parsedUser.email);
-          console.log('  - role:', parsedUser.role);
-          console.log('  - rol:', parsedUser.rol);
-        } catch (e) {
-          console.error('Error al parsear user:', e);
-        }
-      }
+      // Limpiar error antes de cerrar modal
+      setError('');
+      setLoading(false);
       
       // Cerrar modal y redirigir al dashboard
       onClose();
@@ -620,6 +634,7 @@ export default function Home() {
   const [loading, setLoading] = useState(true);
   const [showLoginModal, setShowLoginModal] = useState(false);
   const loginButtonRef = useRef(null);
+  const { isInstallable, handleInstall } = useInstallPrompt();
 
   return (
     <div className="min-h-screen bg-black text-white selection:bg-cyan-500/30 overflow-x-hidden font-sans cursor-none">
@@ -704,10 +719,14 @@ export default function Home() {
               </p>
 
               <div className="flex flex-col sm:flex-row gap-3 sm:gap-4">
-                <button className="relative px-6 sm:px-8 py-3 sm:py-4 bg-cyan-500 text-black font-bold rounded-lg overflow-hidden group cursor-none text-sm sm:text-base">
+                <button 
+                  onClick={handleInstall}
+                  disabled={!isInstallable}
+                  className="relative px-6 sm:px-8 py-3 sm:py-4 bg-cyan-500 text-black font-bold rounded-lg overflow-hidden group cursor-none text-sm sm:text-base disabled:opacity-50 disabled:cursor-not-allowed transition-all"
+                >
                   <div className="absolute inset-0 bg-white/20 translate-y-full group-hover:translate-y-0 transition-transform duration-300" />
                   <span className="relative flex items-center justify-center gap-2">
-                    <Download size={18} /> Desplegar Agente
+                    <Download size={18} /> {isInstallable ? 'Instalar aplicación' : 'Ya instalada'}
                   </span>
                 </button>
                 <button className="px-6 sm:px-8 py-3 sm:py-4 bg-transparent border border-gray-800 hover:border-cyan-500/50 text-white rounded-lg transition-all flex items-center justify-center gap-2 group hover:bg-cyan-950/10 cursor-none text-sm sm:text-base">
