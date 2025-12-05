@@ -6,7 +6,6 @@ import theme from './styles/theme';
 import './styles/global.css';
 import { routes } from './config/routes';
 import ProtectedRoute from './components/ProtectedRoute';
-import PWADebugPanel from './components/PWADebugPanel';
 import { DeviceProvider } from './context/DeviceContext';
 
 /**
@@ -21,7 +20,6 @@ function App() {
   return (
     <ThemeProvider theme={theme}>
       <CssBaseline />
-      <PWADebugPanel />
       <DeviceProvider>
         <BrowserRouter>
           <Routes>

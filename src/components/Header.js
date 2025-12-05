@@ -2,13 +2,10 @@
 import { Box, Button } from '@mui/material';
 import { useNavigate } from 'react-router-dom';
 import ArrowRightIcon from '@mui/icons-material/ArrowRight';
-import { motion } from 'framer-motion';
 import logoIcon from '../assets/icons/icon.png';
-import useInstallPrompt from '../hooks/useInstallPrompt';
 
 const Header = ({ onLogout }) => {
   const navigate = useNavigate();
-  const { isInstallable, handleInstall } = useInstallPrompt();
 
   return (
     
@@ -54,52 +51,6 @@ const Header = ({ onLogout }) => {
           gap: { xs: 1, md: 2 },
         }}
       >
-        {/* Botón Instalar (PWA) */}
-        {isInstallable && (
-          <motion.div
-            initial={{ opacity: 0, scale: 0.95 }}
-            animate={{ opacity: 1, scale: 1 }}
-            exit={{ opacity: 0, scale: 0.95 }}
-          >
-            <Button
-              onClick={handleInstall}
-              sx={{
-                position: 'relative',
-                backgroundColor: 'rgba(6, 182, 212, 0.1)',
-                backdropFilter: 'blur(10px)',
-                color: '#06b6d4',
-                border: '1.5px solid rgba(6, 182, 212, 0.5)',
-                borderRadius: '8px',
-                px: { xs: 1.5, md: 2 },
-                py: { xs: 0.6, md: 0.8 },
-                textTransform: 'none',
-                fontSize: { xs: '0.85rem', md: '0.9rem' },
-                fontWeight: 600,
-                fontFamily: 'Inter, sans-serif',
-                cursor: 'pointer',
-                whiteSpace: 'nowrap',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                gap: 0.5,
-                boxShadow: '0 0 15px rgba(6, 182, 212, 0.2)',
-                transition: 'all 0.3s ease',
-                '&:hover': {
-                  backgroundColor: 'rgba(6, 182, 212, 0.2)',
-                  borderColor: 'rgba(6, 182, 212, 0.8)',
-                  boxShadow: '0 0 25px rgba(6, 182, 212, 0.4)',
-                  transform: 'translateY(-2px)',
-                },
-                '&:active': {
-                  transform: 'translateY(0)',
-                },
-              }}
-            >
-              📥 Instalar
-            </Button>
-          </motion.div>
-        )}
-
         {/* Botón Iniciar */}
         {/* Efecto de brillo de fondo */}
         <Box
