@@ -59,10 +59,12 @@ const AuthService = {
       // Opción 2: response.data es directamente el usuario con token
       else if (response.data.token && !response.data.user && Object.keys(response.data).length > 1) {
         token = response.data.token;
-        // El usuario es todo response.data minus el token
+        // El usuario es todo response.data (incluyendo role, email, etc.) minus el token y type
         userData = { ...response.data };
         delete userData.token;
+        delete userData.type; // Remover el tipo de token (Bearer)
         console.log('✅ Estructura detectada: usuario + token en mismo objeto');
+        console.log('   userData con role:', userData);
       }
       // Opción 3: response.data.token existe directamente (sin estructura user)
       else if (response.data.token) {
@@ -79,6 +81,14 @@ const AuthService = {
       console.log('Token extraído:', token ? '✅ Presente' : '❌ No presente');
       console.log('User data extraído:', userData);
       console.log('Campos del usuario:', Object.keys(userData || {}));
+      console.log('👤 userData.role:', userData?.role);
+      console.log('👤 userData.email:', userData?.email);
+      
+      // Asegurar que userData tenga el role (buscar en diferentes campos)
+      if (userData && !userData.role) {
+        userData.role = userData.rol || userData.type || 'OPERATOR';
+        console.log('⚠️ Role no encontrado, asignando valor por defecto:', userData.role);
+      }
       
       if (token) {
         localStorage.setItem('authToken', token);
@@ -89,6 +99,36 @@ const AuthService = {
         console.log('authToken guardado: ✅');
         console.log('user guardado:', localStorage.getItem('user'));
         console.log('---');
+        
+        // Obtener el rol desde /auth/users ya que /auth/login no lo devuelve
+        try {
+          console.log('🔍 Obteniendo rol desde /auth/users...');
+          const usersResponse = await authAPI.get('/auth/users');
+          console.log('📋 Respuesta completa de /auth/users:', usersResponse.data);
+          
+          const users = Array.isArray(usersResponse.data) ? usersResponse.data : [];
+          console.log('📊 Usuarios como array:', users);
+          console.log('🔎 Buscando email:', userData.email);
+          console.log('📧 Emails disponibles:', users.map(u => u.email));
+          
+          const foundUser = users.find(u => u.email === userData.email);
+          console.log('👤 Usuario encontrado:', foundUser);
+          
+          if (foundUser && foundUser.role) {
+            console.log('✅ Rol obtenido desde /auth/users:', foundUser.role);
+            userData.role = foundUser.role;
+            localStorage.setItem('user', JSON.stringify(userData));
+            console.log('✅ Usuario guardado con rol:', foundUser.role);
+          } else {
+            console.warn('⚠️ Usuario encontrado pero sin role:', foundUser);
+            userData.role = 'OPERATOR';
+            localStorage.setItem('user', JSON.stringify(userData));
+          }
+        } catch (error) {
+          console.error('⚠️ Error al obtener rol desde /auth/users:', error.message);
+          userData.role = 'OPERATOR'; // Valor por defecto
+          localStorage.setItem('user', JSON.stringify(userData));
+        }
       } else {
         console.error('❌ ERROR: No hay token en la respuesta');
       }
@@ -108,6 +148,7 @@ const AuthService = {
         password: userData.password,
         firstName: userData.firstName,
         lastName: userData.lastName,
+        role: userData.role || 'OPERATOR',
       });
       return response.data;
     } catch (error) {
@@ -144,6 +185,13 @@ const AuthService = {
       
       const parsed = JSON.parse(user);
       console.log('✅ User parseado correctamente:', parsed);
+      
+      // Asegurar que el role siempre existe
+      if (!parsed.role) {
+        parsed.role = parsed.rol || 'OPERATOR';
+        console.log('⚠️ Role asignado por defecto:', parsed.role);
+      }
+      
       return parsed;
     } catch (error) {
       // Si hay error al parsear, limpiar y retornar null
@@ -180,6 +228,54 @@ const AuthService = {
   // Get login time
   getLoginTime: () => {
     return localStorage.getItem('loginTime');
+  },
+
+  // Obtener el rol del usuario desde la API si es necesario
+  getUserRole: async () => {
+    try {
+      // Primero intentar obtener desde localStorage
+      const currentUser = AuthService.getCurrentUser();
+      console.log('🔐 currentUser desde localStorage:', currentUser);
+      
+      if (currentUser?.role && currentUser.role !== 'Bearer') {
+        console.log('✅ Usando rol de localStorage:', currentUser.role);
+        return currentUser.role;
+      }
+
+      // Si no está o es 'Bearer', obtener de la API
+      console.log('🔍 Obteniendo rol real desde la API...');
+      const response = await authAPI.get('/auth/users');
+      const users = Array.isArray(response.data) ? response.data : [];
+      console.log('📋 Usuarios obtenidos de la API:', users);
+      
+      // Buscar el usuario actual por email
+      const userEmail = currentUser?.email;
+      console.log('🔎 Buscando usuario con email:', userEmail);
+      
+      const foundUser = users.find(u => u.email === userEmail);
+      
+      if (foundUser) {
+        console.log('✅ Usuario encontrado en la API:', foundUser);
+        const actualRole = foundUser.role || 'OPERATOR';
+        
+        // Guardar el rol correcto en localStorage
+        if (currentUser) {
+          currentUser.role = actualRole;
+          localStorage.setItem('user', JSON.stringify(currentUser));
+          console.log('✅ Rol actualizado en localStorage:', actualRole);
+        }
+        
+        return actualRole;
+      }
+      
+      console.log('⚠️ Usuario NO encontrado en la API');
+      console.log('   Email buscado:', userEmail);
+      console.log('   Emails en API:', users.map(u => u.email));
+      return 'OPERATOR'; // Valor por defecto
+    } catch (error) {
+      console.error('❌ Error al obtener rol:', error);
+      return 'OPERATOR'; // Valor por defecto en caso de error
+    }
   },
 };
 

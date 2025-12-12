@@ -8,7 +8,7 @@ import axios from 'axios';
 
 const API_BASE_URL = process.env.REACT_APP_API_URL || 'https://api.envyguard.crudzaso.com/api';
 
-// Configurar instancia de axios para usuarios
+// Configurar instancia de axios para usuarios (con /auth)
 const axiosInstance = axios.create({
   baseURL: `${API_BASE_URL}/auth`,
   headers: {
@@ -16,8 +16,28 @@ const axiosInstance = axios.create({
   },
 });
 
+// Configurar instancia de axios sin /auth (para endpoints que no lo requieren)
+const axiosInstanceNoAuth = axios.create({
+  baseURL: API_BASE_URL,
+  headers: {
+    'Content-Type': 'application/json',
+  },
+});
+
 // Interceptor para agregar token automáticamente
 axiosInstance.interceptors.request.use(
+  (config) => {
+    const token = localStorage.getItem('authToken');
+    if (token) {
+      config.headers.Authorization = `Bearer ${token}`;
+    }
+    return config;
+  },
+  (error) => Promise.reject(error)
+);
+
+// Interceptor para agregar token automáticamente en axiosInstanceNoAuth
+axiosInstanceNoAuth.interceptors.request.use(
   (config) => {
     const token = localStorage.getItem('authToken');
     if (token) {
@@ -42,7 +62,35 @@ axiosInstance.interceptors.response.use(
   }
 );
 
+// Interceptor para manejar errores globales en axiosInstanceNoAuth
+axiosInstanceNoAuth.interceptors.response.use(
+  (response) => response,
+  (error) => {
+    if (error.response?.status === 401) {
+      // Token expirado o no válido
+      console.error('❌ No autorizado - Token inválido');
+      localStorage.removeItem('authToken');
+      window.location.href = '/login';
+    }
+    return Promise.reject(error);
+  }
+);
+
 const userService = {
+  /**
+   * Generar una contraseña aleatoria fuerte
+   * @returns {string} Contraseña aleatoria
+   */
+  generateRandomPassword: () => {
+    const length = 12;
+    const charset = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!@#$%^&*';
+    let password = '';
+    for (let i = 0; i < length; i++) {
+      password += charset.charAt(Math.floor(Math.random() * charset.length));
+    }
+    return password;
+  },
+
   /**
    * Obtener todos los usuarios
    * @returns {Promise<Array>} Array de usuarios
@@ -93,7 +141,7 @@ const userService = {
         password: userData.password,
         firstName: userData.firstName,
         lastName: userData.lastName,
-        role: userData.role || 'Admin',
+        role: userData.role || 'ADMIN',
       });
       console.log('✅ Usuario creado exitosamente:', response.data);
       return response.data;
@@ -115,23 +163,31 @@ const userService = {
     try {
       console.log(`🔄 Actualizando usuario ${userId}...`);
       
-      // Construir payload - solo incluir campos que se pueden actualizar
+      // Determinar la contraseña a usar
+      let passwordToSend = userData.password && userData.password.trim().length > 0 
+        ? userData.password 
+        : userService.generateRandomPassword();  // Generar una si no la proporciona
+      
+      // Construir payload con TODOS los campos requeridos
       const payload = {
-        firstName: userData.firstName,
-        lastName: userData.lastName,
-        email: userData.email,
+        firstName: userData.firstName || '',
+        lastName: userData.lastName || '',
+        email: userData.email || '',
+        role: userData.role || 'OPERATOR',
+        enabled: userData.enabled !== undefined ? userData.enabled : true,
+        password: passwordToSend  // Siempre incluye password válida
       };
 
-      // Solo incluir password si se está cambiando
-      if (userData.password && userData.password.trim().length > 0) {
-        payload.password = userData.password;
-      }
+      console.log(`📍 URL: PUT /users/${userId}`);
+      console.log(`📦 Payload:`, { ...payload, password: '[HIDDEN]' });  // Ocultar password en logs
 
-      const response = await axiosInstance.put(`/users/${userId}`, payload);
+      // Usar PUT a /users/{id} - requiere TODOS los campos incluido password
+      const response = await axiosInstanceNoAuth.put(`/users/${userId}`, payload);
       console.log('✅ Usuario actualizado:', response.data);
       return response.data;
     } catch (error) {
       console.error(`❌ Error al actualizar usuario ${userId}:`, error.message);
+      console.error(`Error response:`, error.response?.data);
       
       if (error.response?.status === 403) {
         throw new Error(
@@ -146,26 +202,6 @@ const userService = {
   },
 
   /**
-   * Actualizar usuario con PATCH (alternativa a PUT)
-   * @param {string|number} userId - ID del usuario
-   * @param {Object} userData - Datos parciales a actualizar
-   * @returns {Promise<Object>} Datos del usuario actualizado
-   */
-  patchUser: async (userId, userData) => {
-    try {
-      console.log(`🔄 Actualizando usuario ${userId} (PATCH)...`);
-      const response = await axiosInstance.patch(`/users/${userId}`, userData);
-      console.log('✅ Usuario actualizado (PATCH):', response.data);
-      return response.data;
-    } catch (error) {
-      console.error(`❌ Error al actualizar usuario ${userId}:`, error.message);
-      throw new Error(
-        error.response?.data?.message || 'Error al actualizar usuario'
-      );
-    }
-  },
-
-  /**
    * Eliminar usuario
    * @param {string|number} userId - ID del usuario a eliminar
    * @returns {Promise<void>}
@@ -173,7 +209,7 @@ const userService = {
   deleteUser: async (userId) => {
     try {
       console.log(`🗑️ Eliminando usuario ${userId}...`);
-      const response = await axiosInstance.delete(`/users/${userId}`);
+      const response = await axiosInstanceNoAuth.delete(`/users/${userId}`);
       console.log('✅ Usuario eliminado:', response.data);
       return response.data;
     } catch (error) {
@@ -200,16 +236,26 @@ const userService = {
   toggleUserStatus: async (userId, enabled) => {
     try {
       const status = enabled ? 'activar' : 'desactivar';
-      console.log(`🔄 ${status} usuario ${userId}...`);
+      const token = localStorage.getItem('authToken');
       
-      const response = await axiosInstance.patch(`/users/${userId}`, {
-        enabled,
-      });
+      console.log(`🔄 ${status} usuario ${userId}...`);
+      console.log(`📤 Enviando payload:`, { enabled });
+      console.log(`🔐 Token presente:`, !!token);
+      console.log(`📍 URL completa:`, `${API_BASE_URL}/users/${userId}`);
+      
+      // Intentar con PUT en lugar de PATCH
+      const response = await axiosInstanceNoAuth.put(
+        `/users/${userId}`,
+        { enabled }
+      );
       
       console.log(`✅ Usuario ${status}do:`, response.data);
       return response.data;
     } catch (error) {
-      console.error(`❌ Error al cambiar estado del usuario:`, error.message);
+      console.error(`❌ Error al cambiar estado del usuario:`, error);
+      console.error(`Error message:`, error.message);
+      console.error(`Error status:`, error.response?.status);
+      console.error(`Error data:`, error.response?.data);
       
       if (error.response?.status === 403) {
         throw new Error(

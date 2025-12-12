@@ -62,7 +62,7 @@ import {
   Bell,
 } from "lucide-react";
 import iconLogo from "../assets/icons/icon.png";
-import { deviceService, WebSocketService, RabbitMQService, AuthService } from "../services";
+import { deviceService, WebSocketService, RabbitMQService, AuthService, userService } from "../services";
 
 // ============================================
 // 🔧 FUNCIONES DE DEBUG (Para consola)
@@ -1008,10 +1008,10 @@ const ComputerMonitoringSection = ({ showDeployModal, setShowDeployModal, deploy
         { 
           col: 1, 
           pcs: [
-            { id: "s1-col1-pc1", status: "online", ip: "192.168.3.10", cpuCode: "0374" },
-            { id: "s1-col1-pc2", status: "no_internet", ip: "192.168.3.11", cpuCode: "0371" },
-            { id: "s1-col1-pc3", status: "online", ip: "192.168.3.12", cpuCode: "0368" },
-            { id: "s1-col1-pc4", status: "offline", ip: "192.168.3.13", cpuCode: "0365" }
+            { id: "s1-col1-pc1", status: "online", ip: "10.0.20.35", cpuCode: "0374" },
+            { id: "s1-col1-pc2", status: "no_internet", ip: "10.0.20.34", cpuCode: "0371" },
+            { id: "s1-col1-pc3", status: "online", ip: "10.0.20.24", cpuCode: "0368" },
+            { id: "s1-col1-pc4", status: "offline", ip: "10.0.20.31", cpuCode: "0365" }
           ],
           paired: true,
           pairedCol: 2
@@ -1020,20 +1020,20 @@ const ComputerMonitoringSection = ({ showDeployModal, setShowDeployModal, deploy
         { 
           col: 2, 
           pcs: [
-            { id: "s1-col2-pc1", status: "online", ip: "192.168.3.20", cpuCode: "0353" },
-            { id: "s1-col2-pc2", status: "online", ip: "192.168.3.21", cpuCode: "0356" },
-            { id: "s1-col2-pc3", status: "online", ip: "192.168.3.22", cpuCode: "0943" },
-            { id: "s1-col2-pc4", status: "online", ip: "192.168.3.23", cpuCode: "0442" }
+            { id: "s1-col2-pc1", status: "online", ip: "10.0.20.20", cpuCode: "0353" },
+            { id: "s1-col2-pc2", status: "online", ip: "10.0.20.13", cpuCode: "0356" },
+            { id: "s1-col2-pc3", status: "online", ip: "10.0.20.36", cpuCode: "0943" },
+            { id: "s1-col2-pc4", status: "online", ip: "10.0.20.32", cpuCode: "0442" }
           ]
         },
         // Columna C
         { 
           col: 3, 
           pcs: [
-            { id: "s1-col3-pc1", status: "online", ip: "192.168.3.30", cpuCode: "0350" },
-            { id: "s1-col3-pc2", status: "online", ip: "192.168.3.31", cpuCode: "0347" },
-            { id: "s1-col3-pc3", status: "no_internet", ip: "192.168.3.32", cpuCode: "0344" },
-            { id: "s1-col3-pc4", status: "offline", ip: "192.168.3.33", cpuCode: "0341" }
+            { id: "s1-col3-pc1", status: "online", ip: "10.0.20.12", cpuCode: "0350" },
+            { id: "s1-col3-pc2", status: "online", ip: "10.0.20.39", cpuCode: "0347" },
+            { id: "s1-col3-pc3", status: "no_internet", ip: "10.0.20.33", cpuCode: "0344" },
+            { id: "s1-col3-pc4", status: "offline", ip: "10.0.20.43", cpuCode: "0341" }
           ],
           paired: true,
           pairedCol: 4
@@ -1042,20 +1042,20 @@ const ComputerMonitoringSection = ({ showDeployModal, setShowDeployModal, deploy
         { 
           col: 4, 
           pcs: [
-            { id: "s1-col4-pc1", status: "online", ip: "192.168.3.40", cpuCode: "0329" },
-            { id: "s1-col4-pc2", status: "online", ip: "192.168.3.41", cpuCode: "0332" },
-            { id: "s1-col4-pc3", status: "online", ip: "192.168.3.42", cpuCode: "0335" },
-            { id: "s1-col4-pc4", status: "online", ip: "192.168.3.43", cpuCode: "0338" }
+            { id: "s1-col4-pc1", status: "online", ip: "10.0.20.41", cpuCode: "0329" },
+            { id: "s1-col4-pc2", status: "online", ip: "10.0.20.42", cpuCode: "0332" },
+            { id: "s1-col4-pc3", status: "online", ip: "10.0.20.17", cpuCode: "0335" },
+            { id: "s1-col4-pc4", status: "online", ip: "10.0.20.37", cpuCode: "0338" }
           ]
         },
         // Columna E
         { 
           col: 5, 
           pcs: [
-            { id: "s1-col5-pc1", status: "online", ip: "192.168.3.50", cpuCode: "0326" },
-            { id: "s1-col5-pc2", status: "online", ip: "192.168.3.51", cpuCode: "0323" },
-            { id: "s1-col5-pc3", status: "online", ip: "192.168.3.52", cpuCode: "0320" },
-            { id: "s1-col5-pc4", status: "online", ip: "192.168.3.53", cpuCode: "0317" }
+            { id: "s1-col5-pc1", status: "online", ip: "10.0.20.46", cpuCode: "0326" },
+            { id: "s1-col5-pc2", status: "online", ip: "10.0.20.14", cpuCode: "0323" },
+            { id: "s1-col5-pc3", status: "online", ip: "10.0.20.38", cpuCode: "0320" },
+            { id: "s1-col5-pc4", status: "online", ip: "10.0.20.16", cpuCode: "0317" }
           ],
           paired: true,
           pairedCol: 6
@@ -1064,34 +1064,88 @@ const ComputerMonitoringSection = ({ showDeployModal, setShowDeployModal, deploy
         { 
           col: 6, 
           pcs: [
-            { id: "s1-col6-pc1", status: "online", ip: "192.168.3.60", cpuCode: "0308" },
-            { id: "s1-col6-pc2", status: "online", ip: "192.168.3.61", cpuCode: "0311" },
-            { id: "s1-col6-pc3", status: "online", ip: "192.168.3.62", cpuCode: "0305" },
-            { id: "s1-col6-pc4", status: "online", ip: "192.168.3.63", cpuCode: "0314" }
+            { id: "s1-col6-pc1", status: "online", ip: "10.0.20.5", cpuCode: "0308" },
+            { id: "s1-col6-pc2", status: "online", ip: "10.0.20.11", cpuCode: "0311" },
+            { id: "s1-col6-pc3", status: "online", ip: "10.0.20.44", cpuCode: "0305" },
+            { id: "s1-col6-pc4", status: "online", ip: "10.0.20.21", cpuCode: "0314" }
           ]
         },
         // Fila 1 (Horizontal) - 6 PCs
         { 
           row: 1, 
           pcs: [
-            { id: "s1-row1-pc1", status: "online", ip: "192.168.3.70", cpuCode: "0377" },
-            { id: "s1-row1-pc2", status: "online", ip: "192.168.3.71", cpuCode: "0380" },
-            { id: "s1-row1-pc3", status: "online", ip: "192.168.3.72", cpuCode: "0363" },
-            { id: "s1-row1-pc4", status: "online", ip: "192.168.3.73", cpuCode: "0386" },
-            { id: "s1-row1-pc5", status: "online", ip: "192.168.3.74", cpuCode: "0389" },
-            { id: "s1-row1-pc6", status: "online", ip: "192.168.3.75", cpuCode: "0392" }
+            { id: "s1-row1-pc1", status: "online", ip: "10.0.20.19", cpuCode: "0377" },
+            { id: "s1-row1-pc2", status: "online", ip: "10.0.20.53", cpuCode: "0380" },
+            { id: "s1-row1-pc3", status: "online", ip: "10.0.20.49", cpuCode: "0363" },
+            { id: "s1-row1-pc4", status: "online", ip: "10.0.20.9", cpuCode: "0386" },
+            { id: "s1-row1-pc5", status: "online", ip: "10.0.20.52", cpuCode: "0389" },
+            { id: "s1-row1-pc6", status: "online", ip: "10.0.20.51", cpuCode: "0392" }
           ]
         },
         // Fila 2 (Horizontal) - 6 PCs
         { 
           row: 2, 
           pcs: [
-            { id: "s1-row2-pc1", status: "online", ip: "192.168.3.80", cpuCode: "0411" },
-            { id: "s1-row2-pc2", status: "online", ip: "192.168.3.81", cpuCode: "0407" },
-            { id: "s1-row2-pc3", status: "online", ip: "192.168.3.82", cpuCode: "0404" },
-            { id: "s1-row2-pc4", status: "online", ip: "192.168.3.83", cpuCode: "0401" },
-            { id: "s1-row2-pc5", status: "online", ip: "192.168.3.84", cpuCode: "0398" },
-            { id: "s1-row2-pc6", status: "online", ip: "192.168.3.85", cpuCode: "0395" }
+            { id: "s1-row2-pc1", status: "online", ip: "10.0.20.40", cpuCode: "0411" },
+            { id: "s1-row2-pc2", status: "online", ip: "10.0.20.45", cpuCode: "0407" },
+            { id: "s1-row2-pc3", status: "online", ip: "10.0.20.56", cpuCode: "0404" },
+            { id: "s1-row2-pc4", status: "online", ip: "10.0.20.50", cpuCode: "0401" },
+            { id: "s1-row2-pc5", status: "online", ip: "10.0.20.48", cpuCode: "0398" },
+            { id: "s1-row2-pc6", status: "online", ip: "10.0.20.48", cpuCode: "0395" }
+          ]
+        }
+      ]
+    },
+    salaAdicional: { 
+      nombre: "Sala Adicional - Piso 1", 
+      stats: { total: 18, online: 18, power: "1.8kW" }, 
+      layout: [
+        { 
+          col: 1, 
+          pcs: [
+            { id: "sa-col1-pc1", status: "online", ip: "192.168.4.10", cpuCode: "0650" },
+            { id: "sa-col1-pc2", status: "online", ip: "192.168.4.11", cpuCode: "0651" },
+            { id: "sa-col1-pc3", status: "online", ip: "192.168.4.12", cpuCode: "0652" }
+          ]
+        },
+        { 
+          col: 2, 
+          pcs: [
+            { id: "sa-col2-pc1", status: "online", ip: "192.168.4.20", cpuCode: "0653" },
+            { id: "sa-col2-pc2", status: "online", ip: "192.168.4.21", cpuCode: "0654" },
+            { id: "sa-col2-pc3", status: "online", ip: "192.168.4.22", cpuCode: "0655" }
+          ]
+        },
+        { 
+          col: 3, 
+          pcs: [
+            { id: "sa-col3-pc1", status: "online", ip: "192.168.4.30", cpuCode: "0656" },
+            { id: "sa-col3-pc2", status: "online", ip: "192.168.4.31", cpuCode: "0657" },
+            { id: "sa-col3-pc3", status: "online", ip: "192.168.4.32", cpuCode: "0658" }
+          ]
+        },
+        { 
+          col: 4, 
+          pcs: [
+            { id: "sa-col4-pc1", status: "online", ip: "192.168.4.40", cpuCode: "0659" },
+            { id: "sa-col4-pc2", status: "online", ip: "192.168.4.41", cpuCode: "0660" },
+            { id: "sa-col4-pc3", status: "online", ip: "192.168.4.42", cpuCode: "0661" }
+          ]
+        },
+        { 
+          col: 5, 
+          pcs: [
+            { id: "sa-col5-pc1", status: "online", ip: "192.168.4.50", cpuCode: "0662" },
+            { id: "sa-col5-pc2", status: "online", ip: "192.168.4.51", cpuCode: "0663" },
+            { id: "sa-col5-pc3", status: "online", ip: "192.168.4.52", cpuCode: "0664" }
+          ]
+        },
+        { 
+          col: 6, 
+          pcs: [
+            { id: "sa-col6-pc1", status: "online", ip: "192.168.4.60", cpuCode: "0665" },
+            { id: "sa-col6-pc2", status: "online", ip: "192.168.4.61", cpuCode: "0666" },
+            { id: "sa-col6-pc3", status: "online", ip: "192.168.4.62", cpuCode: "0667" }
           ]
         }
       ]
@@ -1154,6 +1208,48 @@ const ComputerMonitoringSection = ({ showDeployModal, setShowDeployModal, deploy
             { id: "s2-der4-pc2", status: "online", ip: "192.168.2.101", cpuCode: "0576" },
             { id: "s2-der4-pc3", status: "online", ip: "192.168.2.102", cpuCode: "0572" },
             { id: "s2-der4-pc4", status: "online", ip: "192.168.2.103", cpuCode: "0569" }
+          ]
+        }
+      ]
+    },
+    salaAdicional2: { 
+      nombre: "Sala Adicional - Piso 2", 
+      stats: { total: 16, online: 16, power: "1.6kW" }, 
+      layout: [
+        { 
+          col: 1, 
+          pcs: [
+            { id: "sa2-col1-pc1", status: "online", ip: "192.168.5.10", cpuCode: "0670" },
+            { id: "sa2-col1-pc2", status: "online", ip: "192.168.5.11", cpuCode: "0671" },
+            { id: "sa2-col1-pc3", status: "online", ip: "192.168.5.12", cpuCode: "0672" },
+            { id: "sa2-col1-pc4", status: "online", ip: "192.168.5.13", cpuCode: "0673" }
+          ]
+        },
+        { 
+          col: 2, 
+          pcs: [
+            { id: "sa2-col2-pc1", status: "online", ip: "192.168.5.20", cpuCode: "0674" },
+            { id: "sa2-col2-pc2", status: "online", ip: "192.168.5.21", cpuCode: "0675" },
+            { id: "sa2-col2-pc3", status: "online", ip: "192.168.5.22", cpuCode: "0676" },
+            { id: "sa2-col2-pc4", status: "online", ip: "192.168.5.23", cpuCode: "0677" }
+          ]
+        },
+        { 
+          col: 3, 
+          pcs: [
+            { id: "sa2-col3-pc1", status: "online", ip: "192.168.5.30", cpuCode: "0678" },
+            { id: "sa2-col3-pc2", status: "online", ip: "192.168.5.31", cpuCode: "0679" },
+            { id: "sa2-col3-pc3", status: "online", ip: "192.168.5.32", cpuCode: "0680" },
+            { id: "sa2-col3-pc4", status: "online", ip: "192.168.5.33", cpuCode: "0681" }
+          ]
+        },
+        { 
+          col: 4, 
+          pcs: [
+            { id: "sa2-col4-pc1", status: "online", ip: "192.168.5.40", cpuCode: "0682" },
+            { id: "sa2-col4-pc2", status: "online", ip: "192.168.5.41", cpuCode: "0683" },
+            { id: "sa2-col4-pc3", status: "online", ip: "192.168.5.42", cpuCode: "0684" },
+            { id: "sa2-col4-pc4", status: "online", ip: "192.168.5.43", cpuCode: "0685" }
           ]
         }
       ]
@@ -1487,7 +1583,7 @@ const ComputerMonitoringSection = ({ showDeployModal, setShowDeployModal, deploy
     return { sector: 'Desconocido', ubicacion: 'No disponible' };
   };
 
-  const currentRoom = salas[selectedSala];
+  const currentRoom = salas[selectedSala] || salas.sala1;
 
   // Cargar dispositivos desde API y poblar overrides por IP
   useEffect(() => {
@@ -1632,7 +1728,8 @@ const ComputerMonitoringSection = ({ showDeployModal, setShowDeployModal, deploy
           <button 
             onClick={() => {
               const allPCs = [];
-              if (selectedSala === 'sala1') {
+              const isSingleColumn = selectedSala === 'sala1' || selectedSala === 'salaAdicional' || selectedSala === 'salaAdicional2';
+              if (isSingleColumn) {
                 currentRoom.layout.forEach(col => {
                   if (col.pcs) col.pcs.forEach(pc => allPCs.push({ id: pc.id, ip: pc.ip }));
                 });
@@ -1647,7 +1744,7 @@ const ComputerMonitoringSection = ({ showDeployModal, setShowDeployModal, deploy
               setSelectedList(allSelected ? new Set() : new Set(allPCs));
             }}
             className={`px-3 py-1.5 text-xs font-bold rounded-lg border transition-all flex items-center gap-2 ${
-              selectedList.size > 0 && (selectedSala === 'sala1' 
+              selectedList.size > 0 && (selectedSala === 'sala1' || selectedSala === 'salaAdicional' || selectedSala === 'salaAdicional2'
                 ? currentRoom.layout.every(col => !col.pcs || col.pcs.every(pc => Array.from(selectedList).some(s => s.id === pc.id)))
                 : currentRoom.layout.every(fila => 
                     (!fila.izquierda || fila.izquierda.every(pc => Array.from(selectedList).some(s => s.id === pc.id))) &&
@@ -1657,7 +1754,7 @@ const ComputerMonitoringSection = ({ showDeployModal, setShowDeployModal, deploy
                 : 'border-blue-500/40 bg-blue-500/10 text-blue-400 hover:bg-blue-500/20'
             }`}
           >
-            {selectedList.size > 0 && (selectedSala === 'sala1' 
+            {selectedList.size > 0 && (selectedSala === 'sala1' || selectedSala === 'salaAdicional' || selectedSala === 'salaAdicional2'
               ? currentRoom.layout.every(col => !col.pcs || col.pcs.every(pc => Array.from(selectedList).some(s => s.id === pc.id)))
               : currentRoom.layout.every(fila => 
                   (!fila.izquierda || fila.izquierda.every(pc => Array.from(selectedList).some(s => s.id === pc.id))) &&
@@ -1672,7 +1769,8 @@ const ComputerMonitoringSection = ({ showDeployModal, setShowDeployModal, deploy
           <button 
             onClick={() => {
               const allPCs = [];
-              if (selectedSala === 'sala1') {
+              const isSingleColumn = selectedSala === 'sala1' || selectedSala === 'salaAdicional' || selectedSala === 'salaAdicional2';
+              if (isSingleColumn) {
                 currentRoom.layout.forEach(col => {
                   if (col.pcs) col.pcs.forEach(pc => allPCs.push({ id: pc.id, ip: pc.ip }));
                 });
@@ -1738,7 +1836,7 @@ const ComputerMonitoringSection = ({ showDeployModal, setShowDeployModal, deploy
         />
         
         <div className="relative z-10">
-          {selectedSala === 'sala1' ? (
+          {(selectedSala === 'sala1' || selectedSala === 'salaAdicional' || selectedSala === 'salaAdicional2') ? (
             <div className="space-y-6 md:space-y-12 flex flex-col items-center w-full">
               {/* 3 Pares de Columnas Verticales - Responsivas */}
               <div className="flex flex-col md:flex-row justify-center gap-4 md:gap-8 w-full flex-wrap md:flex-nowrap">
@@ -2007,7 +2105,7 @@ const CreateUsersSection = ({ avatarOptions, getAvatarUrl }) => {
     email: '',
     password: '',
     confirmPassword: '',
-    role: 'Operador'
+    role: 'OPERATOR'
   });
 
   const [users, setUsers] = useState([]);
@@ -2015,6 +2113,7 @@ const CreateUsersSection = ({ avatarOptions, getAvatarUrl }) => {
   const [editingUser, setEditingUser] = useState(null);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(null);
   const [showMoreOptions, setShowMoreOptions] = useState(null);
+  const [showRoleDropdown, setShowRoleDropdown] = useState(false);
 
   // Traer usuarios desde la API
   useEffect(() => {
@@ -2062,7 +2161,7 @@ const CreateUsersSection = ({ avatarOptions, getAvatarUrl }) => {
           id: user.id || index + 1,
           name: `${user.firstName || user.nombre || ''} ${user.lastName || user.apellido || ''}`.trim() || 'Usuario sin nombre',
           email: user.email || '',
-          role: user.role || user.rol || 'Admin', // Rol por defecto es Admin
+          role: user.role || user.rol || 'ADMIN', // Rol por defecto es ADMIN
           status: user.enabled === false ? 'Inactivo' : 'Activo',
           createdAt: user.createdAt ? new Date(user.createdAt).toISOString().split('T')[0] : new Date().toISOString().split('T')[0],
           avatarId: (index % 8) + 1, // Distribuir avatares entre los usuarios
@@ -2153,6 +2252,7 @@ const CreateUsersSection = ({ avatarOptions, getAvatarUrl }) => {
 
     setIsLoading(true);
     try {
+      // 1. Crear usuario en el backend
       const response = await AuthService.register({
         email: formData.email,
         password: formData.password,
@@ -2161,18 +2261,62 @@ const CreateUsersSection = ({ avatarOptions, getAvatarUrl }) => {
         role: formData.role,
       });
 
-      // Agregar usuario a la lista
-      const newUser = {
-        id: users.length + 1,
-        name: `${formData.firstName} ${formData.lastName}`,
-        email: formData.email,
-        role: formData.role,
-        status: 'Activo',
-        createdAt: new Date().toISOString().split('T')[0],
-        avatarId: newUserAvatarId,
-      };
+      console.log('✅ Usuario creado desde servidor:', response);
 
-      setUsers([...users, newUser]);
+      // 2. Obtener la lista actualizada de usuarios para tener el ID real
+      try {
+        const allUsers = await userService.getAllUsers();
+        console.log('📋 Lista de usuarios actualizada, total:', allUsers.length);
+        
+        // 3. Encontrar el usuario recién creado por email
+        const createdUser = allUsers.find(u => u.email === formData.email);
+        
+        if (createdUser) {
+          console.log('✅ Usuario creado encontrado en lista:', createdUser);
+          
+          // Crear objeto para la UI
+          const newUser = {
+            id: createdUser.id,
+            name: `${createdUser.firstName} ${createdUser.lastName}`,
+            email: createdUser.email,
+            role: createdUser.role,
+            enabled: createdUser.enabled !== undefined ? createdUser.enabled : true,
+            status: createdUser.enabled ? 'Activo' : 'Inactivo',
+            createdAt: createdUser.createdAt ? createdUser.createdAt.split('T')[0] : new Date().toISOString().split('T')[0],
+            avatarId: newUserAvatarId,
+          };
+          
+          setUsers([...users, newUser]);
+        } else {
+          console.warn('⚠️ No se encontró el usuario creado en la lista, agregando con datos temporales');
+          const newUser = {
+            id: Math.random().toString(36).substr(2, 9),  // ID temporal único
+            name: `${formData.firstName} ${formData.lastName}`,
+            email: formData.email,
+            role: formData.role,
+            enabled: true,
+            status: 'Activo',
+            createdAt: new Date().toISOString().split('T')[0],
+            avatarId: newUserAvatarId,
+          };
+          setUsers([...users, newUser]);
+        }
+      } catch (err) {
+        console.error('❌ Error al obtener lista de usuarios:', err.message);
+        // Fallback si no se puede obtener la lista
+        const newUser = {
+          id: Math.random().toString(36).substr(2, 9),
+          name: `${formData.firstName} ${formData.lastName}`,
+          email: formData.email,
+          role: formData.role,
+          enabled: true,
+          status: 'Activo',
+          createdAt: new Date().toISOString().split('T')[0],
+          avatarId: newUserAvatarId,
+        };
+        setUsers([...users, newUser]);
+      }
+
       setToast({ type: 'success', msg: 'Usuario creado exitosamente' });
       
       // Limpiar formulario
@@ -2182,13 +2326,14 @@ const CreateUsersSection = ({ avatarOptions, getAvatarUrl }) => {
         email: '',
         password: '',
         confirmPassword: '',
-        role: 'Operador'
+        role: 'OPERATOR'
       });
       setNewUserAvatarId(1);
       setShowForm(false);
     } catch (error) {
       const errorMsg = error.message || 'Error al crear usuario';
       setToast({ type: 'error', msg: errorMsg });
+      console.error('❌ Error al crear usuario:', error);
     } finally {
       setIsLoading(false);
     }
@@ -2217,19 +2362,19 @@ const CreateUsersSection = ({ avatarOptions, getAvatarUrl }) => {
       return handleCreateUser(e);
     }
 
+    if (!validateForm()) return;
+
     setIsLoading(true);
     try {
-      const API_BASE_URL = process.env.REACT_APP_API_URL || 'https://api.envyguard.crudzaso.com/api';
-      const token = localStorage.getItem('authToken');
-
       console.log(`🔄 Actualizando usuario ${editingUser.id}...`);
-      console.log(`📍 URL: ${API_BASE_URL}/auth/users/${editingUser.id}`);
 
-      // Construir payload
+      // Construir payload con TODOS los campos requeridos por PUT
       const payload = {
-        firstName: formData.firstName,
-        lastName: formData.lastName,
-        email: formData.email
+        firstName: formData.firstName || '',
+        lastName: formData.lastName || '',
+        email: formData.email || '',
+        role: formData.role || 'OPERATOR',
+        enabled: editingUser.enabled !== undefined ? editingUser.enabled : true
       };
 
       // Solo agregar password si se cambió
@@ -2239,49 +2384,16 @@ const CreateUsersSection = ({ avatarOptions, getAvatarUrl }) => {
 
       console.log('📦 Payload enviando:', JSON.stringify(payload, null, 2));
 
-      // Intentar primero con PUT
-      let response = await fetch(`${API_BASE_URL}/auth/users/${editingUser.id}`, {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
-        },
-        body: JSON.stringify(payload)
-      });
-
-      console.log(`📊 Status response (PUT): ${response.status}`);
-
-      // Si PUT falla con 403, intentar con PATCH
-      if (!response.ok && response.status === 403) {
-        console.warn('⚠️  PUT devolvió 403, intentando con PATCH...');
-        
-        response = await fetch(`${API_BASE_URL}/auth/users/${editingUser.id}`, {
-          method: 'PATCH',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${token}`
-          },
-          body: JSON.stringify(payload)
-        });
-
-        console.log(`📊 Status response (PATCH): ${response.status}`);
-      }
-
-      if (!response.ok) {
-        const errorData = await response.text();
-        console.error('❌ Error response body:', errorData);
-        console.error('❌ Status:', response.status);
-        throw new Error(`Error ${response.status}: ${errorData}`);
-      }
-
-      const updatedUser = await response.json();
+      // Usar userService para actualizar
+      const updatedUser = await userService.updateUser(editingUser.id, payload);
       console.log('✅ Usuario actualizado:', updatedUser);
 
       // Actualizar en la lista local
       setUsers(users.map(u => u.id === editingUser.id ? {
         ...u,
         name: `${formData.firstName} ${formData.lastName}`,
-        email: formData.email
+        email: formData.email,
+        role: formData.role
       } : u));
 
       setToast({ type: 'success', msg: 'Usuario actualizado exitosamente' });
@@ -2289,14 +2401,7 @@ const CreateUsersSection = ({ avatarOptions, getAvatarUrl }) => {
       setShowForm(false);
     } catch (error) {
       console.error('❌ Error al actualizar usuario:', error);
-      
-      // Mostrar mensaje detallado
-      let mensajeError = `Error al actualizar: ${error.message}`;
-      if (error.message.includes('403')) {
-        mensajeError = 'No tienes permisos para actualizar este usuario. Verifica con el equipo de backend el endpoint correcto.';
-      }
-      
-      setToast({ type: 'error', msg: mensajeError });
+      setToast({ type: 'error', msg: `Error al actualizar: ${error.message}` });
     } finally {
       setIsLoading(false);
     }
@@ -2307,22 +2412,10 @@ const CreateUsersSection = ({ avatarOptions, getAvatarUrl }) => {
     setShowDeleteConfirm(null);
     setIsLoading(true);
     try {
-      const API_BASE_URL = process.env.REACT_APP_API_URL || 'https://api.envyguard.crudzaso.com/api';
-      const token = localStorage.getItem('authToken');
-
       console.log(`🗑️ Eliminando usuario ${userId}...`);
 
-      const response = await fetch(`${API_BASE_URL}/auth/users/${userId}`, {
-        method: 'DELETE',
-        headers: {
-          'Authorization': `Bearer ${token}`
-        }
-      });
-
-      if (!response.ok) {
-        const errorData = await response.text();
-        throw new Error(`Error ${response.status}: ${errorData}`);
-      }
+      // Usar el servicio userService que ya maneja todo
+      await userService.deleteUser(userId);
 
       console.log('✅ Usuario eliminado');
       setUsers(users.filter(u => u.id !== userId));
@@ -2340,30 +2433,43 @@ const CreateUsersSection = ({ avatarOptions, getAvatarUrl }) => {
     setShowMoreOptions(null);
     setIsLoading(true);
     try {
-      const API_BASE_URL = process.env.REACT_APP_API_URL || 'https://api.envyguard.crudzaso.com/api';
-      const token = localStorage.getItem('authToken');
       const newEnabled = currentStatus === 'Activo' ? false : true;
 
       console.log(`🔄 Cambiando estado del usuario ${userId} a enabled=${newEnabled}...`);
 
-      const response = await fetch(`${API_BASE_URL}/auth/users/${userId}`, {
-        method: 'PUT',
+      // Usar el servicio userService que ya maneja todo
+      await userService.toggleUserStatus(userId, newEnabled);
+
+      console.log('✅ Estado actualizado en la API');
+      
+      // Actualizar localmente y refrescar desde la API
+      setUsers(users.map(u => u.id === userId ? { ...u, status: newEnabled ? 'Activo' : 'Inactivo' } : u));
+      
+      // Refrescar la lista de usuarios desde la API para asegurar sincronización
+      const API_BASE_URL = process.env.REACT_APP_API_URL || 'https://api.envyguard.crudzaso.com/api';
+      const token = localStorage.getItem('authToken');
+      const response = await fetch(`${API_BASE_URL}/auth/users`, {
+        method: 'GET',
         headers: {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${token}`
-        },
-        body: JSON.stringify({
-          enabled: newEnabled
-        })
+        }
       });
 
-      if (!response.ok) {
-        const errorData = await response.text();
-        throw new Error(`Error ${response.status}: ${errorData}`);
+      if (response.ok) {
+        const data = await response.json();
+        const mappedUsers = Array.isArray(data) ? data.map((user, index) => ({
+          id: user.id || index + 1,
+          name: `${user.firstName || user.nombre || ''} ${user.lastName || user.apellido || ''}`.trim() || 'Usuario sin nombre',
+          email: user.email || '',
+          role: user.role || user.rol || 'ADMIN',
+          status: user.enabled === false ? 'Inactivo' : 'Activo',
+          createdAt: user.createdAt ? new Date(user.createdAt).toISOString().split('T')[0] : new Date().toISOString().split('T')[0],
+          avatarId: (index % 8) + 1,
+        })) : [];
+        setUsers(mappedUsers);
       }
-
-      console.log('✅ Estado actualizado');
-      setUsers(users.map(u => u.id === userId ? { ...u, status: newEnabled ? 'Activo' : 'Inactivo' } : u));
+      
       const newStatus = newEnabled ? 'Activo' : 'Inactivo';
       setToast({ type: 'success', msg: `Usuario marcado como ${newStatus}` });
     } catch (error) {
@@ -2382,9 +2488,10 @@ const CreateUsersSection = ({ avatarOptions, getAvatarUrl }) => {
       email: '',
       password: '',
       confirmPassword: '',
-      role: 'Operador'
+      role: 'OPERATOR'
     });
     setEditingUser(null);
+    setShowRoleDropdown(false);
   };
 
   // Filter logic
@@ -2414,7 +2521,25 @@ const CreateUsersSection = ({ avatarOptions, getAvatarUrl }) => {
            </div>
         </div>
         <button 
-          onClick={() => setShowForm(!showForm)}
+          onClick={() => {
+            if (showForm) {
+              clearForm();
+            } else {
+              // Resetear completamente el estado cuando se abre nuevo usuario
+              setEditingUser(null);
+              setFormData({
+                firstName: '',
+                lastName: '',
+                email: '',
+                password: '',
+                confirmPassword: '',
+                role: 'OPERATOR'
+              });
+              setNewUserAvatarId(1);
+              setShowRoleDropdown(false);
+            }
+            setShowForm(!showForm);
+          }}
           className="group relative px-3 md:px-5 py-2 md:py-2.5 bg-cyan-600 hover:bg-cyan-500 text-black font-bold rounded-lg shadow-[0_0_20px_rgba(6,182,212,0.2)] hover:shadow-[0_0_25px_rgba(6,182,212,0.4)] transition-all flex items-center justify-center gap-2 text-xs md:text-sm overflow-hidden w-full sm:w-auto disabled:opacity-50 disabled:cursor-not-allowed"
           disabled={isLoading}
         >
@@ -2436,7 +2561,10 @@ const CreateUsersSection = ({ avatarOptions, getAvatarUrl }) => {
               initial={{ opacity: 0 }} 
               animate={{ opacity: 1 }} 
               exit={{ opacity: 0 }}
-              onClick={() => setShowForm(false)}
+              onClick={() => {
+                clearForm();
+                setShowForm(false);
+              }}
               className="fixed inset-0 bg-black/80 backdrop-blur-sm z-[9998] flex items-center justify-center p-4"
             />
             {/* Modal - Centrado como el del perfil */}
@@ -2448,15 +2576,22 @@ const CreateUsersSection = ({ avatarOptions, getAvatarUrl }) => {
               onClick={(e) => e.stopPropagation()}
               className="fixed inset-0 z-[9999] flex items-center justify-center p-4 pointer-events-none"
             >
-              <div className="bg-[#0a0a0a] border border-cyan-500/30 rounded-2xl shadow-2xl w-full max-w-4xl overflow-hidden max-h-[95vh] pointer-events-auto"
+              <div className={`bg-[#0a0a0a] rounded-2xl shadow-2xl w-full max-w-4xl overflow-hidden max-h-[95vh] pointer-events-auto border ${
+                editingUser ? 'border-yellow-500/30' : 'border-cyan-500/30'
+              }`}
               >
               <div className="p-8 md:p-10 relative overflow-y-auto max-h-[95vh] custom-scrollbar">
                {/* Decorative bg */}
-               <div className="absolute top-0 right-0 w-64 h-64 bg-cyan-500/5 blur-[80px] pointer-events-none" />
+               <div className={`absolute top-0 right-0 w-64 h-64 blur-[80px] pointer-events-none ${
+                 editingUser ? 'bg-yellow-500/5' : 'bg-cyan-500/5'
+               }`} />
                
                {/* Close Button */}
                <motion.button
-                 onClick={() => setShowForm(false)}
+                 onClick={() => {
+                   clearForm();
+                   setShowForm(false);
+                 }}
                  className="absolute top-4 right-4 p-2 text-gray-400 hover:text-white hover:bg-white/10 rounded-lg transition-all z-50"
                  whileHover={{ scale: 1.1 }}
                  whileTap={{ scale: 0.95 }}
@@ -2464,34 +2599,38 @@ const CreateUsersSection = ({ avatarOptions, getAvatarUrl }) => {
                  <X size={20} />
                </motion.button>
                
-               <h3 className="text-cyan-400 font-mono text-sm md:text-base font-bold uppercase tracking-widest mb-6 flex items-center gap-3 relative z-10">
-                   <Lock size={16}/> NUEVA CREDENCIAL DE ACCESO
+               <h3 className={`font-mono text-sm md:text-base font-bold uppercase tracking-widest mb-6 flex items-center gap-3 relative z-10 ${
+                 editingUser ? 'text-yellow-400' : 'text-cyan-400'
+               }`}>
+                   {editingUser ? <Edit2 size={16}/> : <UserPlus size={16}/> } {editingUser ? 'EDITAR CREDENCIAL DE ACCESO' : 'NUEVA CREDENCIAL DE ACCESO'}
                </h3>
                
-               <form onSubmit={handleCreateUser} className="flex flex-col gap-5 md:gap-6 relative z-10">
+               <form onSubmit={editingUser ? handleSaveUserChanges : handleCreateUser} className="flex flex-col gap-5 md:gap-6 relative z-10">
                  {/* Avatar y Datos Principales */}
                  <div className="flex flex-col lg:flex-row items-start gap-6 lg:gap-8">
-                    {/* Avatar Selection for New User */}
-                    <div className="shrink-0">
-                        <label className="block text-xs md:text-sm font-mono text-gray-500 mb-2.5 uppercase tracking-wide font-semibold">Avatar</label>
-                        <div className="w-28 h-28 rounded-xl border-2 border-cyan-500/30 bg-gradient-to-br from-cyan-500/10 to-blue-500/10 p-2 relative overflow-hidden group hover:border-cyan-500/60 transition-colors">
-                            <img 
-                                src={getAvatarUrl(avatarOptions.find(a => a.id === newUserAvatarId))} 
-                                alt="avatar preview" 
-                                className="w-full h-full rounded-lg object-cover" 
-                            />
-                            <button 
-                                type="button"
-                                onClick={() => setNewUserAvatarId(prev => prev >= 8 ? 1 : prev + 1)}
-                                disabled={isLoading}
-                                className="absolute inset-0 bg-black/70 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity text-xs font-bold text-white cursor-pointer disabled:opacity-50"
-                            >
-                                CAMBIAR
-                            </button>
-                        </div>
-                    </div>
+                    {/* Avatar Selection - Solo para Nuevo Usuario */}
+                    {!editingUser && (
+                      <div className="shrink-0">
+                          <label className="block text-xs md:text-sm font-mono text-gray-500 mb-2.5 uppercase tracking-wide font-semibold">Avatar</label>
+                          <div className="w-28 h-28 rounded-xl border-2 border-cyan-500/30 bg-gradient-to-br from-cyan-500/10 to-blue-500/10 p-2 relative overflow-hidden group hover:border-cyan-500/60 transition-colors">
+                              <img 
+                                  src={getAvatarUrl(avatarOptions.find(a => a.id === newUserAvatarId))} 
+                                  alt="avatar preview" 
+                                  className="w-full h-full rounded-lg object-cover" 
+                              />
+                              <button 
+                                  type="button"
+                                  onClick={() => setNewUserAvatarId(prev => prev >= 8 ? 1 : prev + 1)}
+                                  disabled={isLoading}
+                                  className="absolute inset-0 bg-black/70 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity text-xs font-bold text-white cursor-pointer disabled:opacity-50"
+                              >
+                                  CAMBIAR
+                              </button>
+                          </div>
+                      </div>
+                    )}
 
-                    <div className="flex-1 grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-5 w-full">
+                    <div className={`flex-1 grid gap-4 md:gap-5 w-full ${editingUser ? 'grid-cols-1 md:grid-cols-2' : 'grid-cols-1 md:grid-cols-2'}`}>
                         <div>
                             <label className="block text-xs md:text-sm font-mono text-gray-500 mb-2 uppercase tracking-wide font-semibold">Nombre</label>
                             <input 
@@ -2530,8 +2669,50 @@ const CreateUsersSection = ({ avatarOptions, getAvatarUrl }) => {
                         </div>
                         <div className="md:col-span-2">
                             <label className="block text-xs md:text-sm font-mono text-gray-500 mb-2 uppercase tracking-wide font-semibold">Rol de Usuario</label>
-                            <div className="w-full bg-black/40 border border-cyan-500/40 rounded-lg px-4 py-2.5 text-sm text-cyan-400 font-semibold flex items-center">
-                                <span>Admin</span>
+                            <div className="relative">
+                              <button
+                                type="button"
+                                onClick={() => setShowRoleDropdown(!showRoleDropdown)}
+                                className="w-full bg-black/40 border border-white/10 rounded-lg px-4 py-2.5 text-sm text-white focus:border-cyan-500 focus:bg-cyan-900/10 outline-none transition-all disabled:opacity-50 hover:border-white/20 flex items-center justify-between"
+                                disabled={isLoading}
+                              >
+                                <span>{formData.role || 'Seleccionar rol...'}</span>
+                                <ChevronDown 
+                                  size={16} 
+                                  className={`transition-transform ${showRoleDropdown ? 'rotate-180' : ''}`}
+                                />
+                              </button>
+                              <AnimatePresence>
+                                {showRoleDropdown && (
+                                  <motion.div
+                                    initial={{ opacity: 0, y: -10 }}
+                                    animate={{ opacity: 1, y: 0 }}
+                                    exit={{ opacity: 0, y: -10 }}
+                                    className="absolute top-full left-0 right-0 mt-2 bg-black border border-white/10 rounded-lg shadow-lg z-50 overflow-hidden"
+                                  >
+                                    <button
+                                      type="button"
+                                      onClick={() => {
+                                        setFormData({ ...formData, role: 'ADMIN' });
+                                        setShowRoleDropdown(false);
+                                      }}
+                                      className="w-full px-4 py-2.5 text-sm text-white hover:bg-cyan-600/20 hover:text-cyan-400 text-left transition-colors border-b border-white/5"
+                                    >
+                                      ADMIN
+                                    </button>
+                                    <button
+                                      type="button"
+                                      onClick={() => {
+                                        setFormData({ ...formData, role: 'OPERATOR' });
+                                        setShowRoleDropdown(false);
+                                      }}
+                                      className="w-full px-4 py-2.5 text-sm text-white hover:bg-purple-600/20 hover:text-purple-400 text-left transition-colors"
+                                    >
+                                      OPERATOR
+                                    </button>
+                                  </motion.div>
+                                )}
+                              </AnimatePresence>
                             </div>
                         </div>
                     </div>
@@ -2694,13 +2875,13 @@ const CreateUsersSection = ({ avatarOptions, getAvatarUrl }) => {
                   </td>
                   <td className="p-4">
                      <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-[10px] font-bold border uppercase tracking-wider ${
-                       user.role === 'Admin' 
+                       user.role === 'ADMIN' 
                           ? 'border-cyan-500/30 text-cyan-400 bg-cyan-500/5 shadow-[0_0_10px_rgba(6,182,212,0.1)]' 
-                          : user.role === 'Agente'
+                          : user.role === 'OPERATOR'
                               ? 'border-purple-500/30 text-purple-400 bg-purple-500/5'
                               : 'border-white/20 text-gray-400 bg-white/5'
                      }`}>
-                       {user.role === 'Admin' && <Shield size={10} />}
+                       {user.role === 'ADMIN' && <Shield size={10} />}
                        {user.role}
                      </span>
                   </td>
@@ -2750,14 +2931,29 @@ const CreateUsersSection = ({ avatarOptions, getAvatarUrl }) => {
                               initial={{ opacity: 0, y: -10 }}
                               animate={{ opacity: 1, y: 0 }}
                               exit={{ opacity: 0, y: -10 }}
-                              className="absolute right-0 top-full mt-2 bg-black border border-white/10 rounded-lg shadow-lg z-50"
+                              className="absolute right-0 top-full mt-2 bg-black border border-white/10 rounded-lg shadow-lg z-50 p-3 min-w-max"
                             >
-                              <button
-                                onClick={() => handleToggleStatus(user.id, user.status)}
-                                className="block w-full text-left px-4 py-2 text-xs text-gray-300 hover:text-cyan-400 hover:bg-white/5 rounded-lg"
-                              >
-                                {user.status === 'Activo' ? 'Desactivar' : 'Activar'}
-                              </button>
+                              {/* Toggle Switch */}
+                              <div className="flex items-center gap-3">
+                                <label className="text-xs text-gray-400">
+                                  {user.status === 'Activo' ? 'Activo' : 'Inactivo'}
+                                </label>
+                                <button
+                                  onClick={() => handleToggleStatus(user.id, user.status)}
+                                  className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
+                                    user.status === 'Activo'
+                                      ? 'bg-green-600 shadow-[0_0_10px_rgba(34,197,94,0.4)]'
+                                      : 'bg-gray-600'
+                                  }`}
+                                  disabled={isLoading}
+                                >
+                                  <span
+                                    className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+                                      user.status === 'Activo' ? 'translate-x-5' : 'translate-x-1'
+                                    }`}
+                                  />
+                                </button>
+                              </div>
                             </motion.div>
                           )}
                         </AnimatePresence>
@@ -2808,13 +3004,13 @@ const CreateUsersSection = ({ avatarOptions, getAvatarUrl }) => {
               {/* Role and Status Row */}
               <div className="flex items-center gap-2 justify-between mb-3 py-2 border-t border-white/5">
                 <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-bold border uppercase tracking-wider shrink-0 ${
-                  user.role === 'Admin' 
+                  user.role === 'ADMIN' 
                     ? 'border-cyan-500/30 text-cyan-400 bg-cyan-500/5' 
-                    : user.role === 'Agente'
+                    : user.role === 'OPERATOR'
                         ? 'border-purple-500/30 text-purple-400 bg-purple-500/5'
                         : 'border-white/20 text-gray-400 bg-white/5'
                 }`}>
-                  {user.role === 'Admin' && <Shield size={8} />}
+                  {user.role === 'ADMIN' && <Shield size={8} />}
                   {user.role}
                 </span>
                 <div className="flex items-center gap-1.5">
@@ -3317,14 +3513,28 @@ const BlockingSitesSection = () => {
 // 3.5 NOVEDADES SECTION
 const NovedadesSection = ({ problemReports = [], setProblemReports }) => {
   const [filterSeverity, setFilterSeverity] = useState('all');
+  const [viewTab, setViewTab] = useState('pendientes'); // 'pendientes' o 'completadas'
 
-  const sortedReports = [...problemReports].sort((a, b) => 
-    new Date(b.timestamp) - new Date(a.timestamp)
-  );
+  // Separar reportes en pendientes y completados
+  const pendingReports = problemReports.filter(r => r.status !== 'closed');
+  const completedReports = problemReports.filter(r => r.status === 'closed');
 
-  const filteredReports = filterSeverity === 'all' 
-    ? sortedReports 
-    : sortedReports.filter(r => r.severity === filterSeverity);
+  // Ordenar reportes por timestamp (más recientes primero)
+  const getSortedReports = (reports) => {
+    return [...reports].sort((a, b) => 
+      new Date(b.timestamp) - new Date(a.timestamp)
+    );
+  };
+
+  const sortedPendingReports = getSortedReports(pendingReports);
+  const sortedCompletedReports = getSortedReports(completedReports);
+
+  // Aplicar filtro de severidad solo a reportes pendientes
+  const displayReports = viewTab === 'pendientes'
+    ? filterSeverity === 'all'
+      ? sortedPendingReports
+      : sortedPendingReports.filter(r => r.severity === filterSeverity)
+    : sortedCompletedReports;
 
   const getSeverityColor = (severity) => {
     switch(severity) {
@@ -3367,6 +3577,14 @@ const NovedadesSection = ({ problemReports = [], setProblemReports }) => {
     );
   };
 
+  const handleMarkAsOpen = (reportId) => {
+    setProblemReports(prev => 
+      prev.map(report => 
+        report.id === reportId ? { ...report, status: 'open' } : report
+      )
+    );
+  };
+
   return (
     <div className="flex flex-col h-full space-y-6">
       {/* Header */}
@@ -3381,48 +3599,89 @@ const NovedadesSection = ({ problemReports = [], setProblemReports }) => {
           </div>
         </div>
 
-        {/* Filter Section */}
-        <div className="flex flex-col sm:flex-row gap-3 items-start sm:items-center justify-between">
-          <div></div>
-          <div className="flex gap-2 flex-wrap justify-end">
-            {[
-              { id: 'all', label: 'Todos', count: sortedReports.length },
-              { id: 'low', label: 'Baja', count: sortedReports.filter(r => r.severity === 'low').length },
-              { id: 'medium', label: 'Media', count: sortedReports.filter(r => r.severity === 'medium').length },
-              { id: 'high', label: 'Alta', count: sortedReports.filter(r => r.severity === 'high').length },
-            ].map(f => (
-              <motion.button
-                key={f.id}
-                whileHover={{ scale: 1.05 }}
-                whileTap={{ scale: 0.95 }}
-                onClick={() => setFilterSeverity(f.id)}
-                className={`px-3.5 py-2 rounded-lg text-xs font-semibold transition-all backdrop-blur-sm ${
-                  filterSeverity === f.id 
-                    ? "bg-gradient-to-r from-orange-500/30 to-orange-500/15 text-orange-300 border border-orange-500/50 shadow-lg shadow-orange-500/20" 
-                    : "text-gray-400 hover:text-gray-300 bg-white/5 border border-white/10 hover:bg-white/10"
-                }`}
-              >
-                {f.label} {f.count > 0 && <span className="ml-2 text-[10px] opacity-70">({f.count})</span>}
-              </motion.button>
-            ))}
-          </div>
+        {/* Tabs para cambiar entre Pendientes y Completadas */}
+        <div className="flex gap-2 items-center">
+          <motion.button
+            whileHover={{ scale: 1.05 }}
+            whileTap={{ scale: 0.95 }}
+            onClick={() => {
+              setViewTab('pendientes');
+              setFilterSeverity('all');
+            }}
+            className={`px-4 py-2 rounded-lg font-semibold transition-all backdrop-blur-sm ${
+              viewTab === 'pendientes'
+                ? "bg-gradient-to-r from-orange-500/30 to-orange-500/15 text-orange-300 border border-orange-500/50 shadow-lg shadow-orange-500/20"
+                : "text-gray-400 hover:text-gray-300 bg-white/5 border border-white/10 hover:bg-white/10"
+            }`}
+          >
+            Pendientes {sortedPendingReports.length > 0 && `(${sortedPendingReports.length})`}
+          </motion.button>
+          
+          <motion.button
+            whileHover={{ scale: 1.05 }}
+            whileTap={{ scale: 0.95 }}
+            onClick={() => {
+              setViewTab('completadas');
+              setFilterSeverity('all');
+            }}
+            className={`px-4 py-2 rounded-lg font-semibold transition-all backdrop-blur-sm ${
+              viewTab === 'completadas'
+                ? "bg-gradient-to-r from-green-500/30 to-green-500/15 text-green-300 border border-green-500/50 shadow-lg shadow-green-500/20"
+                : "text-gray-400 hover:text-gray-300 bg-white/5 border border-white/10 hover:bg-white/10"
+            }`}
+          >
+            Completadas {sortedCompletedReports.length > 0 && `(${sortedCompletedReports.length})`}
+          </motion.button>
         </div>
+
+        {/* Filter Section - Solo mostrar si está en vista de Pendientes */}
+        {viewTab === 'pendientes' && (
+          <div className="flex flex-col sm:flex-row gap-3 items-start sm:items-center justify-between">
+            <div></div>
+            <div className="flex gap-2 flex-wrap justify-end">
+              {[
+                { id: 'all', label: 'Todos', count: sortedPendingReports.length },
+                { id: 'low', label: 'Baja', count: sortedPendingReports.filter(r => r.severity === 'low').length },
+                { id: 'medium', label: 'Media', count: sortedPendingReports.filter(r => r.severity === 'medium').length },
+                { id: 'high', label: 'Alta', count: sortedPendingReports.filter(r => r.severity === 'high').length },
+              ].map(f => (
+                <motion.button
+                  key={f.id}
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}
+                  onClick={() => setFilterSeverity(f.id)}
+                  className={`px-3.5 py-2 rounded-lg text-xs font-semibold transition-all backdrop-blur-sm ${
+                    filterSeverity === f.id 
+                      ? "bg-gradient-to-r from-orange-500/30 to-orange-500/15 text-orange-300 border border-orange-500/50 shadow-lg shadow-orange-500/20" 
+                      : "text-gray-400 hover:text-gray-300 bg-white/5 border border-white/10 hover:bg-white/10"
+                  }`}
+                >
+                  {f.label} {f.count > 0 && <span className="ml-2 text-[10px] opacity-70">({f.count})</span>}
+                </motion.button>
+              ))}
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Reports Grid */}
       <div className="flex-1 overflow-y-auto space-y-3 scrollbar-hide pr-2">
-        {filteredReports.length === 0 ? (
+        {displayReports.length === 0 ? (
           <div className="h-full flex items-center justify-center">
             <div className="text-center space-y-3">
               <div className="p-4 bg-white/5 rounded-full w-20 h-20 flex items-center justify-center mx-auto">
                 <AlertCircle size={40} className="text-gray-600" />
               </div>
-              <p className="text-gray-500 text-sm font-medium">No hay reportes de problemas</p>
-              <p className="text-gray-600 text-xs">Los nuevos reportes aparecerán aquí</p>
+              <p className="text-gray-500 text-sm font-medium">
+                {viewTab === 'pendientes' ? 'No hay reportes pendientes' : 'No hay reportes completados'}
+              </p>
+              <p className="text-gray-600 text-xs">
+                {viewTab === 'pendientes' ? 'Los nuevos reportes aparecerán aquí' : 'Los reportes marcados como completados aparecerán aquí'}
+              </p>
             </div>
           </div>
         ) : (
-          filteredReports.map(report => {
+          displayReports.map(report => {
             const severity = getSeverityColor(report.severity);
             return (
               <motion.div
@@ -3458,8 +3717,6 @@ const NovedadesSection = ({ problemReports = [], setProblemReports }) => {
                     </div>
                   </div>
                 </div>
-
-                {/* Info de ubicación clara */}
                 <div className="mb-4 p-3.5 bg-white/[0.02] rounded-lg border border-white/10 space-y-2">
                   <div className="space-y-1">
                     <p className="text-gray-600 text-[10px] uppercase tracking-widest font-bold">Ubicación</p>
@@ -3496,6 +3753,17 @@ const NovedadesSection = ({ problemReports = [], setProblemReports }) => {
                     >
                       <CheckCircle size={14} className="drop-shadow" />
                       Marcar Hecho
+                    </motion.button>
+                  )}
+                  {report.status === 'closed' && (
+                    <motion.button
+                      whileHover={{ scale: 1.05 }}
+                      whileTap={{ scale: 0.95 }}
+                      onClick={() => handleMarkAsOpen(report.id)}
+                      className="ml-auto px-4 py-1.5 bg-gradient-to-r from-orange-500/30 to-orange-500/10 hover:from-orange-500/40 hover:to-orange-500/20 text-orange-300 rounded-lg border border-orange-500/40 font-semibold transition-all shadow-lg shadow-orange-500/10 hover:shadow-orange-500/20 flex items-center gap-2 text-xs"
+                    >
+                      <AlertCircle size={14} className="drop-shadow" />
+                      Reabrir
                     </motion.button>
                   )}
                 </div>
@@ -4625,7 +4893,23 @@ const PlaceholderSection = ({ title, icon: Icon, description }) => (
 const DashboardContent = ({ currentPage, avatarOptions, getAvatarUrl, showDeployModal, setShowDeployModal, deployTargetPCs, setDeployTargetPCs, problemReports, setProblemReports }) => {
   const containerClass = "flex flex-1 flex-col gap-4 md:gap-6 rounded-tl-3xl border-l border-t border-white/10 bg-[#080808] p-3 md:p-8 backdrop-blur-xl overflow-y-auto shadow-[-20px_-20px_50px_rgba(0,0,0,0.5)] relative z-10 h-full w-full scrollbar-hide md:rounded-tl-3xl rounded-none";
   
+  // Obtener el usuario autenticado para verificar permisos
+  const authenticatedUser = AuthService.getCurrentUser();
+  const userRole = authenticatedUser?.role || 'OPERATOR';
+  
   const renderContent = () => {
+    // Verificar si el usuario tiene permiso para acceder a esta sección
+    if (currentPage === 'users' && userRole === 'OPERATOR') {
+      return (
+        <div className="flex flex-col items-center justify-center gap-4 py-12">
+          <Lock size={48} className="text-red-500" />
+          <h2 className="text-xl font-bold text-white">Acceso Denegado</h2>
+          <p className="text-gray-400 text-center">No tienes permisos para acceder a la Gestión de Accesos.</p>
+          <p className="text-gray-500 text-sm">Solo administradores pueden gestionar usuarios.</p>
+        </div>
+      );
+    }
+    
     switch(currentPage) {
       case 'dashboard': return <OverviewSection />;
       case 'computers': return <ComputerMonitoringSection showDeployModal={showDeployModal} setShowDeployModal={setShowDeployModal} deployTargetPCs={deployTargetPCs} setDeployTargetPCs={setDeployTargetPCs} problemReports={problemReports} setProblemReports={setProblemReports} />;
@@ -4679,6 +4963,7 @@ const DashboardLayout = () => {
   const navigate = useNavigate();
   const [open, setOpen] = useState(false);
   const [currentPage, setCurrentPage] = useState("dashboard");
+  const [userRole, setUserRole] = useState('OPERATOR');
   const [showProfileModal, setShowProfileModal] = useState(false);
   const [showAvatarSelector, setShowAvatarSelector] = useState(false);
   const [showDeployModal, setShowDeployModal] = useState(false);
@@ -4704,6 +4989,21 @@ const DashboardLayout = () => {
   
   // Obtener datos del usuario autenticado
   const authenticatedUser = AuthService.getCurrentUser();
+
+  // Obtener el rol del usuario de forma asíncrona si es necesario
+  useEffect(() => {
+    const fetchRole = async () => {
+      const role = await AuthService.getUserRole();
+      setUserRole(role);
+      console.log('🔐 Rol obtenido:', role);
+    };
+    
+    if (!authenticatedUser?.role) {
+      fetchRole();
+    } else {
+      setUserRole(authenticatedUser.role);
+    }
+  }, [authenticatedUser]);
   
   // Construir objeto del usuario actual - MEJORADO
   const getFullName = () => {
@@ -4838,11 +5138,14 @@ const DashboardLayout = () => {
     { label: "Servidores Linux", href: "#computers", icon: <Monitor />, page: "computers" },
     { label: "Vigilancia de Pantallas", href: "#screens", icon: <Eye />, page: "screens" },
     { label: "Bloqueo de Sitios", href: "#blocking", icon: <AlertTriangle />, page: "blocking" },
-    { label: "Gestión de Usuarios", href: "#users", icon: <UserPlus />, page: "users" },
+    ...((userRole === 'ADMIN') ? [{ label: "Gestión de Usuarios", href: "/usuarios", icon: <UserPlus />, page: "users" }] : []),
     { label: "Novedades", href: "#novedades", icon: <Bell />, page: "novedades" },
     { label: "Logs y Tráfico", href: "#logs", icon: <FileText />, page: "logs" },
     { label: "Configuración", href: "#settings", icon: <Settings />, page: "settings" },
   ];
+
+  console.log('🔐 userRole en Dashboard:', userRole);
+  console.log('🔐 Links incluyen Gestión de Usuarios:', links.some(l => l.page === 'users'));
 
   return (
     <div className="flex w-full h-screen bg-[#020202] overflow-hidden font-sans text-gray-200 selection:bg-cyan-500/30">
