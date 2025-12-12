@@ -8,6 +8,7 @@ import { routes } from './config/routes';
 import ProtectedRoute from './components/ProtectedRoute';
 import { DeviceProvider } from './context/DeviceContext';
 import SpyWall from './pages/SpyWall';
+import InstallPrompt from './components/InstallPrompt';
 
 /**
  * Componente principal de la aplicación
@@ -55,6 +56,7 @@ function App() {
             {/* Ruta 404 - Redirige a home */}
             <Route path="*" element={<Navigate to="/" />} />
           </Routes>
+          <InstallPrompt />
         </BrowserRouter>
       </DeviceProvider>
     </ThemeProvider>
