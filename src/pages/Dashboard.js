@@ -56,6 +56,7 @@ import {
   Copy,
   Menu,
   Eye,
+  EyeOff,
   RefreshCw,
   Maximize2,
   AlertTriangle as AlertIcon,
@@ -831,7 +832,7 @@ const ReportProblemModal = ({ isOpen, onClose, selectedPC, selectedSala, onSubmi
 // --- DASHBOARD SECTIONS ---
 
 // 1. OVERVIEW SECTION (PANEL PRINCIPAL)
-const OverviewSection = () => {
+const OverviewSection = ({ problemReports = [] }) => {
   const fadeInUp = { hidden: { opacity: 0, y: 20 }, visible: { opacity: 1, y: 0, transition: { duration: 0.5 } } };
   const [currentTime, setCurrentTime] = useState(new Date());
 
@@ -884,10 +885,10 @@ const OverviewSection = () => {
         className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4"
       >
         {[
-          { label: "Agentes Activos", value: "12", icon: Shield, color: "text-cyan-400", bg: "from-cyan-500/10 to-transparent", border: "border-cyan-500/20" },
-          { label: "Alertas Críticas", value: "03", icon: AlertTriangle, color: "text-red-400", bg: "from-red-500/10 to-transparent", border: "border-red-500/20" },
-          { label: "Ancho de Banda", value: "1.2 GB/s", icon: Activity, color: "text-purple-400", bg: "from-purple-500/10 to-transparent", border: "border-purple-500/20" },
-          { label: "Uptime Global", value: "99.9%", icon: Server, color: "text-green-400", bg: "from-green-500/10 to-transparent", border: "border-green-500/20" },
+          { label: "Total Computadores", value: "12", icon: Monitor, color: "text-cyan-400", bg: "from-cyan-500/10 to-transparent", border: "border-cyan-500/20" },
+          { label: "Prendidos", value: "03", icon: Power, color: "text-green-400", bg: "from-green-500/10 to-transparent", border: "border-green-500/20" },
+          { label: "Sin Internet", value: "5", icon: WifiOff, color: "text-orange-400", bg: "from-orange-500/10 to-transparent", border: "border-orange-500/20" },
+          { label: "Sitios Bloqueados", value: "12", icon: Globe, color: "text-red-400", bg: "from-red-500/10 to-transparent", border: "border-red-500/20" },
         ].map((stat, idx) => (
           <motion.div
             key={idx}
@@ -912,57 +913,151 @@ const OverviewSection = () => {
       {/* Charts & Logs Area */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 md:gap-6 h-full">
         
-        {/* Logs Terminal */}
+        {/* Novedades Pendientes - Terminal Style */}
         <motion.div
           initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.2 }}
-          className="lg:col-span-2 rounded-2xl border border-cyan-500/20 bg-black/60 backdrop-blur-md flex flex-col overflow-hidden"
+          className="lg:col-span-2 rounded-xl border border-cyan-500/40 bg-black/80 backdrop-blur-md flex flex-col overflow-hidden transition-all duration-300"
+          style={{
+            minHeight: '300px',
+            maxHeight: `${Math.min(300 + problemReports.filter(r => r.status === "open").length * 80, 800)}px`
+          }}
         >
-          <div className="px-6 py-4 border-b border-white/5 bg-white/5 flex items-center justify-between">
-            <h3 className="font-bold text-cyan-400 flex items-center gap-2 font-mono text-sm">
-              <Terminal size={16} /> TERMINAL_LOGS
-            </h3>
-            <div className="flex gap-1.5">
-              <div className="w-2.5 h-2.5 rounded-full bg-red-500/50" />
-              <div className="w-2.5 h-2.5 rounded-full bg-yellow-500/50" />
-              <div className="w-2.5 h-2.5 rounded-full bg-green-500/50" />
+          {/* Terminal Header */}
+          <div className="px-6 py-3 border-b border-cyan-500/30 bg-gradient-to-r from-cyan-950/40 to-black/60 flex items-center justify-between flex-shrink-0">
+            <div className="flex items-center gap-3">
+              {/* Mac-style buttons */}
+              <div className="flex gap-2">
+                <div className="w-2.5 h-2.5 rounded-full bg-red-500"></div>
+                <div className="w-2.5 h-2.5 rounded-full bg-yellow-500"></div>
+                <div className="w-2.5 h-2.5 rounded-full bg-green-500"></div>
+              </div>
+              <h3 className="font-bold text-cyan-400 font-mono text-xs">
+                NOVEDADES_PENDIENTES              </h3>
+            </div>
+            <div className="text-xs text-cyan-500/70 font-mono">
+              [{problemReports.filter(r => r.status === "open").length} logs]
             </div>
           </div>
-          <div className="p-4 font-mono text-xs space-y-3 overflow-y-auto max-h-[300px] scrollbar-thin scrollbar-thumb-white/10">
-            {[
-              { time: "14:01:22", type: "WARN", msg: "Intento de acceso bloqueado [IP: 192.168.1.45]", color: "text-yellow-400" },
-              { time: "14:00:15", type: "INFO", msg: "Sincronización de agentes completada", color: "text-blue-400" },
-              { time: "13:58:44", type: "CRIT", msg: "Servicio 'Orquestador' reiniciado automáticamente", color: "text-red-400" },
-              { time: "13:55:10", type: "INFO", msg: "Despliegue de parche v2.1 iniciado", color: "text-gray-400" },
-              { time: "13:42:01", type: "INFO", msg: "Usuario 'Admin' inició sesión", color: "text-green-400" },
-            ].map((log, i) => (
-              <div key={i} className="flex gap-3 hover:bg-white/5 p-1 rounded transition-colors">
-                <span className="text-gray-600">[{log.time}]</span>
-                <span className={`font-bold ${log.color}`}>{log.type}:</span>
-                <span className="text-gray-300">{log.msg}</span>
+
+          {/* Terminal Content */}
+          <div className="p-0 overflow-y-auto scrollbar-thin scrollbar-thumb-cyan-500/20 scrollbar-track-black/40 flex-1">
+            {problemReports.filter(r => r.status === "open").length > 0 ? (
+              <div className="space-y-0">
+                {problemReports.filter(r => r.status === "open")
+                  .sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp))
+                  .map((report, i) => {
+                    const timestamp = report.timestamp ? new Date(report.timestamp) : new Date();
+                    const dateStr = timestamp.toLocaleDateString('es-ES', { day: '2-digit', month: '2-digit', year: 'numeric' });
+                    const timeStr = timestamp.toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+                    
+                    const severityLabel = {
+                      high: 'ALTA',
+                      medium: 'MEDIA',
+                      low: 'BAJA',
+                    }[report.severity] || 'BAJA';
+
+                    const severityColor = {
+                      high: 'text-red-400',
+                      medium: 'text-yellow-400',
+                      low: 'text-cyan-400',
+                    }[report.severity] || 'text-cyan-400';
+
+                    return (
+                      <div 
+                        key={i} 
+                        onClick={() => {
+                          // Scroll a la sección de Novedades
+                          const novedadesSection = document.getElementById('novedades-section');
+                          if (novedadesSection) {
+                            novedadesSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                            // Highlight la sección por un momento
+                            novedadesSection.style.animation = 'pulse 2s cubic-bezier(0.4, 0, 0.6, 1) 2';
+                          }
+                        }}
+                        className="border-b border-cyan-500/10 px-6 py-3 hover:bg-cyan-950/40 hover:border-cyan-500/30 transition-all duration-200 cursor-pointer group"
+                      >
+                        <div className="flex items-start gap-4 text-xs font-mono">
+                          <span className="text-cyan-500/50 flex-shrink-0">[{dateStr}]</span>
+                          <span className="text-cyan-500/50 flex-shrink-0">[{timeStr}]</span>
+                          <span className={`font-bold flex-shrink-0 w-12 ${severityColor}`}>{severityLabel}</span>
+                          <span className="text-cyan-300 flex-1 group-hover:text-cyan-200 transition-colors">{report.description}</span>
+                        </div>
+                        <div className="flex items-center gap-4 text-xs font-mono text-cyan-500/60 mt-2 ml-32 flex-wrap">
+                          {report.location && (
+                            <span className="flex items-center gap-1">
+                              <span>{report.location}</span>
+                            </span>
+                          )}
+                          {report.sala && (
+                            <span className="flex items-center gap-1">
+                              <span>{report.sala.replace('sala', 'Sala ')}</span>
+                            </span>
+                          )}
+                          {report.cpuCode && (
+                            <span className="flex items-center gap-1">
+                              <span className="font-bold text-cyan-400">PC #{report.cpuCode}</span>
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                    );
+                  })}
               </div>
-            ))}
-            <div className="animate-pulse text-cyan-500">_</div>
+            ) : (
+              <div className="flex items-center justify-center h-40 text-cyan-500/40 font-mono text-sm">
+                No hay novedades pendientes
+              </div>
+            )}
+          </div>
+
+          {/* Terminal Footer */}
+          <div className="border-t border-cyan-500/20 px-6 py-2.5 bg-black/40 text-right flex-shrink-0">
+            <span className="text-xs text-cyan-500/60 font-mono">
+              Total: {problemReports.filter(r => r.status === "open").length} pendientes
+            </span>
           </div>
         </motion.div>
 
         {/* System Health */}
         <motion.div 
           initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.3 }}
-          className="rounded-2xl border border-purple-500/20 bg-black/60 backdrop-blur-md p-6 flex flex-col"
+          className="rounded-xl border border-purple-500/40 bg-black/80 backdrop-blur-md p-6 flex flex-col overflow-hidden transition-all duration-300"
+          style={{
+            minHeight: '300px',
+            maxHeight: '300px'
+          }}
         >
-          <h3 className="font-bold text-purple-400 mb-6 flex items-center gap-2 font-sans">
-            <Activity size={18} /> Salud del Sistema
+          <h3 className="font-bold text-purple-400 mb-4 flex items-center gap-2 font-mono text-xs flex-shrink-0">
+            <Activity size={16} /> SALUD_SISTEMA
           </h3>
-          <div className="space-y-6 flex-1">
+          <div className="space-y-3 flex-1">
             {[
-              { label: "CPU Core", value: 45, color: "from-purple-600 to-cyan-500" },
-              { label: "Memoria RAM", value: 72, color: "from-pink-600 to-purple-500" },
-              { label: "Almacenamiento", value: 28, color: "from-cyan-600 to-blue-500" },
+              { 
+                label: "Equipos En Línea", 
+                value: Math.min(85, Math.max(20, 100 - (problemReports.filter(r => r.status === "open").length * 5))), 
+                color: "from-green-600 to-emerald-500",
+                icon: "✓"
+              },
+              { 
+                label: "Problemas Críticos", 
+                value: Math.min(100, problemReports.filter(r => r.severity === "high").length * 15),
+                color: "from-red-600 to-orange-500",
+                icon: "!"
+              },
+              { 
+                label: "Uso de Ancho de Banda", 
+                value: 52,
+                color: "from-cyan-600 to-blue-500",
+                icon: "↔"
+              },
             ].map((metric, i) => (
               <div key={i}>
-                <div className="flex justify-between text-xs font-mono mb-2 text-gray-400">
-                  <span>{metric.label}</span>
-                  <span className="text-white">{metric.value}%</span>
+                <div className="flex justify-between text-xs font-mono mb-1.5 text-gray-400">
+                  <span className="flex items-center gap-2">
+                    <span className="text-lg opacity-60">{metric.icon}</span>
+                    {metric.label}
+                  </span>
+                  <span className="text-white font-bold">{metric.value}%</span>
                 </div>
                 <div className="h-2 w-full bg-white/5 rounded-full overflow-hidden">
                   <motion.div 
@@ -974,9 +1069,6 @@ const OverviewSection = () => {
               </div>
             ))}
           </div>
-          <button className="mt-6 w-full py-2 border border-purple-500/30 text-purple-300 text-xs font-mono rounded hover:bg-purple-500/10 transition-colors">
-            VER REPORTE COMPLETO
-          </button>
         </motion.div>
       </div>
     </div>
@@ -2114,6 +2206,8 @@ const CreateUsersSection = ({ avatarOptions, getAvatarUrl }) => {
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(null);
   const [showMoreOptions, setShowMoreOptions] = useState(null);
   const [showRoleDropdown, setShowRoleDropdown] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
   // Traer usuarios desde la API
   useEffect(() => {
@@ -2492,6 +2586,8 @@ const CreateUsersSection = ({ avatarOptions, getAvatarUrl }) => {
     });
     setEditingUser(null);
     setShowRoleDropdown(false);
+    setShowPassword(false);
+    setShowConfirmPassword(false);
   };
 
   // Filter logic
@@ -2736,15 +2832,25 @@ const CreateUsersSection = ({ avatarOptions, getAvatarUrl }) => {
                                 <span className="text-cyan-400 ml-1">(Mínimo 8 caracteres)</span>
                               )}
                             </label>
-                            <input 
-                              type="password" 
-                              name="password"
-                              value={formData.password}
-                              onChange={handleInputChange}
-                              placeholder={editingUser ? "Dejar vacío para no cambiar" : "••••••••••••"} 
-                              disabled={isLoading}
-                              className="w-full bg-black/40 border border-white/10 rounded-lg px-4 py-2.5 text-sm text-white placeholder-gray-600 focus:border-cyan-500 focus:bg-cyan-900/10 outline-none transition-all disabled:opacity-50 hover:border-white/20" 
-                            />
+                            <div className="relative">
+                              <input 
+                                type={showPassword ? "text" : "password"} 
+                                name="password"
+                                value={formData.password}
+                                onChange={handleInputChange}
+                                placeholder={editingUser ? "Dejar vacío para no cambiar" : "••••••••••••"} 
+                                disabled={isLoading}
+                                className="w-full bg-black/40 border border-white/10 rounded-lg px-4 py-2.5 text-sm text-white placeholder-gray-600 focus:border-cyan-500 focus:bg-cyan-900/10 outline-none transition-all disabled:opacity-50 hover:border-white/20 pr-10" 
+                              />
+                              <button
+                                type="button"
+                                onClick={() => setShowPassword(!showPassword)}
+                                className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-white transition-colors"
+                                title={showPassword ? "Ocultar contraseña" : "Mostrar contraseña"}
+                              >
+                                {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                              </button>
+                            </div>
                         </div>
                         <div>
                             <label className="block text-xs md:text-sm font-mono text-gray-500 mb-2 uppercase tracking-wide font-semibold">
@@ -2753,16 +2859,25 @@ const CreateUsersSection = ({ avatarOptions, getAvatarUrl }) => {
                                 <span className="text-yellow-400 ml-1">(Requerido si cambias contraseña)</span>
                               )}
                             </label>
-                            <input 
-                              type="password" 
-                              name="confirmPassword"
-                              value={formData.confirmPassword}
-                              onChange={handleInputChange}
-                              placeholder={editingUser ? "Dejar vacío para no cambiar" : "••••••••••••"} 
-                              disabled={isLoading}
-                              className="w-full bg-black/40 border border-white/10 rounded-lg px-4 py-2.5 text-sm text-white placeholder-gray-600 focus:border-cyan-500 focus:bg-cyan-900/10 outline-none transition-all disabled:opacity-50 hover:border-white/20" 
-
-                            />
+                            <div className="relative">
+                              <input 
+                                type={showConfirmPassword ? "text" : "password"} 
+                                name="confirmPassword"
+                                value={formData.confirmPassword}
+                                onChange={handleInputChange}
+                                placeholder={editingUser ? "Dejar vacío para no cambiar" : "••••••••••••"} 
+                                disabled={isLoading}
+                                className="w-full bg-black/40 border border-white/10 rounded-lg px-4 py-2.5 text-sm text-white placeholder-gray-600 focus:border-cyan-500 focus:bg-cyan-900/10 outline-none transition-all disabled:opacity-50 hover:border-white/20 pr-10"
+                              />
+                              <button
+                                type="button"
+                                onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                                className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-white transition-colors"
+                                title={showConfirmPassword ? "Ocultar contraseña" : "Mostrar contraseña"}
+                              >
+                                {showConfirmPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                              </button>
+                            </div>
                         </div>
                     </div>
                  </div>
@@ -3586,7 +3701,7 @@ const NovedadesSection = ({ problemReports = [], setProblemReports }) => {
   };
 
   return (
-    <div className="flex flex-col h-full space-y-6">
+    <div id="novedades-section" className="flex flex-col h-full space-y-6">
       {/* Header */}
       <div className="flex flex-col gap-6 pb-6 border-b border-white/5">
         <div className="flex items-start gap-4">
@@ -4911,7 +5026,7 @@ const DashboardContent = ({ currentPage, avatarOptions, getAvatarUrl, showDeploy
     }
     
     switch(currentPage) {
-      case 'dashboard': return <OverviewSection />;
+      case 'dashboard': return <OverviewSection problemReports={problemReports} />;
       case 'computers': return <ComputerMonitoringSection showDeployModal={showDeployModal} setShowDeployModal={setShowDeployModal} deployTargetPCs={deployTargetPCs} setDeployTargetPCs={setDeployTargetPCs} problemReports={problemReports} setProblemReports={setProblemReports} />;
       case 'screens': return <ScreenMonitoringSection />;
       case 'users': return <CreateUsersSection avatarOptions={avatarOptions} getAvatarUrl={getAvatarUrl} />;
@@ -4919,7 +5034,7 @@ const DashboardContent = ({ currentPage, avatarOptions, getAvatarUrl, showDeploy
       case 'novedades': return <NovedadesSection problemReports={problemReports} setProblemReports={setProblemReports} />;
       case 'logs': return <LogsAndTrafficSection problemReports={problemReports} />;
       case 'settings': return <PlaceholderSection title="Configuración del Sistema" icon={Settings} description="Ajustes globales, conexiones a bases de datos y preferencias de interfaz." />;
-      default: return <OverviewSection />;
+      default: return <OverviewSection problemReports={problemReports} />;
     }
   }
 
