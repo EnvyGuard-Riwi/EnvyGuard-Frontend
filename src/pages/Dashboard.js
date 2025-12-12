@@ -194,12 +194,15 @@ const Sidebar = ({ children, open, setOpen }) => {
   return (
     <SidebarContext.Provider value={{ open, setOpen }}>
       {/* Hamburger Menu - Solo visible en móvil */}
-      <button
+      <motion.button
         onClick={() => setIsMobileOpen(!isMobileOpen)}
-        className="fixed top-4 left-4 z-[110] md:hidden p-2 rounded-lg bg-cyan-500/20 border border-cyan-500/50 hover:bg-cyan-500/30 text-cyan-400 transition-all"
+        whileHover={{ scale: 1.05 }}
+        whileTap={{ scale: 0.95 }}
+        className="fixed top-5 left-5 z-[110] md:hidden p-2 rounded-lg bg-cyan-500/20 border border-cyan-500/50 hover:bg-cyan-500/30 text-cyan-400 transition-all shadow-lg"
+        aria-label="Abrir menú"
       >
-        <Menu size={24} />
-      </button>
+        <Menu size={20} />
+      </motion.button>
 
       {/* Overlay móvil */}
       <AnimatePresence>
@@ -208,8 +211,8 @@ const Sidebar = ({ children, open, setOpen }) => {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            transition={{ duration: 0.2 }}
-            className="fixed inset-0 bg-black/70 z-40 md:hidden"
+            transition={{ duration: 0.3 }}
+            className="fixed inset-0 bg-black/70 z-40 md:hidden backdrop-blur-sm"
             onClick={() => setIsMobileOpen(false)}
           />
         )}
@@ -230,11 +233,11 @@ const Sidebar = ({ children, open, setOpen }) => {
       <AnimatePresence>
         {isMobileOpen && (
           <motion.div
-            initial={{ x: -280 }}
+            initial={{ x: -320 }}
             animate={{ x: 0 }}
-            exit={{ x: -280 }}
-            transition={{ duration: 0.3, type: "tween", ease: "easeOut" }}
-            className="fixed left-0 top-0 h-full w-[280px] bg-[#0f0f0f] border-r border-gray-900 overflow-hidden z-50 md:hidden flex flex-col"
+            exit={{ x: -320 }}
+            transition={{ duration: 0.35, type: "spring", damping: 25, stiffness: 300 }}
+            className="fixed left-0 top-0 bottom-0 w-[280px] max-w-[75vw] bg-gradient-to-b from-[#0f0f0f] to-[#050505] border-r border-gray-800 overflow-y-auto overflow-x-hidden z-50 md:hidden flex flex-col shadow-2xl"
             onClick={(e) => {
               if (e.target.closest('a') || e.target.closest('button:not(.fixed)')) {
                 setIsMobileOpen(false);
@@ -250,7 +253,7 @@ const Sidebar = ({ children, open, setOpen }) => {
 };
 
 const SidebarBody = (props) => (
-  <div className="flex h-full w-full flex-1 flex-col justify-between overflow-y-auto overflow-x-hidden px-3 md:px-3 py-3 md:py-3" {...props} />
+  <div className="flex h-full w-full flex-1 flex-col justify-between overflow-y-auto overflow-x-hidden px-2 md:px-3 py-4 md:py-3 space-y-1" {...props} />
 );
 
 const SidebarLink = ({ link, className = "", isActive = false, onClick, ...props }) => {
@@ -261,9 +264,10 @@ const SidebarLink = ({ link, className = "", isActive = false, onClick, ...props
     <motion.a
       href={link.href}
       onClick={(e) => { e.preventDefault(); if (onClick) onClick(link.page); }}
-      className={`relative flex items-center justify-center md:justify-start gap-3 px-3 md:px-3 py-2.5 md:py-2.5 rounded-lg transition-all group cursor-pointer mb-2 md:mb-1.5 ${className}`}
+      className={`relative flex items-center justify-start gap-3 px-2 md:px-3 py-3 md:py-2.5 rounded-lg transition-all group cursor-pointer mb-1 md:mb-1.5 touch-manipulation active:scale-95 ${className}`}
       onHoverStart={() => setIsHovered(true)}
       onHoverEnd={() => setIsHovered(false)}
+      whileTap={{ scale: 0.95 }}
       {...props}
     >
       {/* Fondo para items activos */}
@@ -279,7 +283,7 @@ const SidebarLink = ({ link, className = "", isActive = false, onClick, ...props
       {/* Indicador de línea para items activos */}
       {isActive && (
         <div
-          className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-6 bg-cyan-400 rounded-r-lg"
+          className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-6 md:h-6 bg-cyan-400 rounded-r-lg"
         />
       )}
 
@@ -297,7 +301,7 @@ const SidebarLink = ({ link, className = "", isActive = false, onClick, ...props
             animate={{ opacity: 1, x: 0 }}
             exit={{ opacity: 0, x: -10 }}
             transition={{ duration: 0.1, ease: "easeOut" }}
-            className={`relative z-10 text-sm font-medium whitespace-nowrap transition-colors hidden md:inline-block ${isActive ? 'text-white' : 'text-gray-400 group-hover:text-gray-200'}`}
+            className={`relative z-10 text-sm md:text-sm font-medium whitespace-nowrap transition-colors hidden md:inline-block ${isActive ? 'text-white' : 'text-gray-400 group-hover:text-gray-200'}`}
           >
             {link.label}
           </motion.span>
@@ -305,7 +309,7 @@ const SidebarLink = ({ link, className = "", isActive = false, onClick, ...props
       </AnimatePresence>
 
       {/* Móvil: siempre mostrar */}
-      <span className="relative z-10 text-sm font-medium whitespace-nowrap md:hidden">
+      <span className="relative z-10 text-xs md:text-sm font-medium whitespace-nowrap md:hidden text-center px-1">
         {link.label}
       </span>
     </motion.a>
@@ -315,7 +319,7 @@ const SidebarLink = ({ link, className = "", isActive = false, onClick, ...props
 const SidebarLogo = () => {
   const { open } = useContext(SidebarContext);
   return (
-    <div className="relative z-20 flex items-center justify-center md:justify-start gap-3 px-3 md:px-2 py-4 md:py-4 mb-8 md:mb-8 border-b border-gray-800 pb-4 md:pb-4 w-full">
+    <div className="relative z-20 flex items-center justify-center md:justify-start gap-3 px-2 md:px-2 py-4 md:py-4 mb-6 md:mb-8 border-b border-gray-800 pb-4 md:pb-4 w-full">
       <div className="w-10 md:w-10 h-10 md:h-10 flex items-center justify-center shrink-0 rounded-lg flex-shrink-0 bg-cyan-500/10 border border-cyan-500/30">
         <img src={iconLogo} alt="EnvyGuard" className="w-8 md:w-8 h-8 md:h-8 object-contain" />
       </div>
@@ -330,7 +334,7 @@ const SidebarLogo = () => {
             transition={{ duration: 0.1, ease: "easeOut" }}
             className="flex flex-col min-w-0 hidden md:flex"
           >
-            <span className="font-bold text-sm tracking-wide font-mono text-gray-50">ENVYGUARD</span>
+            <span className="font-bold text-sm md:text-sm tracking-wide font-mono text-gray-50">ENVYGUARD</span>
             <span className="text-[8px] text-gray-500 font-mono tracking-wider uppercase">V1.0</span>
           </motion.div>
         )}
@@ -341,10 +345,10 @@ const SidebarLogo = () => {
         initial={{ opacity: 0, x: -10 }}
         animate={{ opacity: 1, x: 0 }}
         transition={{ duration: 0.1, ease: "easeOut" }}
-        className="flex flex-col min-w-0 md:hidden"
+        className="flex flex-col min-w-0 md:hidden text-left"
       >
-        <span className="font-bold text-sm md:text-sm tracking-wide font-mono text-gray-50">ENVYGUARD</span>
-        <span className="text-[9px] md:text-[8px] text-gray-500 font-mono tracking-wider uppercase">V1.0</span>
+        <span className="font-bold text-xs md:text-sm tracking-wide font-mono text-gray-50">ENVYGUARD</span>
+        <span className="text-[7px] md:text-[8px] text-gray-500 font-mono tracking-wider uppercase">V1.0</span>
       </motion.div>
     </div>
   );
@@ -417,11 +421,12 @@ const UserProfile = ({
 
   return (
     <>
-      <div className="border-t border-gray-900 pt-3 md:pt-4 pb-2 md:pb-3 flex flex-col gap-2 md:gap-3">
+      <div className="border-t border-gray-900 pt-3 md:pt-4 pb-3 md:pb-3 flex flex-col gap-2 md:gap-3 px-2 md:px-0">
         {/* Profile Button */}
-        <button 
+        <motion.button 
           onClick={() => setShowProfileModal(true)}
-          className="flex items-center gap-2 md:gap-3 px-2 md:px-3 py-2 md:py-2.5 rounded-lg cursor-pointer hover:bg-cyan-500/10 transition-all border border-transparent hover:border-cyan-500/30 group w-full"
+          whileTap={{ scale: 0.98 }}
+          className="flex items-center gap-2 md:gap-3 px-2 md:px-3 py-3 md:py-2.5 rounded-lg cursor-pointer hover:bg-cyan-500/10 transition-all border border-transparent hover:border-cyan-500/30 group w-full touch-manipulation active:scale-95"
         >
           <div className="h-8 md:h-10 w-8 md:w-10 rounded-full bg-gradient-to-br from-cyan-500/20 to-cyan-900/20 p-[1px] shrink-0 flex items-center justify-center border border-cyan-500/20 group-hover:border-cyan-500/50 transition-colors overflow-hidden">
             {currentAvatarUrl ? (
@@ -440,20 +445,20 @@ const UserProfile = ({
           </AnimatePresence>
           {/* Siempre mostrar en móvil */}
           <div className="flex flex-col min-w-0 text-left flex-1 md:hidden">
-            <span className="text-xs font-semibold text-gray-100 truncate group-hover:text-cyan-400 transition-colors">{user?.name?.split(' ')[0]}</span>
-            <span className="text-[7px] text-gray-500 truncate font-mono group-hover:text-cyan-400/70 transition-colors">{user?.role}</span>
+            <span className="text-xs md:text-xs font-semibold text-gray-100 truncate group-hover:text-cyan-400 transition-colors">{user?.name?.split(' ')[0]}</span>
+            <span className="text-[8px] text-gray-500 truncate font-mono group-hover:text-cyan-400/70 transition-colors">{user?.role}</span>
           </div>
           {open && <Settings className="ml-auto text-gray-600 w-3 md:w-4 h-3 md:h-4 group-hover:text-cyan-400 transition-all duration-300 shrink-0 hidden md:block" />}
-        </button>
+        </motion.button>
 
         {/* Logout Button */}
         <motion.button
           whileHover={{ scale: 1.02 }}
-          whileTap={{ scale: 0.98 }}
-          className="w-full flex items-center justify-center gap-2 px-2 md:px-3 py-1.5 md:py-2 rounded text-xs md:text-sm text-gray-500 hover:text-red-400 transition-all group"
+          whileTap={{ scale: 0.95 }}
+          className="w-full flex items-center justify-center md:justify-start gap-2 px-2 md:px-3 py-2 md:py-2 rounded text-xs md:text-sm text-gray-500 hover:text-red-400 transition-all group touch-manipulation active:scale-95"
           onClick={onLogout}
         >
-          <LogOut size={14} className="shrink-0 md:w-4 md:h-4" />
+          <LogOut size={16} className="shrink-0 md:w-4 md:h-4" />
           <AnimatePresence mode="wait">
             {open && (
               <motion.span
@@ -471,201 +476,6 @@ const UserProfile = ({
           <span className="text-xs font-medium text-center md:hidden">Salir</span>
         </motion.button>
       </div>
-
-      {/* Profile Modal Global */}
-      <AnimatePresence>
-        {showProfileModal && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            onClick={() => setShowProfileModal(false)}
-            className="fixed inset-0 bg-black/70 backdrop-blur-md z-[9999] flex items-center justify-center p-4"
-          >
-            <motion.div
-              initial={{ scale: 0.8, opacity: 0, y: 20 }}
-              animate={{ scale: 1, opacity: 1, y: 0 }}
-              exit={{ scale: 0.8, opacity: 0, y: 20 }}
-              transition={{ type: "spring", stiffness: 300, damping: 30 }}
-              onClick={(e) => e.stopPropagation()}
-              className="bg-gradient-to-b from-gray-900/95 to-black/95 border border-cyan-500/30 rounded-2xl shadow-2xl shadow-cyan-500/10 w-full max-w-lg overflow-hidden"
-            >
-              {/* Header con gradiente */}
-              <div className="relative p-4 border-b border-cyan-500/20 bg-gradient-to-r from-cyan-900/20 via-transparent to-blue-900/20 overflow-hidden">
-                {/* Glow background */}
-                <div className="absolute top-0 right-0 w-64 h-64 bg-cyan-500/10 blur-[100px] pointer-events-none" />
-                
-                <div className="relative z-10 flex items-center justify-between gap-3">
-                  <div className="flex items-center gap-3 flex-1">
-                    {/* Avatar con lápiz */}
-                    <div className="relative group flex-shrink-0">
-                      <div className="h-12 w-12 rounded-lg bg-gradient-to-br from-cyan-500/30 to-blue-600/30 border-2 border-cyan-500/50 flex items-center justify-center shadow-lg shadow-cyan-500/20 transition-all duration-300 overflow-hidden">
-                        {currentAvatarUrl ? (
-                          <img src={currentAvatarUrl} alt="avatar" className="w-full h-full object-cover" />
-                        ) : (
-                          <span className="font-bold text-xl text-cyan-400">{user?.name?.charAt(0)}</span>
-                        )}
-                      </div>
-                      {/* Botón de lápiz flotante */}
-                      <motion.button
-                        whileHover={{ scale: 1.15 }}
-                        whileTap={{ scale: 0.9 }}
-                        onClick={() => setShowAvatarSelector(!showAvatarSelector)}
-                        className="absolute -bottom-1 -right-1 bg-gradient-to-br from-cyan-500 to-blue-600 rounded-full p-1.5 shadow-lg shadow-cyan-500/50 border border-cyan-300/50 hover:shadow-cyan-500/70 transition-all"
-                      >
-                        <Settings className="w-3 h-3 text-white" />
-                      </motion.button>
-                    </div>
-
-                    <div className="flex flex-col min-w-0">
-                      <h2 className="text-lg font-bold text-white truncate">{user?.name}</h2>
-                      <span className="text-cyan-400 font-mono text-xs uppercase tracking-widest font-bold">{user?.role}</span>
-                    </div>
-                  </div>
-                  <motion.button
-                    whileHover={{ scale: 1.1, rotate: 90 }}
-                    whileTap={{ scale: 0.9 }}
-                    onClick={() => setShowProfileModal(false)}
-                    className="text-gray-400 hover:text-cyan-400 transition-colors flex-shrink-0"
-                  >
-                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                    </svg>
-                  </motion.button>
-                </div>
-              </div>
-
-              {/* Body */}
-              <div className="p-6 space-y-6 max-h-[70vh] overflow-y-auto">
-                {/* Selector de Avatares - Aparece cuando se hace click en el lápiz */}
-                <AnimatePresence>
-                  {showAvatarSelector && (
-                    <motion.div
-                      initial={{ opacity: 0, height: 0 }}
-                      animate={{ opacity: 1, height: "auto" }}
-                      exit={{ opacity: 0, height: 0 }}
-                      transition={{ duration: 0.3 }}
-                      className="space-y-4 p-4 rounded-xl bg-gradient-to-br from-cyan-500/10 via-transparent to-blue-500/10 border border-cyan-500/20"
-                    >
-                      <div className="flex items-center gap-2 mb-6">
-                        <div className="h-1.5 w-10 bg-gradient-to-r from-cyan-500 via-blue-500 to-cyan-500 rounded-full" />
-                        <p className="text-sm font-bold text-cyan-300 uppercase tracking-widest">Personalizá tu Avatar</p>
-                      </div>
-
-                      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
-                        {avatarOptions.map((avatar, idx) => (
-                          <motion.button
-                            key={avatar.id}
-                            initial={{ opacity: 0, scale: 0.6, y: 20 }}
-                            animate={{ opacity: 1, scale: 1, y: 0 }}
-                            transition={{ delay: idx * 0.08, duration: 0.4, type: "spring", stiffness: 200, damping: 20 }}
-                            whileHover={{ scale: 1.12, y: -4 }}
-                            whileTap={{ scale: 0.90 }}
-                            onClick={() => {
-                              setSelectedAvatar(avatar.id);
-                              setShowAvatarSelector(false);
-                            }}
-                            className={`relative group overflow-hidden rounded-2xl transition-all duration-300 border-3 flex items-center justify-center cursor-pointer w-full aspect-square ${
-                              selectedAvatar === avatar.id
-                                ? `border-white shadow-2xl shadow-cyan-500/70 bg-gradient-to-br from-cyan-500/20 to-blue-600/20`
-                                : "bg-gradient-to-br from-gray-800/40 to-gray-900/40 border-gray-700/50 hover:border-cyan-500/70 hover:shadow-xl hover:shadow-cyan-500/40"
-                            }`}
-                            title={avatar.label}
-                          >
-                            {/* Fondo brillante */}
-                            <div className="absolute inset-0 bg-white/0 group-hover:bg-white/10 transition-all duration-300 rounded-2xl" />
-                            
-                            <div className="relative z-10 flex items-center justify-center w-full h-full">
-                              <img 
-                                src={getAvatarUrl(avatar)} 
-                                alt={avatar.label}
-                                className="w-full h-full rounded-xl object-cover transition-transform duration-300 group-hover:scale-110"
-                              />
-                            </div>
-
-                            {/* Checkmark para seleccionado con animación */}
-                            {selectedAvatar === avatar.id && (
-                              <motion.div
-                                initial={{ scale: 0, rotate: -180 }}
-                                animate={{ scale: 1, rotate: 0 }}
-                                transition={{ type: "spring", stiffness: 300, damping: 20 }}
-                                className="absolute top-2 right-2 bg-white rounded-full p-1.5 shadow-lg z-20"
-                              >
-                                <svg className="w-4 h-4 text-cyan-600 font-bold" fill="currentColor" viewBox="0 0 20 20">
-                                  <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-                                </svg>
-                              </motion.div>
-                            )}
-                          </motion.button>
-                        ))}
-                      </div>
-                    </motion.div>
-                  )}
-                </AnimatePresence>
-
-                {/* Información Principal */}
-                <motion.div
-                  initial={{ opacity: 0, y: 10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: 0.15 }}
-                  className="grid grid-cols-1 sm:grid-cols-2 gap-4"
-                >
-                  <div className="p-4 rounded-lg bg-white/5 border border-white/10 hover:border-cyan-500/30 transition-colors">
-                    <p className="text-[10px] font-mono text-gray-500 uppercase tracking-wider mb-1">Correo</p>
-                    <p className="text-sm text-gray-200 font-mono break-all">{user?.email || "admin@envyguard.com"}</p>
-                  </div>
-                  <div className="p-4 rounded-lg bg-white/5 border border-white/10 hover:border-cyan-500/30 transition-colors">
-                    <p className="text-[10px] font-mono text-gray-500 uppercase tracking-wider mb-1">Estado</p>
-                    <div className="flex items-center gap-2">
-                      <div className="relative w-2.5 h-2.5">
-                        <span className="absolute inset-0 rounded-full bg-green-500 z-10" />
-                        <span className="absolute inset-0 rounded-full bg-green-500 animate-ping" />
-                      </div>
-                      <span className="text-sm text-green-400 font-mono">Activo en línea</span>
-                    </div>
-                  </div>
-                </motion.div>
-
-                {/* Detalles */}
-                <motion.div
-                  initial={{ opacity: 0, y: 10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: 0.2 }}
-                  className="space-y-3 p-4 rounded-lg bg-gradient-to-r from-cyan-500/5 to-blue-500/5 border border-cyan-500/10"
-                >
-                  <div className="flex justify-between items-center">
-                    <span className="text-[10px] font-mono text-gray-500 uppercase tracking-wider">Departamento</span>
-                    <span className="text-sm text-gray-300 font-semibold">TI & Seguridad</span>
-                  </div>
-                  <div className="flex justify-between items-center">
-                    <span className="text-[10px] font-mono text-gray-500 uppercase tracking-wider">Último acceso</span>
-                    <span className="text-sm text-gray-300 font-mono flex items-center gap-2">
-                      <span className="inline-block w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse"></span>
-                      {lastAccessTime || "Cargando..."}
-                    </span>
-                  </div>
-                  <div className="flex justify-between items-center">
-                    <span className="text-[10px] font-mono text-gray-500 uppercase tracking-wider">Nivel de acceso</span>
-                    <span className="inline-block px-2 py-1 text-[10px] font-bold text-cyan-300 bg-cyan-500/10 border border-cyan-500/30 rounded">ADMINISTRADOR</span>
-                  </div>
-                </motion.div>
-
-                {/* Action Button */}
-                <div className="pt-4">
-                  <motion.button
-                    whileHover={{ scale: 1.05 }}
-                    whileTap={{ scale: 0.95 }}
-                    className="w-full px-4 py-3 rounded-lg bg-gradient-to-r from-cyan-500/20 to-blue-500/20 border border-cyan-500/30 hover:border-cyan-500/50 text-cyan-300 hover:text-cyan-100 font-semibold transition-all flex items-center justify-center gap-2"
-                  >
-                    <Edit2 size={16} />
-                    Editar Perfil
-                  </motion.button>
-                </div>
-              </div>
-            </motion.div>
-          </motion.div>
-        )}
-      </AnimatePresence>
     </>
   );
 };
@@ -882,7 +692,7 @@ const OverviewSection = ({ problemReports = [] }) => {
       <motion.div 
         initial="hidden" animate="visible" 
         variants={{ visible: { transition: { staggerChildren: 0.05 } } }}
-        className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4"
+        className="grid grid-cols-2 md:grid-cols-4 gap-4"
       >
         {[
           { label: "Total Computadores", value: "12", icon: Monitor, color: "text-cyan-400", bg: "from-cyan-500/10 to-transparent", border: "border-cyan-500/20" },
@@ -911,15 +721,15 @@ const OverviewSection = ({ problemReports = [] }) => {
         ))}
       </motion.div>
       {/* Charts & Logs Area */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 md:gap-6 h-full">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-1 md:gap-6 h-full">
         
         {/* Novedades Pendientes - Terminal Style */}
         <motion.div
           initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.2 }}
           className="lg:col-span-2 rounded-xl border border-cyan-500/40 bg-black/80 backdrop-blur-md flex flex-col overflow-hidden transition-all duration-300"
           style={{
-            minHeight: '300px',
-            maxHeight: `${Math.min(300 + problemReports.filter(r => r.status === "open").length * 80, 800)}px`
+            minHeight: 'auto',
+            maxHeight: window.innerWidth < 768 ? '450px' : `${Math.min(300 + problemReports.filter(r => r.status === "open").length * 80, 800)}px`
           }}
         >
           {/* Terminal Header */}
@@ -1023,8 +833,8 @@ const OverviewSection = ({ problemReports = [] }) => {
           initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.3 }}
           className="rounded-xl border border-purple-500/40 bg-black/80 backdrop-blur-md p-6 flex flex-col overflow-hidden transition-all duration-300"
           style={{
-            minHeight: '300px',
-            maxHeight: '300px'
+            minHeight: 'auto',
+            maxHeight: window.innerWidth < 768 ? '600px' : '300px'
           }}
         >
           <h3 className="font-bold text-purple-400 mb-4 flex items-center gap-2 font-mono text-xs flex-shrink-0">
@@ -1094,102 +904,96 @@ const ComputerMonitoringSection = ({ showDeployModal, setShowDeployModal, deploy
   const salas = {
     sala1: {
       nombre: "Sala 1",
-      stats: { total: 36, online: 34, power: "4.2kW" },
+      stats: { total: 36, online: 36, power: "3.6kW" },
       layout: [
-        // Columna A
-        { 
-          col: 1, 
-          pcs: [
-            { id: "s1-col1-pc1", status: "online", ip: "10.0.20.35", cpuCode: "0374" },
-            { id: "s1-col1-pc2", status: "no_internet", ip: "10.0.20.34", cpuCode: "0371" },
-            { id: "s1-col1-pc3", status: "online", ip: "10.0.20.24", cpuCode: "0368" },
-            { id: "s1-col1-pc4", status: "offline", ip: "10.0.20.31", cpuCode: "0365" }
-          ],
-          paired: true,
-          pairedCol: 2
-        },
-        // Columna B
-        { 
-          col: 2, 
-          pcs: [
-            { id: "s1-col2-pc1", status: "online", ip: "10.0.20.20", cpuCode: "0353" },
-            { id: "s1-col2-pc2", status: "online", ip: "10.0.20.13", cpuCode: "0356" },
-            { id: "s1-col2-pc3", status: "online", ip: "10.0.20.36", cpuCode: "0943" },
-            { id: "s1-col2-pc4", status: "online", ip: "10.0.20.32", cpuCode: "0442" }
-          ]
-        },
-        // Columna C
-        { 
-          col: 3, 
-          pcs: [
-            { id: "s1-col3-pc1", status: "online", ip: "10.0.20.12", cpuCode: "0350" },
-            { id: "s1-col3-pc2", status: "online", ip: "10.0.20.39", cpuCode: "0347" },
-            { id: "s1-col3-pc3", status: "no_internet", ip: "10.0.20.33", cpuCode: "0344" },
-            { id: "s1-col3-pc4", status: "offline", ip: "10.0.20.43", cpuCode: "0341" }
-          ],
-          paired: true,
-          pairedCol: 4
-        },
-        // Columna D
-        { 
-          col: 4, 
-          pcs: [
-            { id: "s1-col4-pc1", status: "online", ip: "10.0.20.41", cpuCode: "0329" },
-            { id: "s1-col4-pc2", status: "online", ip: "10.0.20.42", cpuCode: "0332" },
-            { id: "s1-col4-pc3", status: "online", ip: "10.0.20.17", cpuCode: "0335" },
-            { id: "s1-col4-pc4", status: "online", ip: "10.0.20.37", cpuCode: "0338" }
-          ]
-        },
-        // Columna E
-        { 
-          col: 5, 
-          pcs: [
-            { id: "s1-col5-pc1", status: "online", ip: "10.0.20.46", cpuCode: "0326" },
-            { id: "s1-col5-pc2", status: "online", ip: "10.0.20.14", cpuCode: "0323" },
-            { id: "s1-col5-pc3", status: "online", ip: "10.0.20.38", cpuCode: "0320" },
-            { id: "s1-col5-pc4", status: "online", ip: "10.0.20.16", cpuCode: "0317" }
-          ],
-          paired: true,
-          pairedCol: 6
-        },
-        // Columna F
-        { 
-          col: 6, 
-          pcs: [
-            { id: "s1-col6-pc1", status: "online", ip: "10.0.20.5", cpuCode: "0308" },
-            { id: "s1-col6-pc2", status: "online", ip: "10.0.20.11", cpuCode: "0311" },
-            { id: "s1-col6-pc3", status: "online", ip: "10.0.20.44", cpuCode: "0305" },
-            { id: "s1-col6-pc4", status: "online", ip: "10.0.20.21", cpuCode: "0314" }
-          ]
-        },
-        // Fila 1 (Horizontal) - 6 PCs
+        // LADO IZQUIERDO - Fila 1 (4 PCs)
         { 
           row: 1, 
           pcs: [
-            { id: "s1-row1-pc1", status: "online", ip: "10.0.20.19", cpuCode: "0377" },
-            { id: "s1-row1-pc2", status: "online", ip: "10.0.20.53", cpuCode: "0380" },
-            { id: "s1-row1-pc3", status: "online", ip: "10.0.20.49", cpuCode: "0363" },
-            { id: "s1-row1-pc4", status: "online", ip: "10.0.20.9", cpuCode: "0386" },
-            { id: "s1-row1-pc5", status: "online", ip: "10.0.20.52", cpuCode: "0389" },
-            { id: "s1-row1-pc6", status: "online", ip: "10.0.20.51", cpuCode: "0392" }
+            { id: "s1-row1-pc1", status: "online", ip: "10.0.20.35", cpuCode: "0374" },
+            { id: "s1-row1-pc2", status: "online", ip: "10.0.20.34", cpuCode: "0371" },
+            { id: "s1-row1-pc3", status: "online", ip: "10.0.20.24", cpuCode: "0368" },
+            { id: "s1-row1-pc4", status: "online", ip: "10.0.20.31", cpuCode: "0365" }
           ]
         },
-        // Fila 2 (Horizontal) - 6 PCs
+        // LADO IZQUIERDO - Fila 2 (4 PCs)
         { 
           row: 2, 
           pcs: [
-            { id: "s1-row2-pc1", status: "online", ip: "10.0.20.40", cpuCode: "0411" },
-            { id: "s1-row2-pc2", status: "online", ip: "10.0.20.45", cpuCode: "0407" },
-            { id: "s1-row2-pc3", status: "online", ip: "10.0.20.56", cpuCode: "0404" },
-            { id: "s1-row2-pc4", status: "online", ip: "10.0.20.50", cpuCode: "0401" },
-            { id: "s1-row2-pc5", status: "online", ip: "10.0.20.48", cpuCode: "0398" },
-            { id: "s1-row2-pc6", status: "online", ip: "10.0.20.48", cpuCode: "0395" }
+            { id: "s1-row2-pc1", status: "online", ip: "10.0.20.20", cpuCode: "0353" },
+            { id: "s1-row2-pc2", status: "online", ip: "10.0.20.13", cpuCode: "0356" },
+            { id: "s1-row2-pc3", status: "online", ip: "10.0.20.36", cpuCode: "0943" },
+            { id: "s1-row2-pc4", status: "online", ip: "10.0.20.32", cpuCode: "0442" }
+          ]
+        },
+        // LADO IZQUIERDO - Fila 3 (4 PCs)
+        { 
+          row: 3, 
+          pcs: [
+            { id: "s1-row3-pc1", status: "online", ip: "10.0.20.12", cpuCode: "0350" },
+            { id: "s1-row3-pc2", status: "online", ip: "10.0.20.39", cpuCode: "0347" },
+            { id: "s1-row3-pc3", status: "online", ip: "10.0.20.33", cpuCode: "0344" },
+            { id: "s1-row3-pc4", status: "online", ip: "10.0.20.43", cpuCode: "0341" }
+          ]
+        },
+        // LADO IZQUIERDO - Fila 4 (4 PCs)
+        { 
+          row: 4, 
+          pcs: [
+            { id: "s1-row4-pc1", status: "online", ip: "10.0.20.41", cpuCode: "0329" },
+            { id: "s1-row4-pc2", status: "online", ip: "10.0.20.42", cpuCode: "0332" },
+            { id: "s1-row4-pc3", status: "online", ip: "10.0.20.17", cpuCode: "0335" },
+            { id: "s1-row4-pc4", status: "online", ip: "10.0.20.37", cpuCode: "0338" }
+          ]
+        },
+        // LADO IZQUIERDO - Fila 5 (4 PCs)
+        { 
+          row: 5, 
+          pcs: [
+            { id: "s1-row5-pc1", status: "online", ip: "10.0.20.46", cpuCode: "0326" },
+            { id: "s1-row5-pc2", status: "online", ip: "10.0.20.14", cpuCode: "0323" },
+            { id: "s1-row5-pc3", status: "online", ip: "10.0.20.38", cpuCode: "0320" },
+            { id: "s1-row5-pc4", status: "online", ip: "10.0.20.16", cpuCode: "0317" }
+          ]
+        },
+        // LADO IZQUIERDO - Fila 6 (4 PCs)
+        { 
+          row: 6, 
+          pcs: [
+            { id: "s1-row6-pc1", status: "online", ip: "10.0.20.5", cpuCode: "0308" },
+            { id: "s1-row6-pc2", status: "online", ip: "10.0.20.11", cpuCode: "0311" },
+            { id: "s1-row6-pc3", status: "online", ip: "10.0.20.44", cpuCode: "0305" },
+            { id: "s1-row6-pc4", status: "online", ip: "10.0.20.21", cpuCode: "0314" }
+          ]
+        },
+        // LADO DERECHO - Columna 1 (6 PCs)
+        { 
+          col: 1, 
+          pcs: [
+            { id: "s1-col1-pc1", status: "online", ip: "10.0.20.19", cpuCode: "0377" },
+            { id: "s1-col1-pc2", status: "online", ip: "10.0.20.53", cpuCode: "0380" },
+            { id: "s1-col1-pc3", status: "online", ip: "10.0.20.49", cpuCode: "0363" },
+            { id: "s1-col1-pc4", status: "online", ip: "10.0.20.9", cpuCode: "0386" },
+            { id: "s1-col1-pc5", status: "online", ip: "10.0.20.52", cpuCode: "0389" },
+            { id: "s1-col1-pc6", status: "online", ip: "10.0.20.51", cpuCode: "0392" }
+          ]
+        },
+        // LADO DERECHO - Columna 2 (6 PCs)
+        { 
+          col: 2, 
+          pcs: [
+            { id: "s1-col2-pc1", status: "online", ip: "10.0.20.40", cpuCode: "0411" },
+            { id: "s1-col2-pc2", status: "online", ip: "10.0.20.45", cpuCode: "0407" },
+            { id: "s1-col2-pc3", status: "online", ip: "10.0.20.56", cpuCode: "0404" },
+            { id: "s1-col2-pc4", status: "online", ip: "10.0.20.50", cpuCode: "0401" },
+            { id: "s1-col2-pc5", status: "online", ip: "10.0.20.48", cpuCode: "0398" },
+            { id: "s1-col2-pc6", status: "online", ip: "10.0.20.48", cpuCode: "0395" }
           ]
         }
       ]
     },
     salaAdicional: { 
-      nombre: "Sala Adicional - Piso 1", 
+      nombre: "workshop - Piso 1", 
       stats: { total: 18, online: 18, power: "1.8kW" }, 
       layout: [
         { 
@@ -1305,7 +1109,7 @@ const ComputerMonitoringSection = ({ showDeployModal, setShowDeployModal, deploy
       ]
     },
     salaAdicional2: { 
-      nombre: "Sala Adicional - Piso 2", 
+      nombre: "workshop - Piso 2", 
       stats: { total: 16, online: 16, power: "1.6kW" }, 
       layout: [
         { 
@@ -1928,10 +1732,87 @@ const ComputerMonitoringSection = ({ showDeployModal, setShowDeployModal, deploy
         />
         
         <div className="relative z-10">
-          {(selectedSala === 'sala1' || selectedSala === 'salaAdicional' || selectedSala === 'salaAdicional2') ? (
+          {selectedSala === 'sala1' ? (
+            <div className="flex flex-col gap-8 lg:gap-12 w-full">
+              {/* VENTANA - Título superior */}
+              <div className="w-full text-center">
+                <div className="text-lg font-mono text-cyan-400 uppercase tracking-widest font-bold border-b-2 border-cyan-500/50 pb-3 inline-block px-8">
+                  VENTANA
+                </div>
+              </div>
+
+              {/* Contenedor principal - Lado Izquierdo y Derecho */}
+              <div className="flex flex-col lg:flex-row gap-8 lg:gap-12 w-full justify-center">
+                {/* LADO IZQUIERDO: 3 Pares de Filas de 4 PCs */}
+                <div className="flex flex-col gap-8 w-full lg:w-auto">
+                {/* Filas 1-2 */}
+                <div className="flex flex-col gap-3">
+                  {currentRoom.layout.slice(0, 2).map((row, idx) => (
+                    <div key={`row-pair1-${idx}`} className="flex items-center gap-4">
+                      <div className="text-sm font-mono text-cyan-400 uppercase tracking-wider min-w-12 text-right">
+                        COL {String.fromCharCode(70 - idx)}
+                      </div>
+                      <div className="p-3 md:p-4 rounded-lg bg-black/30 border border-white/10 hover:border-cyan-500/30 transition-colors">
+                        <div className="flex flex-wrap gap-2 md:gap-3 justify-center">
+                          {row.pcs && row.pcs.slice(0, 4).map(pc => <PCCard key={pc.id} pc={pc} />)}
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+
+                {/* Filas 3-4 */}
+                <div className="flex flex-col gap-3">
+                  {currentRoom.layout.slice(2, 4).map((row, idx) => (
+                    <div key={`row-pair2-${idx}`} className="flex items-center gap-4">
+                      <div className="text-sm font-mono text-cyan-400 uppercase tracking-wider min-w-12 text-right">
+                        COL {String.fromCharCode(68 - idx)}
+                      </div>
+                      <div className="p-3 md:p-4 rounded-lg bg-black/30 border border-white/10 hover:border-cyan-500/30 transition-colors">
+                        <div className="flex flex-wrap gap-2 md:gap-3 justify-center">
+                          {row.pcs && row.pcs.slice(0, 4).map(pc => <PCCard key={pc.id} pc={pc} />)}
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+
+                {/* Filas 5-6 */}
+                <div className="flex flex-col gap-3">
+                  {currentRoom.layout.slice(4, 6).map((row, idx) => (
+                    <div key={`row-pair3-${idx}`} className="flex items-center gap-4">
+                      <div className="text-sm font-mono text-cyan-400 uppercase tracking-wider min-w-12 text-right">
+                        COL {String.fromCharCode(66 - idx)}
+                      </div>
+                      <div className="p-3 md:p-4 rounded-lg bg-black/30 border border-white/10 hover:border-cyan-500/30 transition-colors">
+                        <div className="flex flex-wrap gap-2 md:gap-3 justify-center">
+                          {row.pcs && row.pcs.slice(0, 4).map(pc => <PCCard key={pc.id} pc={pc} />)}
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* LADO DERECHO: 2 Columnas de 6 PCs cada una */}
+              <div className="flex flex-col gap-8 w-full lg:w-auto justify-center lg:justify-center">
+                <div className="flex gap-6 md:gap-8 justify-center">
+                  {currentRoom.layout.slice(6, 8).map((col, idx) => (
+                    <div key={`col-${idx}`} className="flex flex-col gap-2 md:gap-3">
+                      <div className="text-sm font-mono text-cyan-400 uppercase tracking-wider text-center">FILA {idx + 1}</div>
+                      <div className="p-3 md:p-4 rounded-lg bg-black/30 border border-white/10 hover:border-cyan-500/30 transition-colors flex flex-col gap-2 md:gap-3">
+                        {col.pcs && col.pcs.map(pc => <PCCard key={pc.id} pc={pc} />)}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+              </div>
+            </div>
+          ) : (selectedSala === 'salaAdicional' || selectedSala === 'salaAdicional2') ? (
             <div className="space-y-6 md:space-y-12 flex flex-col items-center w-full">
               {/* 3 Pares de Columnas Verticales - Responsivas */}
-              <div className="flex flex-col md:flex-row justify-center gap-4 md:gap-8 w-full flex-wrap md:flex-nowrap">
+              <div className="flex flex-col md:flex-row justify-center gap-4 md:gap-8 w-full flex-wrap md:flex-nowrap items-start">
                 {/* Grupo 1 */}
                 <div className="flex gap-1 w-full md:w-auto justify-center">
                   {currentRoom.layout.slice(0, 2).map((col, idx) => (
@@ -1941,6 +1822,15 @@ const ComputerMonitoringSection = ({ showDeployModal, setShowDeployModal, deploy
                     </div>
                   ))}
                 </div>
+                
+                {/* TABLERO*/}
+                {selectedSala === 'salaAdicional2' && (
+                  <div className="hidden lg:flex flex-col justify-center items-center gap-2">
+                    <div className="w-60 h-8 bg-gradient-to-br from-yellow-900/40 to-yellow-800/20 border-2 border-yellow-600/50 rounded-lg flex items-center justify-center">
+                      <div className="text-[10px] font-mono text-yellow-500 uppercase tracking-wider font-bold text-center">TABLERO</div>
+                    </div>
+                  </div>
+                )}
                 
                 {/* Grupo 2 */}
                 <div className="flex gap-1 w-full md:w-auto justify-center">
@@ -1952,14 +1842,32 @@ const ComputerMonitoringSection = ({ showDeployModal, setShowDeployModal, deploy
                   ))}
                 </div>
                 
-                {/* Grupo 3 */}
-                <div className="flex gap-1 w-full md:w-auto justify-center">
-                  {currentRoom.layout.slice(4, 6).map((col, idx) => (
-                    <div key={idx + 4} className="flex flex-col gap-2 md:gap-4 p-3 md:p-6 rounded-xl bg-black/40 border border-white/5 hover:border-cyan-500/20 transition-colors">
-                      <div className="text-[9px] md:text-[10px] text-cyan-500 font-mono text-center uppercase tracking-wider mb-1 md:mb-2">COL-{String.fromCharCode(69 + idx)}</div>
-                      {col.pcs && col.pcs.map(pc => <PCCard key={pc.id} pc={pc} />)}
+                {/* Grupo 3 + Título SALA 1 */}
+                <div className="flex gap-16 w-full md:w-auto justify-center items-start">
+                  <div className="flex gap-1">
+                    {currentRoom.layout.slice(4, 6).map((col, idx) => (
+                      <div key={idx + 4} className="flex flex-col gap-2 md:gap-4 p-3 md:p-6 rounded-xl bg-black/40 border border-white/5 hover:border-cyan-500/20 transition-colors">
+                        <div className="text-[9px] md:text-[10px] text-cyan-500 font-mono text-center uppercase tracking-wider mb-1 md:mb-2">COL-{String.fromCharCode(69 + idx)}</div>
+                        {col.pcs && col.pcs.map(pc => <PCCard key={pc.id} pc={pc} />)}
+                      </div>
+                    ))}
+                  </div>
+                  
+                  {/* Línea del porte de la sala - Más grande y visible */}
+                  <div className="hidden lg:flex flex-col items-center gap-4 h-full">
+                    <div className="w-2 bg-gradient-to-b from-transparent via-red-500 to-transparent" style={{ height: '500px' }} />
+                  </div>
+                  
+                  {/* Título al lado de Columna F - Más grande y visible */}
+                  <div className="hidden lg:flex flex-col justify-center items-center">
+                    <div className="text-xl font-mono text-red-400 uppercase tracking-widest font-bold py-16 whitespace-nowrap">
+                      {selectedSala === 'salaAdicional' ? (
+                        <>SALA<br />1</>
+                      ) : (
+                        <>SALA<br />2</>
+                      )}
                     </div>
-                  ))}
+                  </div>
                 </div>
               </div>
 
@@ -1983,7 +1891,16 @@ const ComputerMonitoringSection = ({ showDeployModal, setShowDeployModal, deploy
             </div>
           ) : (
             // LÓGICA DE RENDERIZADO ESTÁNDAR PARA SALAS 2, 3 Y 4 - RESPONSIVA
-            <div className="space-y-4 md:space-y-6">
+            <div className="space-y-6 md:space-y-8 w-full">
+              {/* TV - Adelante de la sala */}
+              <div className="w-full text-center">
+                <div className="text-lg font-mono text-cyan-400 uppercase tracking-widest font-bold border-b-2 border-cyan-500/50 pb-3 inline-block px-8">
+                  TV
+                </div>
+              </div>
+
+              {/* Filas de la sala */}
+              <div className="space-y-4 md:space-y-6">
                 {currentRoom.layout.map((fila, i) => (
                   <div key={i} className="flex flex-col md:flex-row gap-3 md:gap-6 p-3 md:p-4 rounded-xl bg-black/40 border border-white/5 hover:border-cyan-500/20 transition-colors">
                     {/* Fila Izquierda */}
@@ -2014,6 +1931,14 @@ const ComputerMonitoringSection = ({ showDeployModal, setShowDeployModal, deploy
                     </div>
                   </div>
                 ))}
+              </div>
+
+              {/* SALIDA - Atrás de la sala */}
+              <div className="w-full text-center">
+                <div className="text-lg font-mono text-red-400 uppercase tracking-widest font-bold border-t-2 border-red-500/50 pt-3 inline-block px-8">
+                  SALIDA
+                </div>
+              </div>
             </div>
           )}
         </div>
@@ -5262,6 +5187,10 @@ const DashboardLayout = () => {
   console.log('🔐 userRole en Dashboard:', userRole);
   console.log('🔐 Links incluyen Gestión de Usuarios:', links.some(l => l.page === 'users'));
 
+  // Calcular currentAvatarUrl para el modal
+  const selectedAvatarData = avatarOptions.find(a => a.id === selectedAvatar);
+  const currentAvatarUrl = selectedAvatar ? getAvatarUrl(selectedAvatarData) : null;
+
   return (
     <div className="flex w-full h-screen bg-[#020202] overflow-hidden font-sans text-gray-200 selection:bg-cyan-500/30">
       <Sidebar open={open} setOpen={setOpen}>
@@ -5312,6 +5241,201 @@ const DashboardLayout = () => {
           setDeployTargetPCs={setDeployTargetPCs}
         />
       </div>
+
+      {/* Profile Modal - Nivel superior para que aparezca sobre el sidebar */}
+      <AnimatePresence>
+        {showProfileModal && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            onClick={() => setShowProfileModal(false)}
+            className="fixed inset-0 bg-black/70 backdrop-blur-md z-[9999] flex items-center justify-center p-4"
+          >
+            <motion.div
+              initial={{ scale: 0.8, opacity: 0, y: 20 }}
+              animate={{ scale: 1, opacity: 1, y: 0 }}
+              exit={{ scale: 0.8, opacity: 0, y: 20 }}
+              transition={{ type: "spring", stiffness: 300, damping: 30 }}
+              onClick={(e) => e.stopPropagation()}
+              className="bg-gradient-to-b from-gray-900/95 to-black/95 border border-cyan-500/30 rounded-2xl shadow-2xl shadow-cyan-500/10 w-full max-w-lg overflow-hidden"
+            >
+              {/* Header con gradiente */}
+              <div className="relative p-4 border-b border-cyan-500/20 bg-gradient-to-r from-cyan-900/20 via-transparent to-blue-900/20 overflow-hidden">
+                {/* Glow background */}
+                <div className="absolute top-0 right-0 w-64 h-64 bg-cyan-500/10 blur-[100px] pointer-events-none" />
+                
+                <div className="relative z-10 flex items-center justify-between gap-3">
+                  <div className="flex items-center gap-3 flex-1">
+                    {/* Avatar con lápiz */}
+                    <div className="relative group flex-shrink-0">
+                      <div className="h-12 w-12 rounded-lg bg-gradient-to-br from-cyan-500/30 to-blue-600/30 border-2 border-cyan-500/50 flex items-center justify-center shadow-lg shadow-cyan-500/20 transition-all duration-300 overflow-hidden">
+                        {currentUser && currentAvatarUrl ? (
+                          <img src={currentAvatarUrl} alt="avatar" className="w-full h-full object-cover" />
+                        ) : (
+                          <span className="font-bold text-xl text-cyan-400">{currentUser?.name?.charAt(0)}</span>
+                        )}
+                      </div>
+                      {/* Botón de lápiz flotante */}
+                      <motion.button
+                        whileHover={{ scale: 1.15 }}
+                        whileTap={{ scale: 0.9 }}
+                        onClick={() => setShowAvatarSelector(!showAvatarSelector)}
+                        className="absolute -bottom-1 -right-1 bg-gradient-to-br from-cyan-500 to-blue-600 rounded-full p-1.5 shadow-lg shadow-cyan-500/50 border border-cyan-300/50 hover:shadow-cyan-500/70 transition-all"
+                      >
+                        <Settings className="w-3 h-3 text-white" />
+                      </motion.button>
+                    </div>
+
+                    <div className="flex flex-col min-w-0">
+                      <h2 className="text-lg font-bold text-white truncate">{currentUser?.name}</h2>
+                      <span className="text-cyan-400 font-mono text-xs uppercase tracking-widest font-bold">{currentUser?.role}</span>
+                    </div>
+                  </div>
+                  <motion.button
+                    whileHover={{ scale: 1.1, rotate: 90 }}
+                    whileTap={{ scale: 0.9 }}
+                    onClick={() => setShowProfileModal(false)}
+                    className="text-gray-400 hover:text-cyan-400 transition-colors flex-shrink-0"
+                  >
+                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                  </motion.button>
+                </div>
+              </div>
+
+              {/* Body */}
+              <div className="p-6 space-y-6 max-h-[70vh] overflow-y-auto">
+                {/* Selector de Avatares - Aparece cuando se hace click en el lápiz */}
+                <AnimatePresence>
+                  {showAvatarSelector && (
+                    <motion.div
+                      initial={{ opacity: 0, height: 0 }}
+                      animate={{ opacity: 1, height: "auto" }}
+                      exit={{ opacity: 0, height: 0 }}
+                      transition={{ duration: 0.3 }}
+                      className="space-y-4 p-4 rounded-xl bg-gradient-to-br from-cyan-500/10 via-transparent to-blue-500/10 border border-cyan-500/20"
+                    >
+                      <div className="flex items-center gap-2 mb-6">
+                        <div className="h-1.5 w-10 bg-gradient-to-r from-cyan-500 via-blue-500 to-cyan-500 rounded-full" />
+                        <p className="text-sm font-bold text-cyan-300 uppercase tracking-widest">Personalizá tu Avatar</p>
+                      </div>
+
+                      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
+                        {avatarOptions.map((avatar, idx) => (
+                          <motion.button
+                            key={avatar.id}
+                            initial={{ opacity: 0, scale: 0.6, y: 20 }}
+                            animate={{ opacity: 1, scale: 1, y: 0 }}
+                            transition={{ delay: idx * 0.08, duration: 0.4, type: "spring", stiffness: 200, damping: 20 }}
+                            whileHover={{ scale: 1.12, y: -4 }}
+                            whileTap={{ scale: 0.90 }}
+                            onClick={() => {
+                              setSelectedAvatar(avatar.id);
+                              setShowAvatarSelector(false);
+                            }}
+                            className={`relative group overflow-hidden rounded-2xl transition-all duration-300 border-3 flex items-center justify-center cursor-pointer w-full aspect-square ${
+                              selectedAvatar === avatar.id
+                                ? `border-white shadow-2xl shadow-cyan-500/70 bg-gradient-to-br from-cyan-500/20 to-blue-600/20`
+                                : "bg-gradient-to-br from-gray-800/40 to-gray-900/40 border-gray-700/50 hover:border-cyan-500/70 hover:shadow-xl hover:shadow-cyan-500/40"
+                            }`}
+                            title={avatar.label}
+                          >
+                            {/* Fondo brillante */}
+                            <div className="absolute inset-0 bg-white/0 group-hover:bg-white/10 transition-all duration-300 rounded-2xl" />
+                            
+                            <div className="relative z-10 flex items-center justify-center w-full h-full">
+                              <img 
+                                src={getAvatarUrl(avatar)} 
+                                alt={avatar.label}
+                                className="w-full h-full rounded-xl object-cover transition-transform duration-300 group-hover:scale-110"
+                              />
+                            </div>
+
+                            {/* Checkmark para seleccionado con animación */}
+                            {selectedAvatar === avatar.id && (
+                              <motion.div
+                                initial={{ scale: 0, rotate: -180 }}
+                                animate={{ scale: 1, rotate: 0 }}
+                                transition={{ type: "spring", stiffness: 300, damping: 20 }}
+                                className="absolute top-2 right-2 bg-white rounded-full p-1.5 shadow-lg z-20"
+                              >
+                                <svg className="w-4 h-4 text-cyan-600 font-bold" fill="currentColor" viewBox="0 0 20 20">
+                                  <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                                </svg>
+                              </motion.div>
+                            )}
+                          </motion.button>
+                        ))}
+                      </div>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+
+                {/* Información Principal */}
+                <motion.div
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.15 }}
+                  className="grid grid-cols-1 sm:grid-cols-2 gap-4"
+                >
+                  <div className="p-4 rounded-lg bg-white/5 border border-white/10 hover:border-cyan-500/30 transition-colors">
+                    <p className="text-[10px] font-mono text-gray-500 uppercase tracking-wider mb-1">Correo</p>
+                    <p className="text-sm text-gray-200 font-mono break-all">{currentUser?.email || "admin@envyguard.com"}</p>
+                  </div>
+                  <div className="p-4 rounded-lg bg-white/5 border border-white/10 hover:border-cyan-500/30 transition-colors">
+                    <p className="text-[10px] font-mono text-gray-500 uppercase tracking-wider mb-1">Estado</p>
+                    <div className="flex items-center gap-2">
+                      <div className="relative w-2.5 h-2.5">
+                        <span className="absolute inset-0 rounded-full bg-green-500 z-10" />
+                        <span className="absolute inset-0 rounded-full bg-green-500 animate-ping" />
+                      </div>
+                      <span className="text-sm text-green-400 font-mono">Activo en línea</span>
+                    </div>
+                  </div>
+                </motion.div>
+
+                {/* Detalles */}
+                <motion.div
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.2 }}
+                  className="space-y-3 p-4 rounded-lg bg-gradient-to-r from-cyan-500/5 to-blue-500/5 border border-cyan-500/10"
+                >
+                  <div className="flex justify-between items-center">
+                    <span className="text-[10px] font-mono text-gray-500 uppercase tracking-wider">Departamento</span>
+                    <span className="text-sm text-gray-300 font-semibold">TI & Seguridad</span>
+                  </div>
+                  <div className="flex justify-between items-center">
+                    <span className="text-[10px] font-mono text-gray-500 uppercase tracking-wider">Último acceso</span>
+                    <span className="text-sm text-gray-300 font-mono flex items-center gap-2">
+                      <span className="inline-block w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse"></span>
+                      Cargando...
+                    </span>
+                  </div>
+                  <div className="flex justify-between items-center">
+                    <span className="text-[10px] font-mono text-gray-500 uppercase tracking-wider">Nivel de acceso</span>
+                    <span className="inline-block px-2 py-1 text-[10px] font-bold text-cyan-300 bg-cyan-500/10 border border-cyan-500/30 rounded">ADMINISTRADOR</span>
+                  </div>
+                </motion.div>
+
+                {/* Action Button */}
+                <div className="pt-4">
+                  <motion.button
+                    whileHover={{ scale: 1.05 }}
+                    whileTap={{ scale: 0.95 }}
+                    className="w-full px-4 py-3 rounded-lg bg-gradient-to-r from-cyan-500/20 to-blue-500/20 border border-cyan-500/30 hover:border-cyan-500/50 text-cyan-300 hover:text-cyan-100 font-semibold transition-all flex items-center justify-center gap-2"
+                  >
+                    <Edit2 size={16} />
+                    Editar Perfil
+                  </motion.button>
+                </div>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }
