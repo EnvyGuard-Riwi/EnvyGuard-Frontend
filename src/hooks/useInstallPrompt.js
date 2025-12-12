@@ -4,6 +4,7 @@ export const useInstallPrompt = () => {
   const [installPrompt, setInstallPrompt] = useState(null);
   const [isInstalled, setIsInstalled] = useState(false);
   const [isIOS, setIsIOS] = useState(false);
+  const [isInstalling, setIsInstalling] = useState(false);
 
   useEffect(() => {
     // Verificar si está en iOS
@@ -20,13 +21,15 @@ export const useInstallPrompt = () => {
       // Prevenir que el navegador muestre el prompt automático
       event.preventDefault();
       setInstallPrompt(event);
+      console.log('📱 beforeinstallprompt capturado - PWA lista para instalar');
     };
 
     // Evento appinstalled
     const handleAppInstalled = () => {
       setInstallPrompt(null);
       setIsInstalled(true);
-      console.log('Aplicación instalada exitosamente');
+      setIsInstalling(false);
+      console.log('✅ Aplicación instalada exitosamente');
     };
 
     window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
@@ -40,16 +43,30 @@ export const useInstallPrompt = () => {
 
   const handleInstall = async () => {
     if (!installPrompt) {
+      console.warn('⚠️ No hay prompt de instalación disponible');
       return;
     }
 
     try {
+      setIsInstalling(true);
+      
+      // Mostrar el prompt
       installPrompt.prompt();
+      
+      // Esperar la respuesta del usuario
       const { outcome } = await installPrompt.userChoice;
-      console.log(`El usuario ${outcome} la instalación`);
-      setInstallPrompt(null);
+      
+      if (outcome === 'accepted') {
+        console.log('✅ Usuario aceptó la instalación');
+        setInstallPrompt(null);
+      } else if (outcome === 'dismissed') {
+        console.log('ℹ️ Usuario canceló la instalación');
+      }
+      
+      setIsInstalling(false);
     } catch (error) {
-      console.error('Error al instalar la app:', error);
+      console.error('❌ Error al instalar la app:', error);
+      setIsInstalling(false);
     }
   };
 
@@ -58,6 +75,7 @@ export const useInstallPrompt = () => {
     isInstalled,
     isIOS,
     handleInstall,
-    canInstall: installPrompt !== null && !isInstalled
+    isInstalling,
+    canInstall: installPrompt !== null && !isInstalled && !isInstalling
   };
 };

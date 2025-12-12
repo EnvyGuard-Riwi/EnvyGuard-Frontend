@@ -1,14 +1,22 @@
 import React, { useState } from 'react';
-import { Download, X } from 'lucide-react';
+import { Download, X, Loader } from 'lucide-react';
 import { useInstallPrompt } from '../hooks/useInstallPrompt';
 
 const InstallPrompt = () => {
-  const { canInstall, isIOS, handleInstall, isInstalled } = useInstallPrompt();
-  const [showPrompt, setShowPrompt] = useState(true);
+  const { canInstall, isIOS, handleInstall, isInstalled, isInstalling } = useInstallPrompt();
+  const [showPrompt, setShowPrompt] = useState(false); // Cambiar a false para ocultarlo
 
   if (!showPrompt || isInstalled || (!canInstall && !isIOS)) {
     return null;
   }
+
+  const handleInstallClick = async () => {
+    await handleInstall();
+    // Solo cerrar después de confirmar la instalación
+    setTimeout(() => {
+      setShowPrompt(false);
+    }, 1000);
+  };
 
   return (
     <div className="fixed bottom-4 left-4 right-4 md:bottom-6 md:right-6 md:left-auto md:max-w-sm z-50">
@@ -26,21 +34,29 @@ const InstallPrompt = () => {
 
             {canInstall && (
               <button
-                onClick={() => {
-                  handleInstall();
-                  setShowPrompt(false);
-                }}
-                className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white font-medium text-xs md:text-sm py-2 px-3 rounded-md transition-colors w-full justify-center md:w-auto"
+                onClick={handleInstallClick}
+                disabled={isInstalling}
+                className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 disabled:bg-blue-500 text-white font-medium text-xs md:text-sm py-2 px-3 rounded-md transition-colors w-full justify-center md:w-auto"
               >
-                <Download size={16} />
-                Instalar App
+                {isInstalling ? (
+                  <>
+                    <Loader size={16} className="animate-spin" />
+                    Instalando...
+                  </>
+                ) : (
+                  <>
+                    <Download size={16} />
+                    Instalar App
+                  </>
+                )}
               </button>
             )}
           </div>
 
           <button
             onClick={() => setShowPrompt(false)}
-            className="text-gray-400 hover:text-white transition-colors flex-shrink-0"
+            disabled={isInstalling}
+            className="text-gray-400 hover:text-white transition-colors flex-shrink-0 disabled:opacity-50"
             aria-label="Cerrar"
           >
             <X size={18} />
