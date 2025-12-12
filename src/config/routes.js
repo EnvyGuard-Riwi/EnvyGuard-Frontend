@@ -109,7 +109,7 @@ export const canAccessRoute = (path, userRole) => {
   
   if (!route) return false;
   if (!route.protected) return true; // Rutas públicas siempre accesibles
-  if (route.requiresAdmin && userRole !== 'Admin') return false; // Admin-only
+  if (route.requiresAdmin && userRole !== 'ADMIN') return false; // Admin-only
   
   return true; // Ruta protegida y usuario autenticado
 };
