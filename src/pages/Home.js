@@ -13,7 +13,9 @@ import {
   LayoutGrid,
   ChevronRight,
   Mail,
-  Key
+  Key,
+  Eye,
+  EyeOff
 } from 'lucide-react';
 
 // Importar hooks desde la carpeta correcta
@@ -24,64 +26,6 @@ import AuthService from '../services/AuthService';
 // --- VISUAL COMPONENTS ---
 
 // 0. Custom Cursor
-const CustomCursor = () => {
-  const mouse = useMousePosition();
-  
-  return (
-    <>
-      <motion.div 
-        className="fixed top-0 left-0 pointer-events-none z-[9999] hidden md:block"
-        animate={{ x: mouse.x, y: mouse.y }}
-        transition={{ type: "linear", duration: 0 }}
-      >
-        <svg 
-          width="32" 
-          height="32" 
-          viewBox="0 0 24 24" 
-          fill="none" 
-          xmlns="http://www.w3.org/2000/svg"
-          className="filter drop-shadow-[0_0_8px_rgba(6,182,212,0.6)]"
-        >
-          {/* Relleno principal con gradiente cyan */}
-          <defs>
-            <linearGradient id="cursorFill" x1="0%" y1="0%" x2="100%" y2="100%">
-              <stop offset="0%" stopColor="#06B6D4" stopOpacity="1" />
-              <stop offset="100%" stopColor="#0891B2" stopOpacity="0.9" />
-            </linearGradient>
-          </defs>
-          
-          <path 
-            d="M2 2L20.5 9.5L11.5 12.5L8.5 21.5L2 2Z" 
-            fill="url(#cursorFill)"
-            stroke="#FFFFFF"
-            strokeWidth="1.5"
-            strokeLinejoin="round"
-            strokeLinecap="round"
-          />
-          
-          {/* Brillo interior sutil */}
-          <path 
-            d="M4 4L18 9L10 11L7 18L4 4Z" 
-            fill="#FFFFFF"
-            opacity="0.2"
-            strokeLinejoin="round"
-            strokeLinecap="round"
-          />
-        </svg>
-      </motion.div>
-      
-      {/* Aura de seguimiento suave con color cyan */}
-      <motion.div 
-        className="fixed top-0 left-0 w-16 h-16 pointer-events-none z-[9998] hidden md:block"
-        animate={{ x: mouse.x - 32, y: mouse.y - 32 }}
-        transition={{ type: "spring", stiffness: 150, damping: 25, mass: 0.2 }}
-      >
-        <div className="absolute inset-0 rounded-full bg-gradient-to-br from-cyan-500/15 via-cyan-500/5 to-transparent blur-2xl" />
-      </motion.div>
-    </>
-  );
-};
-
 // 1. Boot Sequence Overlay
 const BootSequence = ({ onComplete }) => {
   const [lines, setLines] = useState([]);
@@ -311,6 +255,7 @@ const LoginModal = ({ isOpen, onClose, buttonRef }) => {
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
   const mouse = useMousePosition();
   const navigate = useNavigate();
 
@@ -387,6 +332,13 @@ const LoginModal = ({ isOpen, onClose, buttonRef }) => {
       setLoading(false);
     }
   };
+
+  // Resetear estados cuando se cierra el modal
+  React.useEffect(() => {
+    if (!isOpen) {
+      setShowPassword(false);
+    }
+  }, [isOpen]);
 
   return (
     <AnimatePresence>
@@ -558,16 +510,21 @@ const LoginModal = ({ isOpen, onClose, buttonRef }) => {
                     </label>
                     <div className="relative">
                       <input
-                        type="password"
+                        type={showPassword ? "text" : "password"}
                         value={password}
                         onChange={(e) => setPassword(e.target.value)}
                         placeholder="••••••••••••••••"
                         disabled={loading}
-                        className="w-full bg-black/40 border border-cyan-500/30 rounded-lg px-3 sm:px-4 py-2 sm:py-3 text-white text-sm placeholder-gray-600 focus:outline-none focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500/50 transition-all font-mono group-focus-within:shadow-[0_0_20px_rgba(6,182,212,0.2)] disabled:opacity-50 disabled:cursor-not-allowed"
+                        className="w-full bg-black/40 border border-cyan-500/30 rounded-lg px-3 sm:px-4 py-2 sm:py-3 text-white text-sm placeholder-gray-600 focus:outline-none focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500/50 transition-all font-mono group-focus-within:shadow-[0_0_20px_rgba(6,182,212,0.2)] disabled:opacity-50 disabled:cursor-not-allowed pr-10"
                       />
-                      <div className="absolute right-3 top-1/2 transform -translate-y-1/2 text-cyan-500/30 group-focus-within:text-cyan-500/60 transition-colors">
-                        <Lock size={16} />
-                      </div>
+                      <button
+                        type="button"
+                        onClick={() => setShowPassword(!showPassword)}
+                        className="absolute right-3 top-1/2 transform -translate-y-1/2 text-cyan-500/30 group-focus-within:text-cyan-500/60 hover:text-cyan-500/80 transition-colors"
+                        title={showPassword ? "Ocultar contraseña" : "Mostrar contraseña"}
+                      >
+                        {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+                      </button>
                     </div>
                   </motion.div>
 
@@ -635,14 +592,12 @@ export default function Home() {
   const loginButtonRef = useRef(null);
 
   return (
-    <div className="min-h-screen bg-black text-white selection:bg-cyan-500/30 overflow-x-hidden font-sans cursor-none">
+    <div className="min-h-screen bg-black text-white selection:bg-cyan-500/30 overflow-x-hidden font-sans">
       
       {/* Boot Sequence */}
       <AnimatePresence>
         {loading && <BootSequence onComplete={() => setLoading(false)} />}
       </AnimatePresence>
-
-      <CustomCursor />
       
       {/* Noise Texture Overlay */}
       <div className="fixed inset-0 z-[60] pointer-events-none opacity-[0.04] mix-blend-overlay" 
@@ -652,7 +607,7 @@ export default function Home() {
       {/* Navigation */}
       <nav className="fixed top-0 w-full z-50 border-b border-white/5 bg-black/80 backdrop-blur-xl">
         <div className="max-w-7xl mx-auto px-3 sm:px-6 h-14 sm:h-16 flex items-center justify-between">
-          <div className="flex items-center gap-2 sm:gap-3 group cursor-none">
+          <div className="flex items-center gap-2 sm:gap-3 group">
             <img src={iconLogo} alt="EnvyGuard" className="w-7 sm:w-9 h-7 sm:h-9 object-contain group-hover:scale-110 transition-transform" />
             <span className="font-bold text-sm sm:text-lg tracking-wider font-mono text-transparent bg-clip-text bg-gradient-to-r from-white to-gray-400">EnvyGuard</span>
           </div>
@@ -662,7 +617,7 @@ export default function Home() {
               onClick={() => setShowLoginModal(true)}
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
-              className="bg-white/5 border border-white/10 hover:border-cyan-500/50 text-white px-3 sm:px-4 py-2 rounded-full text-xs font-mono transition-all hover:bg-cyan-500/10 flex items-center gap-2 sm:gap-3 group cursor-none"
+              className="bg-white/5 border border-white/10 hover:border-cyan-500/50 text-white px-3 sm:px-4 py-2 rounded-full text-xs font-mono transition-all hover:bg-cyan-500/10 flex items-center gap-2 sm:gap-3 group"
             >
               PANEL DE ACCESO
               <motion.div
@@ -679,7 +634,7 @@ export default function Home() {
             onClick={() => setShowLoginModal(true)}
             whileHover={{ scale: 1.05 }}
             whileTap={{ scale: 0.95 }}
-            className="md:hidden bg-white/5 border border-white/10 hover:border-cyan-500/50 text-white px-3 py-1.5 rounded-full text-[10px] font-mono transition-all hover:bg-cyan-500/10 flex items-center gap-1 group cursor-none"
+            className="md:hidden bg-white/5 border border-white/10 hover:border-cyan-500/50 text-white px-3 py-1.5 rounded-full text-[10px] font-mono transition-all hover:bg-cyan-500/10 flex items-center gap-1 group"
           >
             ACCESO
             <ChevronRight size={12} className="group-hover:text-cyan-400 transition-colors"/>
@@ -717,13 +672,13 @@ export default function Home() {
               </p>
 
               <div className="flex flex-col sm:flex-row gap-3 sm:gap-4">
-                <button className="relative px-6 sm:px-8 py-3 sm:py-4 bg-cyan-500 text-black font-bold rounded-lg overflow-hidden group cursor-none text-sm sm:text-base">
+                <button className="relative px-6 sm:px-8 py-3 sm:py-4 bg-cyan-500 text-black font-bold rounded-lg overflow-hidden group text-sm sm:text-base">
                   <div className="absolute inset-0 bg-white/20 translate-y-full group-hover:translate-y-0 transition-transform duration-300" />
                   <span className="relative flex items-center justify-center gap-2">
                     <Download size={18} /> Descargar
                   </span>
                 </button>
-                <button className="px-6 sm:px-8 py-3 sm:py-4 bg-transparent border border-gray-800 hover:border-cyan-500/50 text-white rounded-lg transition-all flex items-center justify-center gap-2 group hover:bg-cyan-950/10 cursor-none text-sm sm:text-base">
+                <button className="px-6 sm:px-8 py-3 sm:py-4 bg-transparent border border-gray-800 hover:border-cyan-500/50 text-white rounded-lg transition-all flex items-center justify-center gap-2 group hover:bg-cyan-950/10 text-sm sm:text-base">
                   <Terminal size={18} className="group-hover:text-cyan-400" />
                   <span>Documentación</span>
                 </button>
@@ -786,7 +741,9 @@ export default function Home() {
       {/* Login Modal */}
       <LoginModal 
         isOpen={showLoginModal} 
-        onClose={() => setShowLoginModal(false)}
+        onClose={() => {
+          setShowLoginModal(false);
+        }}
         buttonRef={loginButtonRef}
       />
     </div>
