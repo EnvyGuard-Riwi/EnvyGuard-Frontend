@@ -7,6 +7,7 @@ import './styles/global.css';
 import { routes } from './config/routes';
 import ProtectedRoute from './components/ProtectedRoute';
 import { DeviceProvider } from './context/DeviceContext';
+import { AuthProvider } from './context/AuthContext';
 import SpyWall from './pages/SpyWall';
 import InstallPrompt from './components/InstallPrompt';
 
@@ -15,6 +16,7 @@ import InstallPrompt from './components/InstallPrompt';
  * 
  * Estructura:
  * - Proveedor de tema (Material-UI)
+ * - Proveedor de autenticación (contexto)
  * - Proveedor de dispositivos (contexto)
  * - Router con rutas centralizadas
  */
@@ -22,9 +24,10 @@ function App() {
   return (
     <ThemeProvider theme={theme}>
       <CssBaseline />
-      <DeviceProvider>
-        <BrowserRouter>
-          <Routes>
+      <AuthProvider>
+        <DeviceProvider>
+          <BrowserRouter>
+            <Routes>
             {/* Renderizar todas las rutas desde config/routes.js */}
             {routes.map((route) => (
               <Route
@@ -56,9 +59,10 @@ function App() {
             {/* Ruta 404 - Redirige a home */}
             <Route path="*" element={<Navigate to="/" />} />
           </Routes>
-          <InstallPrompt />
-        </BrowserRouter>
-      </DeviceProvider>
+            <InstallPrompt />
+          </BrowserRouter>
+        </DeviceProvider>
+      </AuthProvider>
     </ThemeProvider>
   );
 }

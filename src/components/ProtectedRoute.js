@@ -1,6 +1,6 @@
 import React from 'react';
 import { Navigate } from 'react-router-dom';
-import AuthService from '../services/AuthService';
+import { useAuth } from '../context/AuthContext';
 
 /**
  * ProtectedRoute Component
@@ -12,25 +12,28 @@ import AuthService from '../services/AuthService';
  * - requiresAdmin: ¿Requiere que sea Admin? (default: false)
  */
 const ProtectedRoute = ({ children, requiresAdmin = false }) => {
-  // Verificar si hay un token válido en localStorage
-  const isAuthenticated = AuthService.isAuthenticated();
-  
+  const { isAuthenticated, user, loading, hasRole } = useAuth();
+
+  // Mostrar loading mientras se verifica la autenticación
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen bg-black">
+        <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-green-400"></div>
+      </div>
+    );
+  }
+
   // Si no está autenticado, redirigir al login
   if (!isAuthenticated) {
     return <Navigate to="/" replace />;
   }
 
   // Si requiere Admin, validar el rol del usuario
-  if (requiresAdmin) {
-    const user = AuthService.getCurrentUser();
-    
-    // Validación segura del usuario y su rol
-    if (!user || user.role !== 'Admin') {
-      console.warn(
-        `Acceso denegado: Se requiere rol de Admin. Usuario actual: ${user?.role || 'sin rol'}`
-      );
-      return <Navigate to="/dashboard" replace />;
-    }
+  if (requiresAdmin && !hasRole('Admin')) {
+    console.warn(
+      `Acceso denegado: Se requiere rol de Admin. Usuario actual: ${user?.role || 'sin rol'}`
+    );
+    return <Navigate to="/dashboard" replace />;
   }
 
   // Si está autenticado y cumple requisitos, renderizar el componente

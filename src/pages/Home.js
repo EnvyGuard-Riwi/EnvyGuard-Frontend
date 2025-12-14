@@ -251,12 +251,13 @@ const TerminalPreview = () => {
 };
 
 // --- LOGIN MODAL COMPONENT ---
-const LoginModal = ({ isOpen, onClose, buttonRef }) => {
+const LoginModal = ({ isOpen, onClose, buttonRef, onSuccess }) => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [showPassword, setShowPassword] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const mouse = useMousePosition();
   const navigate = useNavigate();
 
@@ -303,12 +304,22 @@ const LoginModal = ({ isOpen, onClose, buttonRef }) => {
     e.preventDefault();
     setError('');
     setLoading(true);
+    setIsSubmitting(true);
     
     try {
       // Validar que los campos no estén vacíos
       if (!email || !password) {
         setError('Por favor completa todos los campos');
         setLoading(false);
+        setIsSubmitting(false);
+        return;
+      }
+
+      // Validar formato de email básico
+      if (!email.includes('@')) {
+        setError('Por favor ingresa un correo electrónico válido');
+        setLoading(false);
+        setIsSubmitting(false);
         return;
       }
 
@@ -319,18 +330,53 @@ const LoginModal = ({ isOpen, onClose, buttonRef }) => {
       console.log('Response completa:', response);
       console.log('Response.user:', response.user);
       
-      // Limpiar error antes de cerrar modal
+      // Limpiar error
       setError('');
       setLoading(false);
       
-      // Cerrar modal y redirigir al dashboard
+      // Cerrar modal y mostrar toast de éxito
       onClose();
-      navigate('/dashboard');
+      if (onSuccess) {
+        onSuccess('¡Bienvenido! Inicio de sesión exitoso');
+      }
+      
+      // Después de 1.5 segundos, redirigir al dashboard
+      setTimeout(() => {
+        setIsSubmitting(false);
+        navigate('/dashboard');
+      }, 1500);
       
     } catch (err) {
       console.error('Error de login:', err);
-      setError(err.message || 'Error al iniciar sesión. Verifica tus credenciales.');
+      
+      // Traducir mensajes de error comunes
+      let errorMessage = 'Error al iniciar sesión. Verifica tus credenciales.';
+      
+      const errorText = err.message?.toLowerCase() || '';
+      const errorData = err.response?.data?.message?.toLowerCase() || '';
+      
+      if (errorText.includes('invalid') || errorText.includes('incorrect') || 
+          errorText.includes('wrong') || errorData.includes('invalid') ||
+          errorText.includes('unauthorized') || errorData.includes('unauthorized') ||
+          err.response?.status === 401) {
+        errorMessage = 'Correo o contraseña incorrectos. Por favor verifica tus datos.';
+      } else if (errorText.includes('not found') || errorData.includes('not found') ||
+                 err.response?.status === 404) {
+        errorMessage = 'Usuario no encontrado. Verifica tu correo electrónico.';
+      } else if (errorText.includes('network') || errorText.includes('timeout')) {
+        errorMessage = 'Error de conexión. Por favor verifica tu conexión a internet.';
+      } else if (errorText.includes('too many') || err.response?.status === 429) {
+        errorMessage = 'Demasiados intentos. Por favor espera unos minutos.';
+      } else if (err.response?.status === 500) {
+        errorMessage = 'Error del servidor. Por favor intenta más tarde.';
+      } else if (err.response?.data?.message) {
+        // Si el backend envía un mensaje específico, usarlo
+        errorMessage = err.response.data.message;
+      }
+      
+      setError(errorMessage);
       setLoading(false);
+      setIsSubmitting(false);
     }
   };
 
@@ -585,13 +631,80 @@ const LoginModal = ({ isOpen, onClose, buttonRef }) => {
   );
 };
 
+// --- TOAST COMPONENT ---
+const Toast = ({ toast, onClose }) => {
+  React.useEffect(() => {
+    if (!toast) return;
+    const timer = setTimeout(() => onClose(), 4000);
+    return () => clearTimeout(timer);
+  }, [toast, onClose]);
+
+  if (!toast) return null;
+
+  return (
+    <AnimatePresence>
+      <motion.div 
+        key="toast"
+        initial={{ x: 400, opacity: 0, y: 0 }} 
+        animate={{ x: 0, opacity: 1, y: 0 }} 
+        exit={{ x: 400, opacity: 0, y: -100 }}
+        transition={{ type: "spring", stiffness: 400, damping: 30, exit: { duration: 0.5 } }}
+        className={`fixed top-6 right-6 max-w-md p-4 rounded-xl text-sm font-semibold border-2 shadow-2xl backdrop-blur-md z-[99999] flex items-center gap-3 ${
+          toast.type === 'success' 
+            ? 'text-green-100 border-green-500/60 bg-green-500/20' 
+            : toast.type === 'warn' 
+            ? 'text-yellow-100 border-yellow-500/60 bg-yellow-500/20' 
+            : 'text-red-100 border-red-500/60 bg-red-500/20'
+        }`}
+      >
+        {toast.type === 'success' && (
+          <div className="flex-shrink-0">
+            <svg className="w-5 h-5 text-green-400" fill="currentColor" viewBox="0 0 20 20">
+              <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+            </svg>
+          </div>
+        )}
+        {toast.type === 'warn' && (
+          <div className="flex-shrink-0">
+            <svg className="w-5 h-5 text-yellow-400" fill="currentColor" viewBox="0 0 20 20">
+              <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+            </svg>
+          </div>
+        )}
+        {toast.type === 'error' && (
+          <div className="flex-shrink-0">
+            <svg className="w-5 h-5 text-red-400" fill="currentColor" viewBox="0 0 20 20">
+              <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
+            </svg>
+          </div>
+        )}
+        <span className="flex-1">{toast.msg}</span>
+        <button
+          onClick={onClose}
+          className="flex-shrink-0 ml-2 opacity-70 hover:opacity-100 transition-opacity"
+        >
+          <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+            <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
+          </svg>
+        </button>
+      </motion.div>
+    </AnimatePresence>
+  );
+};
+
 // --- MAIN APP ---
 
 export default function Home() {
   const [loading, setLoading] = useState(true);
   const [showLoginModal, setShowLoginModal] = useState(false);
+  const [toast, setToast] = useState(null);
   const loginButtonRef = useRef(null);
   const { handleInstall, canInstall, isInstalling } = useInstallPrompt();
+  
+  // Función para mostrar toast
+  const showToast = (msg, type = 'success') => {
+    setToast({ msg, type });
+  };
 
   return (
     <div className="min-h-screen bg-black text-white selection:bg-cyan-500/30 overflow-x-hidden font-sans">
@@ -765,7 +878,11 @@ export default function Home() {
           setShowLoginModal(false);
         }}
         buttonRef={loginButtonRef}
+        onSuccess={(msg) => showToast(msg, 'success')}
       />
+      
+      {/* Toast Notification */}
+      <Toast toast={toast} onClose={() => setToast(null)} />
     </div>
   );
 }

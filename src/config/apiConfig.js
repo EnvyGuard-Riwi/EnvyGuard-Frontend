@@ -6,7 +6,7 @@
 
 export const API_CONFIG = {
 // URL base de la API
-BASE_URL: process.env.REACT_APP_API_URL || 'https://api.envyguard.crudzaso.com/api',
+BASE_URL: process.env.REACT_APP_API_URL || 'https://api.envyguard.crudzaso.com',
 
 // Endpoints específicos
 ENDPOINTS: {
@@ -19,14 +19,14 @@ ENDPOINTS: {
     VALIDATE: '/auth/validate',
     },
     USERS: {
-    BASE: '/auth/users',
-    GET_ALL: '/auth/users',
-    GET_BY_ID: '/auth/users/:id',
-    CREATE: '/auth/users',
-    UPDATE: '/auth/users/:id',
-    DELETE: '/auth/users/:id',
-    TOGGLE_STATUS: '/auth/users/:id/status',
-    CHANGE_PASSWORD: '/auth/users/:id/password',
+    BASE: '/users',
+    GET_ALL: '/users',
+    GET_BY_ID: '/users/:id',
+    CREATE: '/auth/register',
+    UPDATE: '/users/:id',
+    DELETE: '/users/:id',
+    TOGGLE_STATUS: '/users/:id/status',
+    CHANGE_PASSWORD: '/users/:id/password',
     },
     DEVICES: {
     BASE: '/devices',
@@ -38,6 +38,29 @@ ENDPOINTS: {
     EXECUTE_ACTION: '/devices/:id/actions/:action',
     GET_STATUS: '/devices/:id/status',
     GET_METRICS: '/devices/:id/metrics',
+    },
+    COMMANDS: {
+    GET_ALL: '/commands',
+    GET_BY_ID: '/commands/:id',
+    GET_BY_STATUS: '/commands/status/:status',
+    GET_BY_COMPUTER: '/commands/computer/:computerName',
+    CREATE: '/commands',
+    // Endpoints específicos por acción (usan query params: ?salaNumber=X&pcId=Y)
+    SHUTDOWN: '/commands/shutdown',
+    REBOOT: '/commands/reboot',
+    WAKE_ON_LAN: '/commands/wake-on-lan',
+    LOCK_SESSION: '/commands/lock-session',
+    BLOCK_WEBSITE: '/commands/block-website',
+    },
+    INCIDENTS: {
+    BASE: '/api/incidents',
+    GET_ALL: '/api/incidents/all',
+    GET_BY_STATUS: '/api/incidents',
+    CREATE: '/api/incidents',
+    COMPLETE: '/api/incidents/:id/complete',
+    },
+    CONTROL: {
+    SEND_ACTION: '/api/control/:action',
     },
 },
 
