@@ -161,9 +161,11 @@ return (
             whileTap={{ scale: 0.98 }}
             onClick={() => sendControl('START')}
             disabled={isLoading}
-            className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-green-600 to-green-700 hover:from-green-500 hover:to-green-600 text-white rounded-lg font-bold text-sm transition-all disabled:opacity-50 disabled:cursor-not-allowed shadow-lg shadow-green-500/20"
+            className="group flex items-center gap-2.5 px-5 py-2.5 bg-transparent border border-green-500/40 hover:border-green-400 text-green-400 hover:text-green-300 rounded-lg font-medium text-sm transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed hover:bg-green-500/10 hover:shadow-[0_0_20px_rgba(34,197,94,0.15)]"
             >
-            <Play size={16} />
+            <span className="p-1 rounded-md bg-green-500/10 group-hover:bg-green-500/20 transition-colors">
+              <Play size={14} />
+            </span>
             INICIAR CLASE
             </motion.button>
             <motion.button
@@ -171,9 +173,11 @@ return (
             whileTap={{ scale: 0.98 }}
             onClick={() => sendControl('STOP')}
             disabled={isLoading}
-            className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-red-600 to-red-700 hover:from-red-500 hover:to-red-600 text-white rounded-lg font-bold text-sm transition-all disabled:opacity-50 disabled:cursor-not-allowed shadow-lg shadow-red-500/20"
+            className="group flex items-center gap-2.5 px-5 py-2.5 bg-transparent border border-red-500/40 hover:border-red-400 text-red-400 hover:text-red-300 rounded-lg font-medium text-sm transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed hover:bg-red-500/10 hover:shadow-[0_0_20px_rgba(239,68,68,0.15)]"
             >
-            <Pause size={16} />
+            <span className="p-1 rounded-md bg-red-500/10 group-hover:bg-red-500/20 transition-colors">
+              <Pause size={14} />
+            </span>
             TERMINAR CLASE
             </motion.button>
         </div>

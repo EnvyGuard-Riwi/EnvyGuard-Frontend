@@ -9,6 +9,7 @@ Lock,
 Eye,
 EyeOff,
 RotateCw,
+RefreshCw,
 Search,
 Shield,
 Trash2,
@@ -419,8 +420,8 @@ return (
     <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 md:gap-4 pb-4 md:pb-6 border-b border-white/5">
         <div>
         <div className="flex items-start sm:items-center gap-2 md:gap-3">
-                <div className="p-2 md:p-2.5 bg-cyan-500/10 rounded-lg border border-cyan-500/20 shrink-0">
-                    <UserPlus className="text-cyan-400" size={20} />
+                <div className="p-2 md:p-2.5 bg-green-500/10 rounded-lg border border-green-500/20 shrink-0">
+                    <UserPlus className="text-green-400" size={20} />
                 </div>
                 <div>
                     <h2 className="text-xl md:text-2xl font-bold text-white tracking-tight">Gestión de Accesos</h2>
@@ -448,16 +449,16 @@ return (
             }
             setShowForm(!showForm);
         }}
-        className="group relative px-3 md:px-5 py-2 md:py-2.5 bg-cyan-600 hover:bg-cyan-500 text-black font-bold rounded-lg shadow-[0_0_20px_rgba(6,182,212,0.2)] hover:shadow-[0_0_25px_rgba(6,182,212,0.4)] transition-all flex items-center justify-center gap-2 text-xs md:text-sm overflow-hidden w-full sm:w-auto disabled:opacity-50 disabled:cursor-not-allowed"
+        className="group relative px-4 md:px-6 py-2.5 md:py-3 bg-transparent border border-green-500/50 hover:border-green-400 text-green-400 hover:text-green-300 font-medium rounded-lg hover:bg-green-500/10 transition-all duration-300 flex items-center justify-center gap-2.5 text-xs md:text-sm w-full sm:w-auto disabled:opacity-50 disabled:cursor-not-allowed hover:shadow-[0_0_20px_rgba(34,197,94,0.15)]"
         disabled={isLoading}
         >
-        <span className="relative z-10 flex items-center gap-2">
-            {showForm ? <ChevronDown size={16} /> : <UserPlus size={16} />}
-            <span className="hidden sm:inline">{showForm ? "Cerrar Panel" : "Nuevo Usuario"}</span>
-            <span className="sm:hidden">{showForm ? "Cerrar" : "Nuevo"}</span>
+        <span className="relative z-10 flex items-center gap-2.5">
+            <span className="p-1 rounded-md bg-green-500/10 group-hover:bg-green-500/20 transition-colors">
+              {showForm ? <ChevronDown size={14} className="group-hover:rotate-180 transition-transform duration-300" /> : <UserPlus size={14} />}
+            </span>
+            <span className="hidden sm:inline tracking-wide">{showForm ? "Cerrar Panel" : "Nuevo Usuario"}</span>
+            <span className="sm:hidden tracking-wide">{showForm ? "Cerrar" : "Nuevo"}</span>
         </span>
-        {/* Shine Effect */}
-        <div className="absolute inset-0 -translate-x-full group-hover:translate-x-full transition-transform duration-700 bg-gradient-to-r from-transparent via-white/30 to-transparent skew-x-12" />
         </button>
     </div>
 
@@ -477,21 +478,21 @@ return (
             />
             {/* Modal - Centrado como el del perfil */}
             <motion.div
-            initial={{ opacity: 0, scale: 0.8, y: 20 }}
+            initial={{ opacity: 0, scale: 0.95, y: 10 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
-            exit={{ opacity: 0, scale: 0.8, y: 20 }}
-            transition={{ type: "spring", stiffness: 300, damping: 30 }}
+            exit={{ opacity: 0, scale: 0.95, y: 10 }}
+            transition={{ type: "spring", stiffness: 400, damping: 30 }}
             onClick={(e) => e.stopPropagation()}
             className="fixed inset-0 z-[9999] flex items-center justify-center p-4 pointer-events-none"
             >
-            <div className={`bg-[#0a0a0a] rounded-2xl shadow-2xl w-full max-w-4xl overflow-hidden max-h-[95vh] pointer-events-auto border ${
-                editingUser ? 'border-yellow-500/30' : 'border-cyan-500/30'
+            <div className={`bg-gradient-to-br from-[#0a0a0a] via-[#0d0d0d] to-[#080808] rounded-xl shadow-2xl w-full max-w-3xl pointer-events-auto border ${
+                editingUser ? 'border-blue-500/40' : 'border-green-500/40'
             }`}
             >
-            <div className="p-8 md:p-10 relative overflow-y-auto max-h-[95vh] custom-scrollbar">
+            <div className="p-6 md:p-8 relative">
             {/* Decorative bg */}
-            <div className={`absolute top-0 right-0 w-64 h-64 blur-[80px] pointer-events-none ${
-                editingUser ? 'bg-yellow-500/5' : 'bg-cyan-500/5'
+            <div className={`absolute top-0 right-0 w-64 h-64 blur-[100px] pointer-events-none ${
+                editingUser ? 'bg-blue-500/8' : 'bg-green-500/8'
             }`} />
             
             {/* Close Button */}
@@ -500,27 +501,30 @@ return (
                 clearForm();
                 setShowForm(false);
                 }}
-                className="absolute top-4 right-4 p-2 text-gray-400 hover:text-white hover:bg-white/10 rounded-lg transition-all z-50"
-                whileHover={{ scale: 1.1 }}
+                className="absolute top-3 right-3 p-2 text-gray-500 hover:text-white hover:bg-white/5 rounded-lg border border-transparent hover:border-white/10 transition-all z-50"
+                whileHover={{ scale: 1.1, rotate: 90 }}
                 whileTap={{ scale: 0.95 }}
             >
-                <X size={20} />
+                <X size={16} />
             </motion.button>
             
-            <h3 className={`font-mono text-sm md:text-base font-bold uppercase tracking-widest mb-6 flex items-center gap-3 relative z-10 ${
-                editingUser ? 'text-yellow-400' : 'text-cyan-400'
+            <h3 className={`font-mono text-xs md:text-sm font-bold uppercase tracking-[0.15em] mb-5 flex items-center gap-2.5 relative z-10 ${
+                editingUser ? 'text-blue-400' : 'text-green-400'
             }`}>
-                {editingUser ? <Edit2 size={16}/> : <UserPlus size={16}/> } {editingUser ? 'EDITAR CREDENCIAL DE ACCESO' : 'NUEVA CREDENCIAL DE ACCESO'}
+                <span className={`p-1.5 rounded-md ${editingUser ? 'bg-blue-500/10' : 'bg-green-500/10'}`}>
+                  {editingUser ? <Edit2 size={14}/> : <UserPlus size={14}/> }
+                </span>
+                {editingUser ? 'EDITAR CREDENCIAL DE ACCESO' : 'NUEVA CREDENCIAL DE ACCESO'}
             </h3>
             
-            <form onSubmit={editingUser ? handleSaveUserChanges : handleCreateUser} className="flex flex-col gap-5 md:gap-6 relative z-10">
+            <form onSubmit={editingUser ? handleSaveUserChanges : handleCreateUser} className="flex flex-col gap-4 relative z-10">
                 {/* Avatar y Datos Principales */}
-                <div className="flex flex-col lg:flex-row items-start gap-6 lg:gap-8">
+                <div className="flex flex-col lg:flex-row items-start gap-4 lg:gap-6">
                     {/* Avatar Selection - Solo para Nuevo Usuario */}
                     {!editingUser && (
                     <div className="shrink-0">
-                        <label className="block text-xs md:text-sm font-mono text-gray-500 mb-2.5 uppercase tracking-wide font-semibold">Avatar</label>
-                        <div className="w-28 h-28 rounded-xl border-2 border-cyan-500/30 bg-gradient-to-br from-cyan-500/10 to-blue-500/10 p-2 relative overflow-hidden group hover:border-cyan-500/60 transition-colors">
+                        <label className="block text-[10px] md:text-xs font-mono text-gray-500 mb-2 uppercase tracking-wider font-semibold">Avatar</label>
+                        <div className="w-20 h-20 rounded-lg border-2 border-green-500/30 bg-gradient-to-br from-green-500/5 to-emerald-500/10 p-1.5 relative overflow-hidden group hover:border-green-400/60 transition-all duration-300 hover:shadow-[0_0_20px_rgba(34,197,94,0.15)]">
                             <img 
                                 src={getAvatarUrl(avatarOptions.find(a => a.id === newUserAvatarId))} 
                                 alt="avatar preview" 
@@ -530,17 +534,17 @@ return (
                                 type="button"
                                 onClick={() => setNewUserAvatarId(prev => prev >= 8 ? 1 : prev + 1)}
                                 disabled={isLoading}
-                                className="absolute inset-0 bg-black/70 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity text-xs font-bold text-white cursor-pointer disabled:opacity-50"
+                                className="absolute inset-0 bg-black/80 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all duration-300 text-xs font-bold text-green-400 cursor-pointer disabled:opacity-50 backdrop-blur-sm"
                             >
-                                CAMBIAR
+                                <span className="flex items-center gap-1.5"><RefreshCw size={12} /> CAMBIAR</span>
                             </button>
                         </div>
                     </div>
                     )}
 
-                    <div className={`flex-1 grid gap-4 md:gap-5 w-full ${editingUser ? 'grid-cols-1 md:grid-cols-2' : 'grid-cols-1 md:grid-cols-2'}`}>
+                    <div className={`flex-1 grid gap-3 w-full ${editingUser ? 'grid-cols-1 md:grid-cols-2' : 'grid-cols-1 md:grid-cols-2'}`}>
                         <div>
-                            <label className="block text-xs md:text-sm font-mono text-gray-500 mb-2 uppercase tracking-wide font-semibold">Nombre</label>
+                            <label className="block text-[10px] md:text-xs font-mono text-gray-500 mb-1.5 uppercase tracking-wider font-semibold">Nombre</label>
                             <input 
                             type="text" 
                             name="firstName"
@@ -548,11 +552,11 @@ return (
                             onChange={handleInputChange}
                             placeholder="Ej: Juan" 
                             disabled={isLoading}
-                            className="w-full bg-black/40 border border-white/10 rounded-lg px-4 py-2.5 text-sm text-white placeholder-gray-600 focus:border-cyan-500 focus:bg-cyan-900/10 outline-none transition-all disabled:opacity-50 hover:border-white/20" 
+                            className="w-full bg-black/30 border border-white/10 rounded-lg px-3 py-2 text-sm text-white placeholder-gray-600 focus:border-green-500/50 focus:bg-green-900/5 outline-none transition-all duration-300 disabled:opacity-50 hover:border-white/20" 
                             />
                         </div>
                         <div>
-                            <label className="block text-xs md:text-sm font-mono text-gray-500 mb-2 uppercase tracking-wide font-semibold">Apellido</label>
+                            <label className="block text-[10px] md:text-xs font-mono text-gray-500 mb-1.5 uppercase tracking-wider font-semibold">Apellido</label>
                             <input 
                             type="text" 
                             name="lastName"
@@ -560,11 +564,11 @@ return (
                             onChange={handleInputChange}
                             placeholder="Ej: Pérez" 
                             disabled={isLoading}
-                            className="w-full bg-black/40 border border-white/10 rounded-lg px-4 py-2.5 text-sm text-white placeholder-gray-600 focus:border-cyan-500 focus:bg-cyan-900/10 outline-none transition-all disabled:opacity-50 hover:border-white/20" 
+                            className="w-full bg-black/30 border border-white/10 rounded-lg px-3 py-2 text-sm text-white placeholder-gray-600 focus:border-green-500/50 focus:bg-green-900/5 outline-none transition-all duration-300 disabled:opacity-50 hover:border-white/20" 
                             />
                         </div>
                         <div className="md:col-span-2">
-                            <label className="block text-xs md:text-sm font-mono text-gray-500 mb-2 uppercase tracking-wide font-semibold">Correo Electrónico</label>
+                            <label className="block text-[10px] md:text-xs font-mono text-gray-500 mb-1.5 uppercase tracking-wider font-semibold">Correo Electrónico</label>
                             <input 
                             type="email" 
                             name="email"
@@ -572,31 +576,32 @@ return (
                             onChange={handleInputChange}
                             placeholder="usuario@envyguard.com" 
                             disabled={isLoading}
-                            className="w-full bg-black/40 border border-white/10 rounded-lg px-4 py-2.5 text-sm text-white placeholder-gray-600 focus:border-cyan-500 focus:bg-cyan-900/10 outline-none transition-all disabled:opacity-50 hover:border-white/20" 
+                            className="w-full bg-black/30 border border-white/10 rounded-lg px-3 py-2 text-sm text-white placeholder-gray-600 focus:border-green-500/50 focus:bg-green-900/5 outline-none transition-all duration-300 disabled:opacity-50 hover:border-white/20" 
                             />
                         </div>
                         <div className="md:col-span-2">
-                            <label className="block text-xs md:text-sm font-mono text-gray-500 mb-2 uppercase tracking-wide font-semibold">Rol de Usuario</label>
+                            <label className="block text-[10px] md:text-xs font-mono text-gray-500 mb-1.5 uppercase tracking-wider font-semibold">Rol de Usuario</label>
                             <div className="relative">
                             <button
                                 type="button"
                                 onClick={() => setShowRoleDropdown(!showRoleDropdown)}
-                                className="w-full bg-black/40 border border-white/10 rounded-lg px-4 py-2.5 text-sm text-white focus:border-cyan-500 focus:bg-cyan-900/10 outline-none transition-all disabled:opacity-50 hover:border-white/20 flex items-center justify-between"
+                                className="w-full bg-black/30 border border-white/10 rounded-lg px-3 py-2 text-sm text-white focus:border-green-500/50 focus:bg-green-900/5 outline-none transition-all duration-300 disabled:opacity-50 hover:border-white/20 flex items-center justify-between"
                                 disabled={isLoading}
                             >
                                 <span>{formData.role || 'Seleccionar rol...'}</span>
                                 <ChevronDown 
-                                size={16} 
-                                className={`transition-transform ${showRoleDropdown ? 'rotate-180' : ''}`}
+                                size={14} 
+                                className={`transition-transform duration-300 text-gray-500 ${showRoleDropdown ? 'rotate-180' : ''}`}
                                 />
                             </button>
                             <AnimatePresence>
                                 {showRoleDropdown && (
                                 <motion.div
-                                    initial={{ opacity: 0, y: -10 }}
-                                    animate={{ opacity: 1, y: 0 }}
-                                    exit={{ opacity: 0, y: -10 }}
-                                    className="absolute top-full left-0 right-0 mt-2 bg-black border border-white/10 rounded-lg shadow-lg z-50 overflow-hidden"
+                                    initial={{ opacity: 0, y: -8, scale: 0.95 }}
+                                    animate={{ opacity: 1, y: 0, scale: 1 }}
+                                    exit={{ opacity: 0, y: -8, scale: 0.95 }}
+                                    transition={{ duration: 0.12 }}
+                                    className="absolute top-full left-0 right-0 mt-1 bg-[#0a0a0a] border border-white/10 rounded-lg shadow-2xl z-50 overflow-hidden"
                                 >
                                     <button
                                     type="button"
@@ -604,8 +609,9 @@ return (
                                         setFormData({ ...formData, role: 'ADMIN' });
                                         setShowRoleDropdown(false);
                                     }}
-                                    className="w-full px-4 py-2.5 text-sm text-white hover:bg-cyan-600/20 hover:text-cyan-400 text-left transition-colors border-b border-white/5"
+                                    className="w-full px-3 py-2 text-sm text-white hover:bg-green-500/10 hover:text-green-400 text-left transition-all duration-200 border-b border-white/5 flex items-center gap-2"
                                     >
+                                    <span className="w-1.5 h-1.5 rounded-full bg-green-500"></span>
                                     ADMIN
                                     </button>
                                     <button
@@ -614,8 +620,9 @@ return (
                                         setFormData({ ...formData, role: 'OPERATOR' });
                                         setShowRoleDropdown(false);
                                     }}
-                                    className="w-full px-4 py-2.5 text-sm text-white hover:bg-purple-600/20 hover:text-purple-400 text-left transition-colors"
+                                    className="w-full px-3 py-2 text-sm text-white hover:bg-purple-500/10 hover:text-purple-400 text-left transition-all duration-200 flex items-center gap-2"
                                     >
+                                    <span className="w-1.5 h-1.5 rounded-full bg-purple-500"></span>
                                     OPERATOR
                                     </button>
                                 </motion.div>
@@ -627,21 +634,21 @@ return (
                 </div>
 
                 {/* Separador */}
-                <div className="border-t border-white/10" />
+                <div className="border-t border-white/5" />
 
                 {/* Credenciales de Seguridad */}
                 <div>
-                    <h4 className="text-xs md:text-sm font-mono text-cyan-400 mb-4 uppercase tracking-wide font-semibold flex items-center gap-2">
-                        <Lock size={14} /> Credenciales de Seguridad
+                    <h4 className="text-[10px] md:text-xs font-mono text-green-400 mb-3 uppercase tracking-wider font-semibold flex items-center gap-2">
+                        <span className="p-1 rounded bg-green-500/10"><Lock size={10} /></span> Credenciales de Seguridad
                     </h4>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-5">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                         <div>
-                            <label className="block text-xs md:text-sm font-mono text-gray-500 mb-2 uppercase tracking-wide font-semibold">
+                            <label className="block text-[10px] md:text-xs font-mono text-gray-500 mb-1.5 uppercase tracking-wider font-semibold">
                             Contraseña 
                             {editingUser ? (
-                                <span className="text-yellow-400 ml-1">(Opcional)</span>
+                                <span className="text-blue-400/80 ml-1 font-normal">(Opcional)</span>
                             ) : (
-                                <span className="text-cyan-400 ml-1">(Mínimo 8 caracteres)</span>
+                                <span className="text-green-400/80 ml-1 font-normal">(Mín. 8 car.)</span>
                             )}
                             </label>
                             <div className="relative">
@@ -652,23 +659,23 @@ return (
                                 onChange={handleInputChange}
                                 placeholder={editingUser ? "Dejar vacío para no cambiar" : "••••••••••••"} 
                                 disabled={isLoading}
-                                className="w-full bg-black/40 border border-white/10 rounded-lg px-4 py-2.5 text-sm text-white placeholder-gray-600 focus:border-cyan-500 focus:bg-cyan-900/10 outline-none transition-all disabled:opacity-50 hover:border-white/20 pr-10" 
+                                className="w-full bg-black/30 border border-white/10 rounded-lg px-3 py-2 text-sm text-white placeholder-gray-600 focus:border-green-500/50 focus:bg-green-900/5 outline-none transition-all duration-300 disabled:opacity-50 hover:border-white/20 pr-10" 
                             />
                             <button
                                 type="button"
                                 onClick={() => setShowPassword(!showPassword)}
-                                className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-white transition-colors"
+                                className="absolute right-2 top-1/2 transform -translate-y-1/2 text-gray-500 hover:text-green-400 transition-colors p-1 rounded hover:bg-white/5"
                                 title={showPassword ? "Ocultar contraseña" : "Mostrar contraseña"}
                             >
-                                {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                                {showPassword ? <EyeOff size={14} /> : <Eye size={14} />}
                             </button>
                             </div>
                         </div>
                         <div>
-                            <label className="block text-xs md:text-sm font-mono text-gray-500 mb-2 uppercase tracking-wide font-semibold">
+                            <label className="block text-[10px] md:text-xs font-mono text-gray-500 mb-1.5 uppercase tracking-wider font-semibold">
                             Confirmar Contraseña
                             {editingUser && formData.password && (
-                                <span className="text-yellow-400 ml-1">(Requerido si cambias contraseña)</span>
+                                <span className="text-blue-400/80 ml-1 font-normal">(Requerido)</span>
                             )}
                             </label>
                             <div className="relative">
@@ -679,15 +686,15 @@ return (
                                 onChange={handleInputChange}
                                 placeholder={editingUser ? "Dejar vacío para no cambiar" : "••••••••••••"} 
                                 disabled={isLoading}
-                                className="w-full bg-black/40 border border-white/10 rounded-lg px-4 py-2.5 text-sm text-white placeholder-gray-600 focus:border-cyan-500 focus:bg-cyan-900/10 outline-none transition-all disabled:opacity-50 hover:border-white/20 pr-10"
+                                className="w-full bg-black/30 border border-white/10 rounded-lg px-3 py-2 text-sm text-white placeholder-gray-600 focus:border-green-500/50 focus:bg-green-900/5 outline-none transition-all duration-300 disabled:opacity-50 hover:border-white/20 pr-10"
                             />
                             <button
                                 type="button"
                                 onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                                className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-white transition-colors"
+                                className="absolute right-2 top-1/2 transform -translate-y-1/2 text-gray-500 hover:text-green-400 transition-colors p-1 rounded hover:bg-white/5"
                                 title={showConfirmPassword ? "Ocultar contraseña" : "Mostrar contraseña"}
                             >
-                                {showConfirmPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                                {showConfirmPassword ? <EyeOff size={14} /> : <Eye size={14} />}
                             </button>
                             </div>
                         </div>
@@ -695,38 +702,40 @@ return (
                 </div>
 
                 {/* Separador */}
-                <div className="border-t border-white/10" />
+                <div className="border-t border-white/5" />
                 
                 {/* Botones de Acción */}
-                <div className="flex flex-col-reverse sm:flex-row justify-end gap-4">
+                <div className="flex flex-col-reverse sm:flex-row justify-end gap-2.5 pt-1">
                     <motion.button 
                         type="button" 
                         onClick={() => {
                         setShowForm(false);
                         clearForm();
                         }}
-                        whileHover={{ scale: 1.05, y: -2 }}
-                        whileTap={{ scale: 0.95 }}
+                        whileHover={{ scale: 1.02 }}
+                        whileTap={{ scale: 0.98 }}
                         disabled={isLoading}
-                        className="px-6 py-2.5 text-xs md:text-sm font-bold uppercase tracking-wider rounded-lg border-2 border-red-500/40 text-red-400 hover:text-red-300 hover:bg-red-500/10 transition-all disabled:opacity-50"
+                        className="px-5 py-2 text-xs font-medium uppercase tracking-wider rounded-lg border border-red-500/40 hover:border-red-400 text-red-400 hover:text-red-300 hover:bg-red-500/10 transition-all duration-300 disabled:opacity-50 hover:shadow-[0_0_15px_rgba(239,68,68,0.1)]"
                     >
                         CANCELAR
                     </motion.button>
                     <motion.button 
                         type="submit"
-                        whileHover={{ scale: 1.08, y: -3 }}
-                        whileTap={{ scale: 0.92 }}
+                        whileHover={{ scale: 1.02 }}
+                        whileTap={{ scale: 0.98 }}
                         disabled={isLoading}
-                        className="px-8 py-2.5 bg-gradient-to-r from-cyan-500 to-blue-600 text-black font-bold rounded-lg text-xs md:text-sm uppercase tracking-widest transition-all flex items-center justify-center gap-3 border-2 border-cyan-400/50 hover:border-cyan-300 disabled:opacity-50 disabled:cursor-not-allowed hover:shadow-lg hover:shadow-cyan-500/20"
+                        className="group px-6 py-2 bg-transparent border border-green-500/40 hover:border-green-400 text-green-400 hover:text-green-300 font-medium rounded-lg text-xs uppercase tracking-wider transition-all duration-300 flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed hover:bg-green-500/10 hover:shadow-[0_0_20px_rgba(34,197,94,0.15)]"
                     >
                         {isLoading ? (
                         <>
-                            <RotateCw size={16} className="animate-spin" />
-                            {editingUser ? 'GUARDANDO...' : 'CREANDO USUARIO...'}
+                            <RotateCw size={14} className="animate-spin" />
+                            {editingUser ? 'GUARDANDO...' : 'CREANDO...'}
                         </>
                         ) : (
                         <>
-                            {editingUser ? <Edit2 size={16} /> : <UserPlus size={16} />}
+                            <span className="p-1 rounded bg-green-500/10 group-hover:bg-green-500/20 transition-colors">
+                              {editingUser ? <Edit2 size={12} /> : <UserPlus size={12} />}
+                            </span>
                             {editingUser ? 'GUARDAR CAMBIOS' : 'CREAR USUARIO'}
                         </>
                         )}
@@ -743,7 +752,7 @@ return (
     {/* Toolbar & Filters */}
     <div className="flex flex-col gap-3 md:gap-4 bg-[#0a0a0a] p-2 md:p-3 rounded-xl border border-white/5">
         {/* Search */}
-        <div className="flex items-center gap-2 md:gap-3 bg-black/40 px-2 md:px-3 py-1.5 md:py-2 rounded-lg border border-white/5 w-full focus-within:border-cyan-500/50 transition-colors">
+        <div className="flex items-center gap-2 md:gap-3 bg-black/40 px-2 md:px-3 py-1.5 md:py-2 rounded-lg border border-white/5 w-full focus-within:border-green-500/50 transition-colors">
             <Search size={14} className="text-gray-500 shrink-0" />
             <input 
             type="text" 

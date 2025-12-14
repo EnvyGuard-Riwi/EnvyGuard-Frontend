@@ -188,7 +188,8 @@ const TerminalPreview = () => {
       "> PKG_INSTALL: 'chrome_installer.msi'",
       "> SUCCESS: DEPLOYMENT_COMPLETE",
       "> UPLOADING_LOGS...",
-      "> HEARTBEAT_ACK"
+      "> HEARTBEAT_ACK",
+      "> CREATE: JERO_C"
     ];
     
     let i = 0;
@@ -333,18 +334,13 @@ const LoginModal = ({ isOpen, onClose, buttonRef, onSuccess }) => {
       // Limpiar error
       setError('');
       setLoading(false);
+      setIsSubmitting(false);
       
-      // Cerrar modal y mostrar toast de éxito
+      // Cerrar modal y activar la animación de transición
       onClose();
       if (onSuccess) {
         onSuccess('¡Bienvenido! Inicio de sesión exitoso');
       }
-      
-      // Después de 1.5 segundos, redirigir al dashboard
-      setTimeout(() => {
-        setIsSubmitting(false);
-        navigate('/dashboard');
-      }, 1500);
       
     } catch (err) {
       console.error('Error de login:', err);
@@ -632,6 +628,7 @@ const LoginModal = ({ isOpen, onClose, buttonRef, onSuccess }) => {
 };
 
 // --- TOAST COMPONENT ---
+// --- TOAST COMPONENT (Estilo Terminal) ---
 const Toast = ({ toast, onClose }) => {
   React.useEffect(() => {
     if (!toast) return;
@@ -645,50 +642,253 @@ const Toast = ({ toast, onClose }) => {
     <AnimatePresence>
       <motion.div 
         key="toast"
-        initial={{ x: 400, opacity: 0, y: 0 }} 
-        animate={{ x: 0, opacity: 1, y: 0 }} 
-        exit={{ x: 400, opacity: 0, y: -100 }}
-        transition={{ type: "spring", stiffness: 400, damping: 30, exit: { duration: 0.5 } }}
-        className={`fixed top-6 right-6 max-w-md p-4 rounded-xl text-sm font-semibold border-2 shadow-2xl backdrop-blur-md z-[99999] flex items-center gap-3 ${
-          toast.type === 'success' 
-            ? 'text-green-100 border-green-500/60 bg-green-500/20' 
-            : toast.type === 'warn' 
-            ? 'text-yellow-100 border-yellow-500/60 bg-yellow-500/20' 
-            : 'text-red-100 border-red-500/60 bg-red-500/20'
-        }`}
+        initial={{ x: 400, opacity: 0 }} 
+        animate={{ x: 0, opacity: 1 }} 
+        exit={{ x: 400, opacity: 0 }}
+        transition={{ type: "spring", stiffness: 400, damping: 30 }}
+        className="fixed top-6 right-6 max-w-md z-[99999]"
       >
-        {toast.type === 'success' && (
-          <div className="flex-shrink-0">
-            <svg className="w-5 h-5 text-green-400" fill="currentColor" viewBox="0 0 20 20">
-              <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
-            </svg>
+        {/* Terminal Window */}
+        <div className={`bg-[#0a0a0a] border rounded-lg overflow-hidden shadow-2xl ${
+          toast.type === 'success' 
+            ? 'border-green-500/50 shadow-green-500/20' 
+            : toast.type === 'warn' 
+            ? 'border-yellow-500/50 shadow-yellow-500/20' 
+            : 'border-red-500/50 shadow-red-500/20'
+        }`}>
+          {/* Terminal Header */}
+          <div className={`px-3 py-1.5 flex items-center gap-2 border-b ${
+            toast.type === 'success' 
+              ? 'bg-green-500/10 border-green-500/30' 
+              : toast.type === 'warn' 
+              ? 'bg-yellow-500/10 border-yellow-500/30' 
+              : 'bg-red-500/10 border-red-500/30'
+          }`}>
+            <div className="flex gap-1">
+              <div className="w-2 h-2 rounded-full bg-red-500/50" />
+              <div className="w-2 h-2 rounded-full bg-yellow-500/50" />
+              <div className="w-2 h-2 rounded-full bg-green-500/50" />
+            </div>
+            <span className={`text-[9px] font-mono uppercase tracking-wider ${
+              toast.type === 'success' ? 'text-green-500' : toast.type === 'warn' ? 'text-yellow-500' : 'text-red-500'
+            }`}>
+              {toast.type === 'success' ? 'SYSTEM_OK' : toast.type === 'warn' ? 'WARNING' : 'ERROR'}
+            </span>
+            <button
+              onClick={onClose}
+              className="ml-auto text-gray-500 hover:text-white transition-colors"
+            >
+              <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
+                <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
+              </svg>
+            </button>
           </div>
-        )}
-        {toast.type === 'warn' && (
-          <div className="flex-shrink-0">
-            <svg className="w-5 h-5 text-yellow-400" fill="currentColor" viewBox="0 0 20 20">
-              <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
-            </svg>
+          
+          {/* Terminal Content */}
+          <div className="px-4 py-3 font-mono text-sm">
+            <div className="flex items-start gap-3">
+              <span className={`text-xs ${
+                toast.type === 'success' ? 'text-green-600' : toast.type === 'warn' ? 'text-yellow-600' : 'text-red-600'
+              }`}>
+                {toast.type === 'success' ? '>' : toast.type === 'warn' ? '!' : 'X'}
+              </span>
+              <div className="flex-1">
+                <motion.span
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  transition={{ duration: 0.3 }}
+                  className={`${
+                    toast.type === 'success' ? 'text-green-400' : toast.type === 'warn' ? 'text-yellow-400' : 'text-red-400'
+                  }`}
+                >
+                  {toast.msg}
+                </motion.span>
+                {toast.type === 'success' && (
+                  <motion.span
+                    initial={{ opacity: 0, scale: 0 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    transition={{ delay: 0.2 }}
+                    className="text-green-400 ml-2"
+                  >
+                    ✓
+                  </motion.span>
+                )}
+              </div>
+            </div>
           </div>
-        )}
-        {toast.type === 'error' && (
-          <div className="flex-shrink-0">
-            <svg className="w-5 h-5 text-red-400" fill="currentColor" viewBox="0 0 20 20">
-              <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
-            </svg>
-          </div>
-        )}
-        <span className="flex-1">{toast.msg}</span>
-        <button
-          onClick={onClose}
-          className="flex-shrink-0 ml-2 opacity-70 hover:opacity-100 transition-opacity"
-        >
-          <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
-            <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
-          </svg>
-        </button>
+          
+          {/* Progress bar */}
+          <motion.div
+            initial={{ scaleX: 1 }}
+            animate={{ scaleX: 0 }}
+            transition={{ duration: 4, ease: "linear" }}
+            className={`h-0.5 origin-left ${
+              toast.type === 'success' ? 'bg-green-500' : toast.type === 'warn' ? 'bg-yellow-500' : 'bg-red-500'
+            }`}
+          />
+        </div>
       </motion.div>
     </AnimatePresence>
+  );
+};
+
+// --- TRANSICIÓN DE SUMERGIMIENTO ---
+const DiveTransition = ({ isActive, onComplete }) => {
+  const [bootLines, setBootLines] = useState([]);
+  
+  useEffect(() => {
+    if (isActive) {
+      // Secuencia de boot estilo terminal
+      const lines = [
+        { text: "> CREDENTIALS_VERIFIED", delay: 0 },
+        { text: "> ESTABLISHING_SECURE_TUNNEL...", delay: 200 },
+        { text: "> ENCRYPTION_LAYER: AES-256 [OK]", delay: 400 },
+        { text: "> LOADING_USER_PROFILE...", delay: 600 },
+        { text: "> INITIALIZING_DASHBOARD...", delay: 800 },
+        { text: "> ACCESS_GRANTED", delay: 1000 },
+      ];
+      
+      lines.forEach(({ text, delay }) => {
+        setTimeout(() => {
+          setBootLines(prev => [...prev, text]);
+        }, delay);
+      });
+      
+      // Ejecutar onComplete después de la animación
+      const timer = setTimeout(() => {
+        onComplete();
+      }, 1800);
+      return () => clearTimeout(timer);
+    }
+  }, [isActive, onComplete]);
+
+  if (!isActive) return null;
+
+  return (
+    <motion.div
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      className="fixed inset-0 z-[999] flex items-center justify-center bg-black overflow-hidden"
+    >
+      {/* Grid de fondo animado */}
+      <div 
+        className="absolute inset-0 opacity-20"
+        style={{
+          backgroundImage: `linear-gradient(to right, #0891b2 1px, transparent 1px), linear-gradient(to bottom, #0891b2 1px, transparent 1px)`,
+          backgroundSize: '40px 40px',
+        }}
+      />
+      
+      {/* Glow central */}
+      <motion.div
+        initial={{ scale: 0, opacity: 0 }}
+        animate={{ scale: [0, 1.5, 1], opacity: [0, 0.5, 0.3] }}
+        transition={{ duration: 0.8, ease: "easeOut" }}
+        className="absolute w-96 h-96 bg-cyan-500/30 rounded-full blur-[100px]"
+      />
+      
+      {/* Terminal de acceso */}
+      <motion.div
+        initial={{ scale: 0.8, opacity: 0, y: 20 }}
+        animate={{ scale: 1, opacity: 1, y: 0 }}
+        transition={{ duration: 0.4, ease: [0.22, 1, 0.36, 1] }}
+        className="relative z-10 w-full max-w-md mx-4"
+      >
+        {/* Ventana de terminal */}
+        <div className="bg-[#0a0a0a] border border-cyan-500/30 rounded-lg overflow-hidden shadow-2xl shadow-cyan-500/20">
+          {/* Header del terminal */}
+          <div className="bg-[#111] px-4 py-2 flex items-center gap-2 border-b border-cyan-500/20">
+            <div className="flex gap-1.5">
+              <div className="w-2.5 h-2.5 rounded-full bg-red-500/50" />
+              <div className="w-2.5 h-2.5 rounded-full bg-yellow-500/50" />
+              <div className="w-2.5 h-2.5 rounded-full bg-green-500/50" />
+            </div>
+            <span className="text-[10px] text-cyan-500/70 font-mono ml-2">envyguard@secure-gateway</span>
+          </div>
+          
+          {/* Contenido del terminal */}
+          <div className="p-4 font-mono text-sm space-y-1 min-h-[180px]">
+            {bootLines.map((line, idx) => (
+              <motion.div
+                key={idx}
+                initial={{ opacity: 0, x: -10 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ duration: 0.2 }}
+                className={`flex items-center gap-2 ${
+                  line.includes('ACCESS_GRANTED') 
+                    ? 'text-green-400' 
+                    : line.includes('[OK]') 
+                    ? 'text-cyan-400' 
+                    : 'text-gray-400'
+                }`}
+              >
+                <span className="text-cyan-600 text-xs">{`0x${(100 + idx).toString(16).toUpperCase()}`}</span>
+                <span>{line}</span>
+                {line.includes('ACCESS_GRANTED') && (
+                  <motion.span
+                    initial={{ scale: 0 }}
+                    animate={{ scale: 1 }}
+                    className="text-green-400 ml-1"
+                  >
+                    ✓
+                  </motion.span>
+                )}
+              </motion.div>
+            ))}
+            
+            {/* Cursor parpadeante */}
+            <motion.div
+              animate={{ opacity: [1, 0] }}
+              transition={{ repeat: Infinity, duration: 0.6 }}
+              className="w-2 h-4 bg-cyan-400 mt-2"
+            />
+          </div>
+        </div>
+        
+        {/* Barra de progreso */}
+        <motion.div
+          initial={{ scaleX: 0 }}
+          animate={{ scaleX: 1 }}
+          transition={{ duration: 1.5, ease: "easeInOut" }}
+          className="h-1 bg-gradient-to-r from-cyan-500 via-blue-500 to-purple-500 rounded-full mt-4 origin-left"
+        />
+        
+        {/* Texto de estado */}
+        <motion.p
+          initial={{ opacity: 0 }}
+          animate={{ opacity: [0, 1, 1, 0] }}
+          transition={{ duration: 1.8, times: [0, 0.2, 0.8, 1] }}
+          className="text-center text-cyan-500/70 text-xs font-mono mt-3 tracking-widest"
+        >
+          INICIANDO SESIÓN SEGURA...
+        </motion.p>
+      </motion.div>
+
+      {/* Scanlines CRT */}
+      <div className="absolute inset-0 bg-[linear-gradient(rgba(18,16,16,0)_50%,rgba(0,0,0,0.25)_50%)] bg-[length:100%_4px] pointer-events-none opacity-20" />
+      
+      {/* Partículas flotantes */}
+      {[...Array(15)].map((_, i) => (
+        <motion.div
+          key={i}
+          initial={{ 
+            x: Math.random() * window.innerWidth,
+            y: window.innerHeight + 20,
+            opacity: 0
+          }}
+          animate={{ 
+            y: -20,
+            opacity: [0, 0.8, 0]
+          }}
+          transition={{ 
+            duration: Math.random() * 2 + 1,
+            delay: Math.random() * 0.5,
+            ease: "linear"
+          }}
+          className="absolute w-1 h-1 bg-cyan-400 rounded-full"
+        />
+      ))}
+    </motion.div>
   );
 };
 
@@ -697,13 +897,26 @@ const Toast = ({ toast, onClose }) => {
 export default function Home() {
   const [loading, setLoading] = useState(true);
   const [showLoginModal, setShowLoginModal] = useState(false);
+  const [showDiveTransition, setShowDiveTransition] = useState(false);
   const [toast, setToast] = useState(null);
   const loginButtonRef = useRef(null);
+  const navigate = useNavigate();
   const { handleInstall, canInstall, isInstalling } = useInstallPrompt();
   
   // Función para mostrar toast
   const showToast = (msg, type = 'success') => {
     setToast({ msg, type });
+  };
+  
+  // Función para manejar el login exitoso con efecto de transición
+  const handleLoginSuccess = (msg) => {
+    showToast(msg, 'success');
+    setShowDiveTransition(true);
+  };
+  
+  // Función que se ejecuta cuando termina la animación
+  const handleTransitionComplete = () => {
+    navigate('/dashboard');
   };
 
   return (
@@ -878,7 +1091,13 @@ export default function Home() {
           setShowLoginModal(false);
         }}
         buttonRef={loginButtonRef}
-        onSuccess={(msg) => showToast(msg, 'success')}
+        onSuccess={handleLoginSuccess}
+      />
+      
+      {/* Transición de Sumergimiento */}
+      <DiveTransition 
+        isActive={showDiveTransition} 
+        onComplete={handleTransitionComplete} 
       />
       
       {/* Toast Notification */}
