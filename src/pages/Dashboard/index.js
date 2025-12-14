@@ -17,6 +17,7 @@ import {
 } from "lucide-react";
 import iconLogo from "../../assets/icons/icon.png";
 import { AuthService, incidentService } from "../../services";
+import { useUserActivity } from "../../hooks/useUserActivity";
 
 // Importar componentes del Dashboard
 import { 
@@ -174,7 +175,6 @@ const DashboardContent = ({
       case 'blocking': return <BlockingSitesSection />;
       case 'novedades': return <NovedadesSection problemReports={problemReports} setProblemReports={setProblemReports} />;
       case 'logs': return <LogsAndTrafficSection problemReports={problemReports} />;
-      case 'settings': return <PlaceholderSection title="Configuración del Sistema" icon={Settings} description="Ajustes globales, conexiones a bases de datos y preferencias de interfaz." />;
       default: return <OverviewSection problemReports={problemReports} />;
     }
   }
@@ -228,6 +228,9 @@ const DashboardLayout = () => {
   const [showDeployModal, setShowDeployModal] = useState(false);
   const [deployTargetPCs, setDeployTargetPCs] = useState([]);
   const [problemReports, setProblemReports] = useState([]);
+  
+  // Hook para detectar actividad del usuario (10 segundos de inactividad)
+  const isUserActive = useUserActivity(10000);
   
   // Estado del avatar con persistencia en localStorage
   const [selectedAvatar, setSelectedAvatarState] = useState(() => {
@@ -480,14 +483,13 @@ const DashboardLayout = () => {
   };
 
   const links = [
-    { label: "Panel Principal", href: "#dashboard", icon: <LayoutGrid />, page: "dashboard" },
-    { label: "Monitoreo Remoto", href: "#computers", icon: <Monitor />, page: "computers" },
-    { label: "Vigilancia de Pantallas", href: "#screens", icon: <Eye />, page: "screens" },
-    { label: "Bloqueo de Sitios", href: "#blocking", icon: <AlertTriangle />, page: "blocking" },
-    ...((userRole === 'ADMIN') ? [{ label: "Gestión de Usuarios", href: "/usuarios", icon: <UserPlus />, page: "users" }] : []),
-    { label: "Novedades", href: "#novedades", icon: <Bell />, page: "novedades" },
-    { label: "Logs", href: "#logs", icon: <FileText />, page: "logs" },
-    { label: "Configuración", href: "#settings", icon: <Settings />, page: "settings" },
+    { label: "Panel Principal", href: "#dashboard", icon: <LayoutGrid />, page: "dashboard", color: "cyan" },
+    { label: "Monitoreo Remoto", href: "#computers", icon: <Monitor />, page: "computers", color: "blue" },
+    { label: "Vigilancia de Pantallas", href: "#screens", icon: <Eye />, page: "screens", color: "purple" },
+    { label: "Bloqueo de Sitios", href: "#blocking", icon: <AlertTriangle />, page: "blocking", color: "red" },
+    ...((userRole === 'ADMIN') ? [{ label: "Gestión de Usuarios", href: "/usuarios", icon: <UserPlus />, page: "users", color: "green" }] : []),
+    { label: "Novedades", href: "#novedades", icon: <Bell />, page: "novedades", color: "orange" },
+    { label: "Logs", href: "#logs", icon: <FileText />, page: "logs", color: "yellow" },
   ];
 
   console.log('🔐 userRole en Dashboard:', userRole);
@@ -684,18 +686,10 @@ const DashboardLayout = () => {
                   initial={{ opacity: 0, y: 10 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: 0.15 }}
-                  className="grid grid-cols-1 sm:grid-cols-2 gap-4"
                 >
                   <div className="p-4 rounded-lg bg-white/5 border border-white/10 hover:border-white/20 transition-colors">
                     <p className="text-[10px] font-mono text-gray-500 uppercase tracking-wider mb-1">Correo</p>
                     <p className="text-sm text-gray-200 font-mono break-all">{currentUser?.email || "admin@envyguard.com"}</p>
-                  </div>
-                  <div className="p-4 rounded-lg bg-white/5 border border-white/10 hover:border-white/20 transition-colors">
-                    <p className="text-[10px] font-mono text-gray-500 uppercase tracking-wider mb-1">Estado</p>
-                    <div className="flex items-center gap-2">
-                      <span className="w-2.5 h-2.5 rounded-full bg-green-500" />
-                      <span className="text-sm font-mono text-green-400">Activo en línea</span>
-                    </div>
                   </div>
                 </motion.div>
 
@@ -707,18 +701,22 @@ const DashboardLayout = () => {
                   className="space-y-3 p-4 rounded-lg bg-white/5 border border-white/10"
                 >
                   <div className="flex justify-between items-center">
-                    <span className="text-[10px] font-mono text-gray-500 uppercase tracking-wider">Último acceso</span>
+                    <span className="text-[10px] font-mono text-gray-500 uppercase tracking-wider">Estado</span>
                     <span className="text-sm text-gray-300 font-mono flex items-center gap-2">
-                      <span className="inline-block w-1.5 h-1.5 rounded-full bg-green-500"></span>
-                      {authenticatedUser?.lastAccess 
-                        ? new Date(authenticatedUser.lastAccess).toLocaleString('es-ES', { 
-                            day: '2-digit', 
-                            month: '2-digit', 
-                            year: 'numeric',
-                            hour: '2-digit',
-                            minute: '2-digit'
-                          })
-                        : 'Ahora'}
+                      {isUserActive ? (
+                        <>
+                          <span className="relative flex h-2 w-2">
+                            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
+                            <span className="relative inline-flex rounded-full h-2 w-2 bg-green-500"></span>
+                          </span>
+                          <span className="text-green-400">Activo</span>
+                        </>
+                      ) : (
+                        <>
+                          <span className="relative inline-flex rounded-full h-2 w-2 bg-yellow-500"></span>
+                          <span className="text-yellow-400">Inactivo</span>
+                        </>
+                      )}
                     </span>
                   </div>
                   <div className="flex justify-between items-center">

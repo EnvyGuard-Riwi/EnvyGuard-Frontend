@@ -153,8 +153,8 @@ const LogsAndTrafficSection = ({ problemReports = [] }) => {
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 pb-6 border-b border-white/5">
         <div>
           <div className="flex items-center gap-3">
-            <div className="p-2.5 bg-blue-500/10 rounded-lg border border-blue-500/20">
-              <Terminal className="text-blue-400" size={24} />
+            <div className="p-2.5 bg-yellow-500/10 rounded-lg border border-yellow-500/20">
+              <Terminal className="text-yellow-400" size={24} />
             </div>
             <div>
               <h2 className="text-2xl font-bold text-white tracking-tight">Logs de Comandos</h2>
@@ -170,7 +170,7 @@ const LogsAndTrafficSection = ({ problemReports = [] }) => {
           <div className="flex flex-col gap-4 bg-[#0a0a0a] p-4 rounded-xl border border-white/5">
             {/* Búsqueda y filtro de tipo */}
             <div className="flex flex-col md:flex-row gap-4">
-              <div className="flex-1 flex items-center gap-3 bg-black/40 px-3 py-2 rounded-lg border border-white/5 focus-within:border-blue-500/50 transition-colors">
+              <div className="flex-1 flex items-center gap-3 bg-black/40 px-3 py-2 rounded-lg border border-white/5 focus-within:border-yellow-500/50 transition-colors">
                 <Search size={14} className="text-gray-500" />
                 <input 
                   type="text" 
@@ -192,7 +192,7 @@ const LogsAndTrafficSection = ({ problemReports = [] }) => {
                     onClick={() => setFilterType(f.id)}
                     className={`px-3 py-2 rounded-lg text-xs font-medium transition-all ${
                       filterType === f.id ? 
-                        "bg-blue-500/20 text-blue-300 border border-blue-500/30" : 
+                        "bg-yellow-500/20 text-yellow-300 border border-yellow-500/30" : 
                         "text-gray-400 hover:text-gray-300 bg-white/5"
                     }`}
                   >
@@ -217,10 +217,10 @@ const LogsAndTrafficSection = ({ problemReports = [] }) => {
               <span className="text-xs text-gray-500 flex items-center mr-2">Estado:</span>
               {[
                 { id: COMMAND_STATUS.ALL, label: 'Todos', color: 'gray' },
-                { id: COMMAND_STATUS.PENDING, label: '⏳ Pendiente', color: 'yellow' },
-                { id: COMMAND_STATUS.SENT, label: '📤 Enviado', color: 'blue' },
-                { id: COMMAND_STATUS.EXECUTED, label: '✅ Ejecutado', color: 'green' },
-                { id: COMMAND_STATUS.FAILED, label: '❌ Fallido', color: 'red' },
+                { id: COMMAND_STATUS.PENDING, label: 'Pendiente', color: 'yellow' },
+                { id: COMMAND_STATUS.SENT, label: 'Enviado', color: 'blue' },
+                { id: COMMAND_STATUS.EXECUTED, label: 'Ejecutado', color: 'green' },
+                { id: COMMAND_STATUS.FAILED, label: 'Fallido', color: 'red' },
               ].map(s => (
                 <button
                   key={s.id}
@@ -240,37 +240,7 @@ const LogsAndTrafficSection = ({ problemReports = [] }) => {
                 </button>
               ))}
 
-              {/* Separador */}
-              <div className="w-px h-6 bg-white/10 mx-2" />
-
-              {/* Filtro por PC */}
-              <span className="text-xs text-gray-500 flex items-center mr-2">PC:</span>
-              <select
-                value={computerFilter}
-                onChange={(e) => handleComputerFilterChange(e.target.value)}
-                disabled={isLoadingCommands}
-                className="px-3 py-1.5 rounded-lg text-xs font-medium bg-white/5 text-gray-300 border border-white/10 focus:border-cyan-500/50 outline-none transition-all cursor-pointer min-w-[120px]"
-              >
-                <option value="">Todos los PCs</option>
-                {availableComputers.map(pc => (
-                  <option key={pc} value={pc}>{pc}</option>
-                ))}
-              </select>
-
-              {/* Limpiar filtros */}
-              {(statusFilter !== COMMAND_STATUS.ALL || computerFilter !== '') && (
-                <button
-                  onClick={() => {
-                    setStatusFilter(COMMAND_STATUS.ALL);
-                    setComputerFilter('');
-                    loadCommands(COMMAND_STATUS.ALL, '');
-                  }}
-                  className="px-3 py-1.5 rounded-lg text-xs font-medium text-red-400 hover:text-red-300 bg-red-500/10 hover:bg-red-500/20 transition-all flex items-center gap-1"
-                >
-                  <X size={12} />
-                  Limpiar
-                </button>
-              )}
+              
             </div>
           </div>
 
@@ -329,9 +299,9 @@ const LogsAndTrafficSection = ({ problemReports = [] }) => {
                       </td>
                       <td className="p-4">
                         <span className={`text-xs px-2 py-1 rounded-full font-mono font-bold ${
-                          log.type === 'Comando' ? 'bg-cyan-500/10 text-cyan-400' :
+                          log.type === 'Comando' ? 'bg-yellow-500/10 text-yellow-400' :
                           log.type === 'Reporte' ? 'bg-orange-500/10 text-orange-400' :
-                          'bg-blue-500/10 text-blue-400'
+                          'bg-gray-500/10 text-gray-400'
                         }`}>
                           {log.type}
                         </span>

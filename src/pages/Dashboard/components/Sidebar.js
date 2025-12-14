@@ -2,6 +2,7 @@ import React, { useState, useContext, createContext, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Menu, Settings, LogOut } from 'lucide-react';
 import iconLogo from '../../../assets/icons/icon.png';
+import { useUserActivity } from '../../../hooks/useUserActivity';
 
 // Context para el Sidebar
 export const SidebarContext = createContext(undefined);
@@ -87,6 +88,68 @@ export const SidebarLink = ({ link, className = "", isActive = false, onClick, .
   const { open } = useContext(SidebarContext);
   const [isHovered, setIsHovered] = useState(false);
 
+  // Mapa de colores para cada sección
+  const colorMap = {
+    cyan: {
+      bg: 'bg-cyan-500/15',
+      border: 'border-cyan-500',
+      line: 'bg-cyan-400',
+      text: 'text-cyan-400',
+      hover: 'group-hover:text-cyan-300'
+    },
+    blue: {
+      bg: 'bg-blue-500/15',
+      border: 'border-blue-500',
+      line: 'bg-blue-400',
+      text: 'text-blue-400',
+      hover: 'group-hover:text-blue-300'
+    },
+    purple: {
+      bg: 'bg-purple-500/15',
+      border: 'border-purple-500',
+      line: 'bg-purple-400',
+      text: 'text-purple-400',
+      hover: 'group-hover:text-purple-300'
+    },
+    red: {
+      bg: 'bg-red-500/15',
+      border: 'border-red-500',
+      line: 'bg-red-400',
+      text: 'text-red-400',
+      hover: 'group-hover:text-red-300'
+    },
+    green: {
+      bg: 'bg-green-500/15',
+      border: 'border-green-500',
+      line: 'bg-green-400',
+      text: 'text-green-400',
+      hover: 'group-hover:text-green-300'
+    },
+    orange: {
+      bg: 'bg-orange-500/15',
+      border: 'border-orange-500',
+      line: 'bg-orange-400',
+      text: 'text-orange-400',
+      hover: 'group-hover:text-orange-300'
+    },
+    yellow: {
+      bg: 'bg-yellow-500/15',
+      border: 'border-yellow-500',
+      line: 'bg-yellow-400',
+      text: 'text-yellow-400',
+      hover: 'group-hover:text-yellow-300'
+    },
+    gray: {
+      bg: 'bg-gray-500/15',
+      border: 'border-gray-500',
+      line: 'bg-gray-400',
+      text: 'text-gray-400',
+      hover: 'group-hover:text-gray-300'
+    }
+  };
+
+  const colors = colorMap[link.color] || colorMap.cyan;
+
   return (
     <motion.a
       href={link.href}
@@ -99,7 +162,7 @@ export const SidebarLink = ({ link, className = "", isActive = false, onClick, .
     >
       {/* Fondo para items activos */}
       {isActive && (
-        <div className="absolute inset-0 rounded-lg bg-cyan-500/15 border-l-2 border-cyan-500" />
+        <div className={`absolute inset-0 rounded-lg ${colors.bg} border-l-2 ${colors.border}`} />
       )}
 
       {/* Fondo hover sutil */}
@@ -110,11 +173,11 @@ export const SidebarLink = ({ link, className = "", isActive = false, onClick, .
       {/* Indicador de línea para items activos */}
       {isActive && (
         <div
-          className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-6 md:h-6 bg-cyan-400 rounded-r-lg"
+          className={`absolute left-0 top-1/2 -translate-y-1/2 w-1 h-6 md:h-6 ${colors.line} rounded-r-lg`}
         />
       )}
 
-      <div className={`relative z-10 flex-shrink-0 w-5 h-5 md:w-5 md:h-5 flex items-center justify-center transition-all duration-300 ${isActive ? 'text-cyan-400' : 'text-gray-500 group-hover:text-gray-200'}`}>
+      <div className={`relative z-10 flex-shrink-0 w-5 h-5 md:w-5 md:h-5 flex items-center justify-center transition-all duration-300 ${isActive ? colors.text : 'text-gray-500 group-hover:text-gray-200'}`}>
         <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-full h-full">
           {link.icon}
         </svg>
@@ -205,6 +268,9 @@ export const UserProfile = ({
   
   // Estado para el tiempo de último acceso
   const [lastAccessTime, setLastAccessTime] = useState("");
+  
+  // Hook para detectar actividad del usuario (10 segundos de inactividad)
+  const isUserActive = useUserActivity(10000);
 
   // Función para calcular el tiempo transcurrido
   const calculateLastAccessTime = () => {
@@ -261,12 +327,14 @@ export const UserProfile = ({
           whileTap={{ scale: 0.98 }}
           className="flex items-center gap-2 md:gap-3 px-2 md:px-3 py-3 md:py-2.5 rounded-lg cursor-pointer hover:bg-cyan-500/10 transition-all border border-transparent hover:border-cyan-500/30 group w-full touch-manipulation active:scale-95"
         >
-          <div className="h-8 md:h-10 w-8 md:w-10 rounded-full bg-gradient-to-br from-cyan-500/20 to-cyan-900/20 p-[1px] shrink-0 flex items-center justify-center border border-cyan-500/20 group-hover:border-cyan-500/50 transition-colors overflow-hidden">
-            {currentAvatarUrl ? (
-              <img src={currentAvatarUrl} alt="avatar" className="w-full h-full object-cover rounded-full" />
-            ) : (
-              <span className="font-bold text-xs md:text-sm text-cyan-400">{user?.name?.charAt(0)}</span>
-            )}
+          <div className="relative shrink-0">
+            <div className="h-8 md:h-10 w-8 md:w-10 rounded-full bg-gradient-to-br from-cyan-500/20 to-cyan-900/20 p-[1px] flex items-center justify-center border border-cyan-500/20 group-hover:border-cyan-500/50 transition-colors overflow-hidden">
+              {currentAvatarUrl ? (
+                <img src={currentAvatarUrl} alt="avatar" className="w-full h-full object-cover rounded-full" />
+              ) : (
+                <span className="font-bold text-xs md:text-sm text-cyan-400">{user?.name?.charAt(0)}</span>
+              )}
+            </div>
           </div>
           <AnimatePresence mode="wait">
             {open && (

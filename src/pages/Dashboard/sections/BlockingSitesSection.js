@@ -275,12 +275,14 @@ return (
 
         <div className="sm:col-span-1 flex items-end">
             <motion.button
-            whileHover={{ scale: 1.05 }}
-            whileTap={{ scale: 0.95 }}
+            whileHover={{ scale: 1.02 }}
+            whileTap={{ scale: 0.98 }}
             onClick={handleAddSite}
-            className="w-full px-3 md:px-4 py-2 md:py-2.5 bg-gradient-to-r from-cyan-500 to-blue-600 text-black font-bold rounded-lg text-[10px] md:text-xs uppercase tracking-widest transition-all flex items-center justify-center gap-2 border border-cyan-400/50 hover:border-cyan-300"
+            className="group w-full px-4 py-2.5 md:py-3 bg-transparent border border-cyan-500/40 hover:border-cyan-400 text-cyan-400 hover:text-cyan-300 rounded-lg font-medium text-xs uppercase tracking-wider transition-all duration-300 flex items-center justify-center gap-2.5 hover:bg-cyan-500/10 hover:shadow-[0_0_20px_rgba(6,182,212,0.15)]"
             >
-            <Plus size={14} />
+            <span className="p-1 rounded-md bg-cyan-500/10 group-hover:bg-cyan-500/20 transition-colors">
+              <Plus size={12} />
+            </span>
             Agregar
             </motion.button>
         </div>

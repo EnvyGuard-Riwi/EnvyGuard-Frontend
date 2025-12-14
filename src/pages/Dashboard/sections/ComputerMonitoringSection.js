@@ -901,15 +901,15 @@ return (
             const allSelected = allPCs.length > 0 && selectedList.size === allPCs.length;
             setSelectedList(allSelected ? new Set() : new Set(allPCs));
             }}
-            className={`px-3 py-1.5 text-xs font-bold rounded-lg border transition-all flex items-center gap-2 ${
+            className={`group px-4 py-2 text-xs font-medium rounded-lg border transition-all duration-300 flex items-center gap-2.5 ${
             selectedList.size > 0 && (selectedSala === 'sala1' || selectedSala === 'salaAdicional' || selectedSala === 'salaAdicional2'
                 ? currentRoom.layout.every(col => !col.pcs || col.pcs.every(pc => Array.from(selectedList).some(s => s.id === pc.id)))
                 : currentRoom.layout.every(fila => 
                     (!fila.izquierda || fila.izquierda.every(pc => Array.from(selectedList).some(s => s.id === pc.id))) &&
                     (!fila.derecha || fila.derecha.every(pc => Array.from(selectedList).some(s => s.id === pc.id)))
                 ))
-                ? 'border-red-500/40 bg-red-500/10 text-red-400 hover:bg-red-500/20'
-                : 'border-blue-500/40 bg-blue-500/10 text-blue-400 hover:bg-blue-500/20'
+                ? 'border-red-500/40 hover:border-red-400 text-red-400 hover:text-red-300 hover:bg-red-500/10 hover:shadow-[0_0_15px_rgba(239,68,68,0.1)]'
+                : 'border-blue-500/40 hover:border-blue-400 text-blue-400 hover:text-blue-300 hover:bg-blue-500/10 hover:shadow-[0_0_15px_rgba(59,130,246,0.1)]'
             }`}
         >
             {selectedList.size > 0 && (selectedSala === 'sala1' || selectedSala === 'salaAdicional' || selectedSala === 'salaAdicional2'
@@ -941,7 +941,7 @@ return (
             setSelectedList(new Set(allPCs));
             setTimeout(() => setShowBulkModal(true), 100);
             }}
-            className="px-3 py-1.5 text-xs font-bold rounded-lg border border-purple-500/40 bg-purple-500/10 text-purple-400 hover:bg-purple-500/20 transition-all flex items-center gap-2"
+            className="group px-4 py-2 text-xs font-medium rounded-lg border border-purple-500/40 hover:border-purple-400 text-purple-400 hover:text-purple-300 hover:bg-purple-500/10 transition-all duration-300 flex items-center gap-2.5 hover:shadow-[0_0_15px_rgba(168,85,247,0.1)]"
         >
             Ejecutar en TODOS
         </button>
