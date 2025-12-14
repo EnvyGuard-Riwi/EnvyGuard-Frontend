@@ -1,8 +1,8 @@
 import React, { useState, useEffect, useRef } from 'react';
 import SockJS from 'sockjs-client';
+import { controlService } from '../services';
 
 // --- CONFIGURACIÓN DE CONEXIÓN ---
-// CAMBIA ESTO: Usa la IP de tu VPS, no localhost
 const BACKEND_URL = 'https://api.envyguard.crudzaso.com'; 
 // ---------------------------------
 
@@ -14,15 +14,15 @@ const SpyWall = () => {
     const historyRef = useRef({});
     const MAX_HISTORY_SIZE = 100;
 
-    // CONTROL REMOTO
+    // CONTROL REMOTO - Usando controlService centralizado
     const sendControl = async (action) => {
         try {
-            // AQUÍ USAMOS LA IP DEL SERVIDOR
-            await fetch(`${BACKEND_URL}/api/control/${action}`, { method: 'POST' });
-            console.log(`Orden ${action} enviada.`);
+            console.log('🎮 Enviando control:', action);
+            await controlService.sendAction(action);
+            console.log(`✅ Orden ${action} enviada correctamente.`);
         } catch (e) { 
-            alert("Error contactando al servidor Java. Verifica la conexión."); 
-            console.error(e);
+            alert("Error contactando al servidor. Verifica la conexión."); 
+            console.error('❌ Error:', e);
         }
     };
 
