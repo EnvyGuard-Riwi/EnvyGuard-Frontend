@@ -39,6 +39,10 @@ ENDPOINTS: {
     GET_STATUS: '/devices/:id/status',
     GET_METRICS: '/devices/:id/metrics',
     },
+    // Estado en tiempo real de computadores (Radar)
+    COMPUTERS: {
+    LIST: '/computers',  // GET - Lista todos los computadores con status ONLINE/OFFLINE
+    },
     COMMANDS: {
     GET_ALL: '/commands',
     GET_BY_ID: '/commands/:id',
@@ -46,11 +50,24 @@ ENDPOINTS: {
     GET_BY_COMPUTER: '/commands/computer/:computerName',
     CREATE: '/commands',
     // Endpoints específicos por acción (usan query params: ?salaNumber=X&pcId=Y)
+    TEST: '/commands/test',
     SHUTDOWN: '/commands/shutdown',
     REBOOT: '/commands/reboot',
     WAKE_ON_LAN: '/commands/wake-on-lan',
     LOCK_SESSION: '/commands/lock-session',
     BLOCK_WEBSITE: '/commands/block-website',
+    UNBLOCK_WEBSITE: '/commands/unblock-website',
+    INSTALL_APP: '/commands/install-app',
+    INSTALL_SNAP: '/commands/install-snap',
+    FORMAT: '/commands/format',
+    UPDATE_STATUS: '/commands/:id/status',
+    },
+    // Gestión global de sitios bloqueados
+    BLOCKED_WEBSITES: {
+    LIST: '/blocked-websites',           // GET - Listar todos los sitios bloqueados
+    ADD: '/blocked-websites',             // POST - Agregar sitio (broadcast a todos los PCs)
+    COUNT: '/blocked-websites/count',     // GET - Contar sitios bloqueados
+    DELETE: '/blocked-websites/:id',      // DELETE - Eliminar sitio bloqueado
     },
     INCIDENTS: {
     BASE: '/api/incidents',
@@ -60,7 +77,7 @@ ENDPOINTS: {
     COMPLETE: '/api/incidents/:id/complete',
     },
     CONTROL: {
-    SEND_ACTION: '/api/control/:action',
+    EXAM_MONITORING: '/control/:action',  // POST - START o STOP para vigilancia de exámenes
     },
 },
 

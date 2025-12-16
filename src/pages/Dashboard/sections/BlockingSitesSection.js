@@ -13,35 +13,22 @@ Zap,
 Loader,
 Send,
 CheckCircle,
-XCircle
+XCircle,
+Globe,
+RefreshCw
 } from 'lucide-react';
 
 import { Toast, ScrollArea } from '../components';
-import { commandService } from '../../../services';
-
-// Configuración de salas con sus PCs (dbId = ID en base de datos)
-const SALAS_CONFIG = {
-1: { name: 'Sala 1', pcs: Array.from({ length: 36 }, (_, i) => ({ dbId: i + 1, label: `PC ${i + 1}` })) },
-2: { name: 'Sala 2', pcs: Array.from({ length: 32 }, (_, i) => ({ dbId: i + 1, label: `PC ${i + 1}` })) },
-3: { name: 'Sala 3', pcs: Array.from({ length: 38 }, (_, i) => ({ dbId: i + 1, label: `PC ${i + 1}` })) },
-4: { name: 'Sala 4', pcs: Array.from({ length: 32 }, (_, i) => ({ dbId: i + 1, label: `PC ${i + 1}` })) },
-};
+import { blockedWebsitesService } from '../../../services';
 
 const BlockingSitesSection = () => {
-const [blockedSites, setBlockedSites] = useState([
-    { id: 1, url: "facebook.com", category: "Redes Sociales", blocked: true, dateAdded: "2025-11-20", devices: 15, sala: 4, pcIds: [1, 2, 3] },
-    { id: 2, url: "youtube.com", category: "Video", blocked: true, dateAdded: "2025-11-20", devices: 18, sala: 4, pcIds: [1, 2, 3, 4, 5] },
-    { id: 3, url: "instagram.com", category: "Redes Sociales", blocked: true, dateAdded: "2025-11-21", devices: 12, sala: 3, pcIds: [1, 2] },
-    { id: 4, url: "tiktok.com", category: "Video", blocked: true, dateAdded: "2025-11-21", devices: 10, sala: 2, pcIds: [1] },
-    { id: 5, url: "gaming.com", category: "Entretenimiento", blocked: false, dateAdded: "2025-11-22", devices: 0, sala: 1, pcIds: [] },
-]);
+// Lista de sitios bloqueados (desde API)
+const [blockedSites, setBlockedSites] = useState([]);
+const [isLoading, setIsLoading] = useState(true);
+const [blockedCount, setBlockedCount] = useState({});
 
 // Estado para envío de comandos
 const [isSubmitting, setIsSubmitting] = useState(false);
-const [selectedSala, setSelectedSala] = useState(4);
-const [selectedPCs, setSelectedPCs] = useState([]);
-const [openSalaMenu, setOpenSalaMenu] = useState(false);
-const [selectAllPCs, setSelectAllPCs] = useState(false);
 
 const [newSite, setNewSite] = useState("");
 const [searchTerm, setSearchTerm] = useState("");
@@ -52,19 +39,41 @@ const [openCategoryMenu, setOpenCategoryMenu] = useState(false);
 
 const categories = ["Redes Sociales", "Video", "Entretenimiento", "Compras", "Otro"];
 
-// Efecto para seleccionar todos los PCs
-useEffect(() => {
-    if (selectAllPCs && selectedSala) {
-    const allPcIds = SALAS_CONFIG[selectedSala]?.pcs.map(pc => pc.dbId) || [];
-    setSelectedPCs(allPcIds);
+// Cargar sitios bloqueados desde la API
+const loadBlockedSites = useCallback(async () => {
+    try {
+    setIsLoading(true);
+    const [sites, count] = await Promise.all([
+        blockedWebsitesService.getAll(),
+        blockedWebsitesService.getCount().catch(() => ({}))
+    ]);
+    
+    // Mapear datos de la API al formato del componente
+    const mappedSites = sites.map(site => ({
+        id: site.id,
+        url: site.url,
+        name: site.name || site.url,
+        category: site.category || "Otro",
+        blocked: true,
+        dateAdded: site.createdAt ? new Date(site.createdAt).toISOString().split('T')[0] : 'N/A',
+        devices: 'Todos', // Se aplica a todos los PCs
+    }));
+    
+    setBlockedSites(mappedSites);
+    setBlockedCount(count);
+    } catch (error) {
+    console.error('[BlockingSitesSection] Error cargando sitios:', error);
+    setToast({ type: "error", msg: "Error al cargar sitios bloqueados" });
+    setTimeout(() => setToast(null), 3000);
+    } finally {
+    setIsLoading(false);
     }
-}, [selectAllPCs, selectedSala]);
+}, []);
 
-// Cuando cambia la sala, resetear selección
+// Cargar al montar
 useEffect(() => {
-    setSelectedPCs([]);
-    setSelectAllPCs(false);
-}, [selectedSala]);
+    loadBlockedSites();
+}, [loadBlockedSites]);
 
 const filteredSites = blockedSites.filter(site => {
     const matchesSearch = site.url.toLowerCase().includes(searchTerm.toLowerCase());
@@ -78,16 +87,13 @@ const handleAddSite = async () => {
     setTimeout(() => setToast(null), 2000);
     return;
     }
-
-    if (selectedPCs.length === 0) {
-    setToast({ type: "warn", msg: "Selecciona al menos un PC" });
-    setTimeout(() => setToast(null), 2000);
-    return;
-    }
     
-    const siteExists = blockedSites.some(s => s.url.toLowerCase() === newSite.toLowerCase() && s.sala === selectedSala);
+    // Verificar si ya existe
+    const siteExists = blockedSites.some(s => 
+    s.url.toLowerCase() === newSite.toLowerCase().replace(/^https?:\/\//, '').replace(/\/$/, '')
+    );
     if (siteExists) {
-    setToast({ type: "warn", msg: "Este sitio ya está bloqueado en esta sala" });
+    setToast({ type: "warn", msg: "Este sitio ya está bloqueado" });
     setTimeout(() => setToast(null), 2000);
     return;
     }
@@ -95,41 +101,26 @@ const handleAddSite = async () => {
     setIsSubmitting(true);
     
     try {
-    // Enviar comando de bloqueo a cada PC seleccionado
-    const results = await Promise.allSettled(
-        selectedPCs.map(pcId => 
-        commandService.sendBlockWebsite(selectedSala, pcId, newSite.toLowerCase())
-        )
-    );
-    
-    const successCount = results.filter(r => r.status === 'fulfilled').length;
-    const failCount = results.filter(r => r.status === 'rejected').length;
+    // Usar el nuevo endpoint global que hace broadcast a todos los PCs
+    const newBlockedSite = await blockedWebsitesService.add({
+        url: newSite,
+        name: newSite,
+        category: selectedCategory
+    });
 
-    if (successCount > 0) {
-        const newBlockedSite = {
-        id: Math.max(...blockedSites.map(s => s.id), 0) + 1,
-        url: newSite.toLowerCase(),
+    // Agregar a la lista local
+    setBlockedSites(prev => [...prev, {
+        id: newBlockedSite.id,
+        url: newBlockedSite.url,
+        name: newBlockedSite.name || newBlockedSite.url,
         category: selectedCategory,
         blocked: true,
         dateAdded: new Date().toISOString().split('T')[0],
-        devices: successCount,
-        sala: selectedSala,
-        pcIds: selectedPCs
-        };
-
-        setBlockedSites([...blockedSites, newBlockedSite]);
-        setNewSite("");
-        setSelectedPCs([]);
-        setSelectAllPCs(false);
-        
-        if (failCount > 0) {
-        setToast({ type: "warn", msg: `${newSite} bloqueado en ${successCount} PCs, ${failCount} fallaron` });
-        } else {
-        setToast({ type: "success", msg: `${newSite} bloqueado en ${successCount} PCs de Sala ${selectedSala}` });
-        }
-    } else {
-        setToast({ type: "error", msg: "Error al bloquear sitio en todos los PCs" });
-    }
+        devices: 'Todos',
+    }]);
+    
+    setNewSite("");
+    setToast({ type: "success", msg: `${newBlockedSite.url} bloqueado en todos los computadores` });
     } catch (error) {
     console.error('[BlockingSitesSection] Error:', error);
     setToast({ type: "error", msg: error.message || "Error al bloquear sitio" });
@@ -139,23 +130,41 @@ const handleAddSite = async () => {
     }
 };
 
-const handleRemoveSite = (id) => {
+const handleRemoveSite = async (id) => {
     const site = blockedSites.find(s => s.id === id);
-    setBlockedSites(blockedSites.filter(s => s.id !== id));
-    setToast({ type: "success", msg: `${site.url} eliminado de la lista` });
-    setTimeout(() => setToast(null), 2000);
+    if (!site) return;
+    
+    setIsSubmitting(true);
+    
+    try {
+    // Usar el nuevo endpoint global que hace broadcast de desbloqueo a todos los PCs
+    await blockedWebsitesService.delete(id);
+    
+    // Remover de la lista local
+    setBlockedSites(prev => prev.filter(s => s.id !== id));
+    setToast({ type: "success", msg: `${site.url} desbloqueado de todos los computadores` });
+    } catch (error) {
+    console.error('[BlockingSitesSection] Error al desbloquear:', error);
+    setToast({ type: "error", msg: error.message || "Error al desbloquear sitio" });
+    } finally {
+    setIsSubmitting(false);
+    setTimeout(() => setToast(null), 3000);
+    }
 };
 
-const handleToggleSite = (id) => {
-    setBlockedSites(blockedSites.map(site =>
-    site.id === id ? { ...site, blocked: !site.blocked } : site
-    ));
+// Toggle ya no tiene sentido con la nueva API global
+// Los sitios están bloqueados o no, no hay toggle por PC
+const handleToggleSite = async (id) => {
+    // Con la nueva API, toggle = eliminar el bloqueo
+    await handleRemoveSite(id);
 };
 
 const stats = {
     total: blockedSites.length,
     active: blockedSites.filter(s => s.blocked).length,
-    devices: blockedSites.reduce((sum, s) => sum + s.devices, 0),
+    devices: typeof Object.values(blockedCount)[0] === 'number' 
+    ? Object.values(blockedCount).reduce((a, b) => a + b, 0) 
+    : blockedSites.length,
 };
 
 return (
@@ -176,6 +185,16 @@ return (
             </div>
         </div>
         </div>
+        
+        {/* Botón refrescar */}
+        <button
+        onClick={loadBlockedSites}
+        disabled={isLoading}
+        className="flex items-center gap-2 px-3 py-2 bg-white/5 border border-white/10 rounded-lg text-gray-400 hover:text-white hover:bg-white/10 transition-colors disabled:opacity-50"
+        >
+        <RefreshCw size={16} className={isLoading ? 'animate-spin' : ''} />
+        <span className="text-sm">Actualizar</span>
+        </button>
     </div>
 
     {/* Stats Grid */}
@@ -216,17 +235,27 @@ return (
         Agregar Sitio
         </h3>
         
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2 md:gap-3">
-        <div className="sm:col-span-2 lg:col-span-2">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-2 md:gap-3">
+        {/* URL del Sitio */}
+        <div className="lg:col-span-2">
             <label className="text-[10px] md:text-xs font-bold text-gray-400 uppercase mb-1.5 md:mb-2 block">URL del Sitio</label>
             <input
             type="text"
-            placeholder="ej: example.com"
+            placeholder="ej: https://www.youtube.com/ - youtube.com"
             value={newSite}
             onChange={(e) => setNewSite(e.target.value)}
             onKeyPress={(e) => e.key === 'Enter' && handleAddSite()}
             className="w-full px-3 py-2 md:py-2.5 bg-white/5 border border-white/10 rounded-lg text-white text-xs md:text-sm focus:border-cyan-500/50 focus:outline-none placeholder-gray-700"
             />
+        </div>
+
+        {/* Indicador: Bloqueo Global */}
+        <div>
+            <label className="text-[10px] md:text-xs font-bold text-gray-400 uppercase mb-1.5 md:mb-2 block">Alcance</label>
+            <div className="w-full px-3 py-2 md:py-2.5 bg-cyan-500/10 border border-cyan-500/30 rounded-lg text-cyan-300 text-xs md:text-sm flex items-center gap-2">
+            <Globe size={14} className="text-cyan-400" />
+            <span className="font-medium">Todos los Computadores</span>
+            </div>
         </div>
 
         <div className="relative sm:col-span-1">
@@ -278,12 +307,28 @@ return (
             whileHover={{ scale: 1.02 }}
             whileTap={{ scale: 0.98 }}
             onClick={handleAddSite}
-            className="group w-full px-4 py-2.5 md:py-3 bg-transparent border border-cyan-500/40 hover:border-cyan-400 text-cyan-400 hover:text-cyan-300 rounded-lg font-medium text-xs uppercase tracking-wider transition-all duration-300 flex items-center justify-center gap-2.5 hover:bg-cyan-500/10 hover:shadow-[0_0_20px_rgba(6,182,212,0.15)]"
+            disabled={isSubmitting || !newSite.trim()}
+            className={`group w-full px-4 py-2.5 md:py-3 rounded-lg font-medium text-xs uppercase tracking-wider transition-all duration-300 flex items-center justify-center gap-2.5 ${
+                isSubmitting 
+                ? 'bg-yellow-600 text-black cursor-wait'
+                : !newSite.trim()
+                ? 'bg-gray-700 text-gray-500 cursor-not-allowed border border-gray-600'
+                : 'bg-transparent border border-cyan-500/40 hover:border-cyan-400 text-cyan-400 hover:text-cyan-300 hover:bg-cyan-500/10 hover:shadow-[0_0_20px_rgba(6,182,212,0.15)]'
+            }`}
             >
-            <span className="p-1 rounded-md bg-cyan-500/10 group-hover:bg-cyan-500/20 transition-colors">
-              <Plus size={12} />
-            </span>
-            Agregar
+            {isSubmitting ? (
+                <>
+                <Loader size={12} className="animate-spin" />
+                Bloqueando...
+                </>
+            ) : (
+                <>
+                <span className="p-1 rounded-md bg-cyan-500/10 group-hover:bg-cyan-500/20 transition-colors">
+                  <Plus size={12} />
+                </span>
+                Bloquear Globalmente
+                </>
+            )}
             </motion.button>
         </div>
         </div>
@@ -367,23 +412,25 @@ return (
                     whileHover={{ scale: 1.1 }}
                     whileTap={{ scale: 0.9 }}
                     onClick={() => handleToggleSite(site.id)}
-                    className={`p-2 rounded-lg transition-colors ${
+                    disabled={isSubmitting}
+                    className={`p-2 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed ${
                         site.blocked 
                         ? "hover:bg-green-500/10 hover:text-green-400" 
                         : "hover:bg-red-500/10 hover:text-red-400"
                     }`}
-                    title={site.blocked ? "Permitir" : "Bloquear"}
+                    title={site.blocked ? "Desbloquear" : "Bloquear"}
                     >
-                    {site.blocked ? <Zap size={14} /> : <Lock size={14} />}
+                    {isSubmitting ? <Loader size={14} className="animate-spin" /> : (site.blocked ? <Zap size={14} /> : <Lock size={14} />)}
                     </motion.button>
                     <motion.button
                     whileHover={{ scale: 1.1 }}
                     whileTap={{ scale: 0.9 }}
                     onClick={() => handleRemoveSite(site.id)}
-                    className="p-2 hover:bg-red-500/10 hover:text-red-400 rounded-lg transition-colors"
-                    title="Eliminar"
+                    disabled={isSubmitting}
+                    className="p-2 hover:bg-red-500/10 hover:text-red-400 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                    title="Desbloquear y eliminar"
                     >
-                    <Trash2 size={14} />
+                    {isSubmitting ? <Loader size={14} className="animate-spin" /> : <Trash2 size={14} />}
                     </motion.button>
                 </div>
                 </td>
@@ -440,23 +487,25 @@ return (
                     whileHover={{ scale: 1.1 }}
                     whileTap={{ scale: 0.9 }}
                     onClick={() => handleToggleSite(site.id)}
-                    className={`p-1.5 rounded-lg transition-colors text-xs ${
+                    disabled={isSubmitting}
+                    className={`p-1.5 rounded-lg transition-colors text-xs disabled:opacity-50 disabled:cursor-not-allowed ${
                         site.blocked 
                         ? "hover:bg-green-500/10 hover:text-green-400 text-green-400/60" 
                         : "hover:bg-red-500/10 hover:text-red-400 text-red-400/60"
                     }`}
-                    title={site.blocked ? "Permitir" : "Bloquear"}
+                    title={site.blocked ? "Desbloquear" : "Bloquear"}
                     >
-                    {site.blocked ? <Zap size={12} /> : <Lock size={12} />}
+                    {isSubmitting ? <Loader size={12} className="animate-spin" /> : (site.blocked ? <Zap size={12} /> : <Lock size={12} />)}
                     </motion.button>
                     <motion.button
                     whileHover={{ scale: 1.1 }}
                     whileTap={{ scale: 0.9 }}
                     onClick={() => handleRemoveSite(site.id)}
-                    className="p-1.5 hover:bg-red-500/10 hover:text-red-400 text-red-400/60 rounded-lg transition-colors text-xs"
-                    title="Eliminar"
+                    disabled={isSubmitting}
+                    className="p-1.5 hover:bg-red-500/10 hover:text-red-400 text-red-400/60 rounded-lg transition-colors text-xs disabled:opacity-50 disabled:cursor-not-allowed"
+                    title="Desbloquear y eliminar"
                     >
-                    <Trash2 size={12} />
+                    {isSubmitting ? <Loader size={12} className="animate-spin" /> : <Trash2 size={12} />}
                     </motion.button>
                 </div>
                 </div>
