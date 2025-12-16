@@ -245,6 +245,7 @@ const LogsAndTrafficSection = ({ problemReports = [] }) => {
           </div>
 
           {/* Logs Table */}
+          
           <ScrollArea className="flex-1 rounded-xl border border-white/5 bg-[#0a0a0a] overflow-hidden shadow-inner">
             <table className="w-full text-left border-collapse">
               <thead className="bg-white/5 text-[10px] uppercase font-mono text-gray-500 sticky top-0 backdrop-blur-md z-10 tracking-wider">
