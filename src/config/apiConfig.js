@@ -70,11 +70,11 @@ ENDPOINTS: {
     DELETE: '/blocked-websites/:id',      // DELETE - Eliminar sitio bloqueado
     },
     INCIDENTS: {
-    BASE: '/api/incidents',
-    GET_ALL: '/api/incidents/all',
-    GET_BY_STATUS: '/api/incidents',
-    CREATE: '/api/incidents',
-    COMPLETE: '/api/incidents/:id/complete',
+    BASE: '/incidents',
+    GET_ALL: '/incidents/all',
+    GET_BY_STATUS: '/incidents',
+    CREATE: '/incidents',
+    COMPLETE: '/incidents/:id/complete',
     },
     CONTROL: {
     EXAM_MONITORING: '/control/:action',  // POST - START o STOP para vigilancia de exámenes
@@ -83,7 +83,7 @@ ENDPOINTS: {
 
 // Configuración de axios
 AXIOS_CONFIG: {
-    timeout: 10000, // 10 segundos
+    timeout: 30000, // 30 segundos (aumentado por lentitud del backend)
     headers: {
     'Content-Type': 'application/json',
     'Accept': 'application/json',

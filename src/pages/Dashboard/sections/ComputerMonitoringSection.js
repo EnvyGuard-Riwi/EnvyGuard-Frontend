@@ -936,24 +936,53 @@ const getLocationFromPC = (pcId, sala) => {
 
     // Buscar en el layout de la sala
     for (const section of salaData.layout) {
-    for (const pc of section.pcs) {
+    // Caso 1: Estructura con "pcs" (sala1, sala2, sala3, salaAdicional, etc.)
+    if (section.pcs && Array.isArray(section.pcs)) {
+        for (const pc of section.pcs) {
         if (pc.id === pcId) {
-        let sectorName = '';
-        if (section.col) {
+            let sectorName = '';
+            if (section.col) {
             const colLetters = ['A', 'B', 'C', 'D', 'E', 'F'];
             sectorName = `Columna ${colLetters[section.col - 1] || section.col}`;
-        } else if (section.row) {
+            } else if (section.row) {
             sectorName = `Fila ${section.row}`;
-        }
-        
-        // Determinar la posición dentro del sector (1, 2, 3, 4...)
-        const posInSector = section.pcs.indexOf(pc) + 1;
-        
-        return {
+            }
+            
+            const posInSector = section.pcs.indexOf(pc) + 1;
+            
+            return {
             sector: sectorName,
             posicion: posInSector,
             ubicacion: `${sectorName} - Posición ${posInSector}`
-        };
+            };
+        }
+        }
+    }
+    
+    // Caso 2: Estructura con "izquierda" y "derecha" (sala4)
+    if (section.izquierda && Array.isArray(section.izquierda)) {
+        for (const pc of section.izquierda) {
+        if (pc.id === pcId) {
+            const posInSector = section.izquierda.indexOf(pc) + 1;
+            return {
+            sector: 'Lado Izquierdo',
+            posicion: posInSector,
+            ubicacion: `Lado Izquierdo - Posición ${posInSector}`
+            };
+        }
+        }
+    }
+    
+    if (section.derecha && Array.isArray(section.derecha)) {
+        for (const pc of section.derecha) {
+        if (pc.id === pcId) {
+            const posInSector = section.derecha.indexOf(pc) + 1;
+            return {
+            sector: 'Lado Derecho',
+            posicion: posInSector,
+            ubicacion: `Lado Derecho - Posición ${posInSector}`
+            };
+        }
         }
     }
     }

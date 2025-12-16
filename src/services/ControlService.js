@@ -8,8 +8,8 @@ import axios from 'axios';
 import axiosInstance from './api/axiosInstance';
 import { API_CONFIG, replaceUrlParams, apiLog } from '../config/apiConfig';
 
-// URL base sin /api para endpoints que no lo requieren
-const BASE_URL_NO_API = 'https://api.envyguard.crudzaso.com';
+// URL base con /api para el endpoint de control de exámenes
+const BASE_URL_API = 'https://api.envyguard.crudzaso.com/api';
 
 // Acciones disponibles para control remoto
 export const CONTROL_ACTIONS = {
@@ -115,11 +115,16 @@ const controlService = {
 
       apiLog('log', `Enviando control de examen: ${action}...`);
       
-      // Este endpoint NO tiene prefijo /api, usa URL base diferente
-      const endpoint = `${BASE_URL_NO_API}/control/${action.toUpperCase()}`;
+      // Endpoint con prefijo /api
+      const endpoint = `${BASE_URL_API}/control/${action.toUpperCase()}`;
       
       // Obtener token para autenticación
       const token = localStorage.getItem('authToken');
+      const user = JSON.parse(localStorage.getItem('user') || '{}');
+      
+      console.log('[ControlService] Token presente:', !!token);
+      console.log('[ControlService] Usuario:', user.email, '- Rol:', user.role);
+      console.log('[ControlService] Endpoint:', endpoint);
       
       const response = await axios.post(endpoint, {}, {
         headers: {

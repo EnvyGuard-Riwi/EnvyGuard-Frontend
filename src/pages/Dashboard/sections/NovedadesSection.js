@@ -18,6 +18,7 @@ Calendar,
 Tag
 } from 'lucide-react';
 import incidentService from '../../../services/IncidentService';
+import { Toast } from '../components';
 
 const NovedadesSection = ({ problemReports = [], setProblemReports }) => {
 const [filterSeverity, setFilterSeverity] = useState('all');
@@ -25,6 +26,7 @@ const [viewTab, setViewTab] = useState('pendientes');
 const [searchTerm, setSearchTerm] = useState('');
 const [loadingId, setLoadingId] = useState(null);
 const [selectedReport, setSelectedReport] = useState(null); // Para el modal de detalles
+const [toast, setToast] = useState(null); // Para mostrar mensajes
 
 // Separar reportes
 const pendingReports = problemReports.filter(r => r.status !== 'closed');
@@ -83,7 +85,7 @@ const handleToggleStatus = async (reportId, currentStatus) => {
         const result = await incidentService.completeIncident(reportId);
         console.log('📥 Respuesta del servidor:', result);
         
-        // Actualizar estado local
+        // Solo actualizar estado local si la API respondió correctamente
         setProblemReports(prev => 
         prev.map(report => 
             report.id === reportId 
@@ -91,18 +93,20 @@ const handleToggleStatus = async (reportId, currentStatus) => {
             : report
         )
         );
+        
+        setToast({ type: 'success', msg: 'Incidente marcado como completado' });
+        setTimeout(() => setToast(null), 3000);
         console.log(`✅ Incidente ${reportId} marcado como completado`);
     } catch (error) {
         console.error(`❌ Error al completar incidente ${reportId}:`, error);
         console.error('Detalles del error:', error.response?.data || error.message);
-        // Aún así actualizamos localmente por si es un error de CORS
-        setProblemReports(prev => 
-        prev.map(report => 
-            report.id === reportId 
-            ? { ...report, status: 'closed', completedAt: new Date().toISOString() } 
-            : report
-        )
-        );
+        
+        // Mostrar error al usuario - NO actualizar localmente
+        const errorMsg = error.response?.status === 403 
+        ? 'Sin permisos para completar este incidente' 
+        : 'Error al completar incidente. Intenta de nuevo.';
+        setToast({ type: 'error', msg: errorMsg });
+        setTimeout(() => setToast(null), 4000);
     } finally {
         setLoadingId(null);
     }
@@ -128,6 +132,9 @@ const getSeverityConfig = (severity) => {
 
 return (
     <div id="novedades-section" className="flex flex-col h-full bg-[#0a0a0a] overflow-hidden">
+    
+    {/* Toast para mensajes */}
+    {toast && <Toast type={toast.type} msg={toast.msg} onClose={() => setToast(null)} />}
     
     {/* Title Header */}
     <div className="px-6 py-5 flex items-center gap-4 border-b border-white/10">
