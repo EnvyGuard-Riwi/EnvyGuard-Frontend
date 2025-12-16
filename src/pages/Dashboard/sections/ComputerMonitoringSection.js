@@ -16,7 +16,8 @@ FileText,
 Zap,
 Terminal,
 AlertCircle,
-Lock
+Lock,
+Activity
 } from 'lucide-react';
 import { deviceService, WebSocketService, incidentService, INCIDENT_SEVERITY, commandService, COMMAND_ACTIONS } from '../../../services';
 import Toast from '../components/Toast';
@@ -36,6 +37,8 @@ const [loadingDevices, setLoadingDevices] = useState(false);
 const [deviceStatusOverrides, setDeviceStatusOverrides] = useState({}); // ip -> {status, meta}
 const [showReportModal, setShowReportModal] = useState(false);
 const [selectedPCForReport, setSelectedPCForReport] = useState(null);
+const [isCheckingStatus, setIsCheckingStatus] = useState(false);
+const [lastStatusCheck, setLastStatusCheck] = useState(null);
 
 // Configuración de Salas - DATOS COMPLETOS
 const salas = {
@@ -479,6 +482,98 @@ const getSalaNumber = (salaName) => {
     return salaMap[salaName] || 1;
 };
 
+// Obtener todos los PCs de una sala
+const getAllPCsFromSala = (salaKey) => {
+    const salaData = salas[salaKey];
+    if (!salaData) return [];
+    
+    const allPCs = [];
+    const isSingleColumn = salaKey === 'sala1' || salaKey === 'salaAdicional' || salaKey === 'salaAdicional2';
+    
+    if (isSingleColumn) {
+    salaData.layout.forEach(section => {
+        if (section.pcs) {
+        section.pcs.forEach(pc => allPCs.push(pc));
+        }
+    });
+    } else {
+    salaData.layout.forEach(fila => {
+        if (fila.izquierda) {
+        fila.izquierda.forEach(pc => allPCs.push(pc));
+        }
+        if (fila.derecha) {
+        fila.derecha.forEach(pc => allPCs.push(pc));
+        }
+    });
+    }
+    
+    return allPCs;
+};
+
+// Verificar estado de todos los PCs usando el endpoint /computers
+const checkAllPCsStatus = async () => {
+    setIsCheckingStatus(true);
+    console.log('[Status Check] Obteniendo estado de computadores...');
+    
+    try {
+    // Usar el nuevo endpoint GET /computers para estado en tiempo real
+    const computers = await deviceService.getComputersStatus();
+    
+    // Mapear por IP para actualizar el estado visual
+    const newOverrides = { ...deviceStatusOverrides };
+    let online = 0, offline = 0;
+    
+    computers?.forEach(computer => {
+        if (computer?.ipAddress) {
+        const isOnline = computer.status?.toUpperCase() === 'ONLINE';
+        newOverrides[computer.ipAddress] = { 
+            status: isOnline ? 'online' : 'offline',
+            name: computer.name,
+            macAddress: computer.macAddress,
+            lastSeen: computer.lastSeen,
+            roomNumber: computer.roomNumber,
+            positionInRoom: computer.positionInRoom,
+            lastCheck: new Date()
+        };
+        if (isOnline) online++; else offline++;
+        }
+    });
+    
+    setDeviceStatusOverrides(newOverrides);
+    setLastStatusCheck(new Date());
+    
+    console.log(`[Status Check] Completado: ${online} online, ${offline} offline de ${computers?.length || 0} totales`);
+    
+    // Mostrar toast con resultado
+    setToast({ 
+        type: online > 0 ? 'success' : 'warn', 
+        msg: `Estado actualizado: ${online} online, ${offline} offline` 
+    });
+    setTimeout(() => setToast(null), 3000);
+    
+    } catch (error) {
+    console.error('[Status Check] Error:', error);
+    setToast({ type: 'error', msg: 'Error al obtener estado de computadores' });
+    setTimeout(() => setToast(null), 3000);
+    } finally {
+    setIsCheckingStatus(false);
+    }
+};
+
+// Verificar estado al cargar y cuando cambia la sala
+useEffect(() => {
+    // Verificar estado inicial
+    checkAllPCsStatus();
+    
+    // Configurar verificación periódica cada 30 segundos
+    const intervalId = setInterval(() => {
+    checkAllPCsStatus();
+    }, 30000);
+    
+    return () => clearInterval(intervalId);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+}, [selectedSala]);
+
 const handleAction = async (action, pcId, ip, dbId) => {
     // Si la acción es reportar problema, abre el modal
     if (action === 'report') {
@@ -490,13 +585,33 @@ const handleAction = async (action, pcId, ip, dbId) => {
 
     // Si la acción es instalar apps, abre el modal de despliegue
     if (action === 'install') {
-    setDeployTargetPCs([{ id: pcId, ip }]);
+    // Extraer número de sala del ID
+    const salaMatch = pcId.match(/s(\d+)/i);
+    const salaNumber = salaMatch ? parseInt(salaMatch[1]) : getSalaNumber(selectedSala);
+    
+    console.log('[handleAction install] Creating deploy target:', { id: pcId, ip, dbId, salaNumber });
+    
+    setDeployTargetPCs([{ id: pcId, ip, dbId, salaNumber }]);
     setShowDeployModal(true);
     setSelectedPC(null);
     return;
     }
 
     setActionLoading(`${pcId}-${action}`);
+    
+    // Extraer número de sala del ID
+    const salaMatch = pcId.match(/s(\d+)/i);
+    const salaNumber = salaMatch ? parseInt(salaMatch[1]) : getSalaNumber(selectedSala);
+    
+    // Usar dbId si está disponible, sino extraer del ID del PC
+    let numericPcId;
+    if (dbId) {
+    numericPcId = dbId;
+    } else {
+    const pcMatch = pcId.match(/pc(\d+)/i);
+    numericPcId = pcMatch ? parseInt(pcMatch[1]) : 1;
+    }
+    
     try {
     // Mapear acciones del frontend a acciones del backend
     const actionMap = {
@@ -508,6 +623,9 @@ const handleAction = async (action, pcId, ip, dbId) => {
         'wol': COMMAND_ACTIONS.WAKE_ON_LAN,
         'start': COMMAND_ACTIONS.WAKE_ON_LAN,  // Encender PC
         'lock': COMMAND_ACTIONS.LOCK_SESSION,
+        'format': 'FORMAT',
+        'clean': 'FORMAT',
+        'cleanup': 'FORMAT',
     };
     
     const backendAction = actionMap[action.toLowerCase()];
@@ -516,19 +634,6 @@ const handleAction = async (action, pcId, ip, dbId) => {
         console.error(`[handleAction] Acción no reconocida: ${action}`);
         setToast({ type: "error", msg: `Acción no soportada: ${action}` });
         return;
-    }
-    
-    // Extraer número de sala del ID (s1 = sala 1, s2 = sala 2, s3 = sala 3, s4 = sala 4)
-    const salaMatch = pcId.match(/s(\d+)/i);
-    const salaNumber = salaMatch ? parseInt(salaMatch[1]) : getSalaNumber(selectedSala);
-    
-    // Usar dbId si está disponible, sino extraer del ID del PC
-    let numericPcId;
-    if (dbId) {
-    numericPcId = dbId;
-    } else {
-    const pcMatch = pcId.match(/pc(\d+)/i);
-    numericPcId = pcMatch ? parseInt(pcMatch[1]) : 1;
     }
     
     console.log(`[handleAction] Enviando: salaNumber=${salaNumber}, pcId=${numericPcId}, action=${backendAction}, dbId=${dbId || 'no disponible'}`);
@@ -542,6 +647,8 @@ const handleAction = async (action, pcId, ip, dbId) => {
     await commandService.sendReboot(salaNumber, numericPcId);
     } else if (backendAction === COMMAND_ACTIONS.LOCK_SESSION) {
     await commandService.sendLockSession(salaNumber, numericPcId);
+    } else if (backendAction === 'FORMAT') {
+    await commandService.sendFormat(salaNumber, numericPcId);
     } else {
     // Enviar comando con body JSON para otras acciones
     await commandService.sendCommand({
@@ -564,12 +671,82 @@ const handleAction = async (action, pcId, ip, dbId) => {
 const handleBulkAction = async (action) => {
     if (selectedList.size === 0) return;
     
-    // Si la acción es instalar apps, abre el modal de despliegue
+    // Función auxiliar para obtener los datos completos del PC desde el layout
+    const findPCData = (pcItem) => {
+      const pcId = typeof pcItem === 'string' ? pcItem : pcItem.id;
+      const currentSalaData = salas[selectedSala];
+      if (!currentSalaData) return null;
+      
+      for (const section of currentSalaData.layout) {
+        // Para salas con estructura de filas (row)
+        if (section.row && section.pcs) {
+          const found = section.pcs.find(pc => pc.id === pcId);
+          if (found) return found;
+        }
+        // Para salas con estructura de columnas (col)
+        if (section.col && section.pcs) {
+          const found = section.pcs.find(pc => pc.id === pcId);
+          if (found) return found;
+        }
+        // Para salas con estructura izquierda/derecha
+        if (section.izquierda) {
+          const found = section.izquierda.find(pc => pc.id === pcId);
+          if (found) return found;
+        }
+        if (section.derecha) {
+          const found = section.derecha.find(pc => pc.id === pcId);
+          if (found) return found;
+        }
+      }
+      return null;
+    };
+    
+    // Si la acción es instalar apps, abre el modal de despliegue con objetos completos
     if (action === 'install') {
-    setDeployTargetPCs(Array.from(selectedList));
-    setShowDeployModal(true);
-    setShowBulkModal(false);
-    return;
+      const items = Array.from(selectedList);
+      const fullPCData = items.map(item => {
+        // Si item ya es un objeto con datos completos
+        if (typeof item === 'object' && item.dbId) {
+          return item;
+        }
+        
+        // Buscar datos completos del PC
+        const pcId = typeof item === 'string' ? item : item.id;
+        const pcData = findPCData(pcId);
+        
+        // Extraer número de sala
+        const salaMatch = pcId.match(/s(\d+)/i);
+        const salaNumber = salaMatch ? parseInt(salaMatch[1]) : getSalaNumber(selectedSala);
+        
+        if (pcData && pcData.dbId) {
+          return {
+            id: pcId,
+            ip: pcData.ip || (typeof item === 'object' ? item.ip : ''),
+            dbId: pcData.dbId,
+            salaNumber
+          };
+        }
+        
+        // Fallback: construir con lo que tengamos
+        return {
+          id: pcId,
+          ip: typeof item === 'object' ? item.ip : '',
+          dbId: typeof item === 'object' ? item.dbId : null,
+          salaNumber
+        };
+      }).filter(pc => pc.dbId); // Filtrar los que no tienen dbId
+      
+      console.log('[handleBulkAction install] PCs completos:', fullPCData);
+      
+      if (fullPCData.length === 0) {
+        setToast({ type: "error", msg: "No se encontraron datos de los PCs seleccionados" });
+        return;
+      }
+      
+      setDeployTargetPCs(fullPCData);
+      setShowDeployModal(true);
+      setShowBulkModal(false);
+      return;
     }
 
     const items = Array.from(selectedList);
@@ -583,39 +760,80 @@ const handleBulkAction = async (action) => {
     'reboot': COMMAND_ACTIONS.REBOOT,
     'wake': COMMAND_ACTIONS.WAKE_ON_LAN,
     'wol': COMMAND_ACTIONS.WAKE_ON_LAN,
+    'start': COMMAND_ACTIONS.WAKE_ON_LAN,
     'lock': COMMAND_ACTIONS.LOCK_SESSION,
+    'format': 'FORMAT',
+    'clean': 'FORMAT',
+    'cleanup': 'FORMAT',
     };
     const backendAction = actionMap[action.toLowerCase()];
     
     if (!backendAction) {
     console.error(`[handleBulkAction] Acción no reconocida: ${action}`);
     setToast({ type: "error", msg: `Acción no soportada: ${action}` });
+    setActionLoading(null);
     return;
     }
     
-    // Obtener número de sala actual
-    const salaNumber = getSalaNumber(selectedSala);
-    
     try {
-    // Enviar comando a cada PC seleccionado
+    // Enviar comando a cada PC seleccionado usando los endpoints específicos
     const results = await Promise.allSettled(
-        items.map(({ id }) => {
-        // Extraer número de PC del ID (ej: "s4-iz4-pc1" -> 1)
-        const pcMatch = id.match(/pc(\d+)/i);
-        const numericPcId = pcMatch ? parseInt(pcMatch[1]) : 1;
+        items.map(async ({ id, ip, dbId }) => {
+        // Buscar los datos completos del PC si no tenemos dbId
+        const pcData = !dbId ? findPCData(id) : null;
         
-        return commandService.sendCommand({
+        // Extraer número de sala del ID (s1 = sala 1, s2 = sala 2, etc.) o usar sala actual
+        const salaMatch = id.match(/s(\d+)/i);
+        const salaNumber = salaMatch ? parseInt(salaMatch[1]) : getSalaNumber(selectedSala);
+        
+        // Usar dbId directo, del PC data, o extraer del ID
+        let numericPcId;
+        if (dbId) {
+            numericPcId = dbId;
+        } else if (pcData && pcData.dbId) {
+            numericPcId = pcData.dbId;
+        } else {
+            const pcMatch = id.match(/pc(\d+)/i);
+            numericPcId = pcMatch ? parseInt(pcMatch[1]) : 1;
+        }
+        
+        console.log(`[handleBulkAction] Enviando ${backendAction} a: salaNumber=${salaNumber}, pcId=${numericPcId}, id=${id}, dbId=${dbId}`);
+        
+        // Usar el endpoint específico según la acción
+        if (backendAction === COMMAND_ACTIONS.WAKE_ON_LAN) {
+            return commandService.sendWakeOnLan(salaNumber, numericPcId);
+        } else if (backendAction === COMMAND_ACTIONS.SHUTDOWN) {
+            return commandService.sendShutdown(salaNumber, numericPcId);
+        } else if (backendAction === COMMAND_ACTIONS.REBOOT) {
+            return commandService.sendReboot(salaNumber, numericPcId);
+        } else if (backendAction === COMMAND_ACTIONS.LOCK_SESSION) {
+            return commandService.sendLockSession(salaNumber, numericPcId);
+        } else if (backendAction === 'FORMAT') {
+            return commandService.sendFormat(salaNumber, numericPcId);
+        } else {
+            // Fallback a sendCommand para otras acciones
+            return commandService.sendCommand({
             salaNumber,
             pcId: numericPcId,
             action: backendAction,
-        });
+            });
+        }
         })
     );
+    
     const ok = results.filter(r => r.status === 'fulfilled').length;
     const fail = results.length - ok;
     
+    // Log de errores para debugging
+    results.forEach((r, i) => {
+        if (r.status === 'rejected') {
+        console.error(`[handleBulkAction] Error en PC ${items[i].id}:`, r.reason);
+        }
+    });
+    
     setToast({ type: fail ? "warn" : "success", msg: `Acción ${action}: ${ok} ok, ${fail} error(es)` });
     } catch (e) {
+    console.error('[handleBulkAction] Error general:', e);
     setToast({ type: "error", msg: `Error ejecutando acción masiva ${action}` });
     } finally {
     setTimeout(() => setActionLoading(null), 600);
@@ -649,13 +867,14 @@ const PCCard = ({ pc }) => {
         onClick={(e) => {
         if (e.shiftKey || e.ctrlKey || e.metaKey) {
             // selección múltiple
+            const salaNum = getSalaNumber(selectedSala);
             setSelectedList(prev => {
             const next = new Set(prev);
             const exists = Array.from(next).some(s => s.id === pc.id);
             if (exists) {
                 next.forEach(s => { if (s.id === pc.id) next.delete(s); });
             } else {
-                next.add({ id: pc.id, ip: pc.ip });
+                next.add({ id: pc.id, ip: pc.ip, dbId: pc.dbId, salaNumber: salaNum });
             }
             return next;
             });
@@ -670,13 +889,14 @@ const PCCard = ({ pc }) => {
         <button
             onClick={(e) => {
             e.stopPropagation();
+            const salaNum = getSalaNumber(selectedSala);
             setSelectedList(prev => {
                 const next = new Set(prev);
                 const exists = Array.from(next).some(s => s.id === pc.id);
                 if (exists) {
                 next.forEach(s => { if (s.id === pc.id) next.delete(s); });
                 } else {
-                next.add({ id: pc.id, ip: pc.ip });
+                next.add({ id: pc.id, ip: pc.ip, dbId: pc.dbId, salaNumber: salaNum });
                 }
                 return next;
             });
@@ -743,28 +963,42 @@ const getLocationFromPC = (pcId, sala) => {
 
 const currentRoom = salas[selectedSala] || salas.sala1;
 
-// Cargar dispositivos desde API y poblar overrides por IP
+// Cargar estado de computadores desde API y poblar overrides por IP
 useEffect(() => {
     let cancelled = false;
-    const fetchDevices = async () => {
+    const fetchComputersStatus = async () => {
     setLoadingDevices(true);
     try {
-        const data = await deviceService.getDevices();
+        // Usar el nuevo endpoint GET /computers para estado en tiempo real
+        const computers = await deviceService.getComputersStatus();
         if (cancelled) return;
-        // Esperamos array de dispositivos: { id, ip, status, latencyMs? }
+        
+        // Mapear por IP para actualizar el estado visual
         const map = {};
-        data?.forEach(d => {
-        if (d?.ip) map[d.ip] = { status: d.status || 'online', latencyMs: d.latencyMs };
+        computers?.forEach(computer => {
+        if (computer?.ipAddress) {
+            map[computer.ipAddress] = { 
+            status: computer.status?.toLowerCase() || 'offline',
+            name: computer.name,
+            macAddress: computer.macAddress,
+            lastSeen: computer.lastSeen,
+            roomNumber: computer.roomNumber,
+            positionInRoom: computer.positionInRoom
+            };
+        }
         });
         setDeviceStatusOverrides(prev => ({ ...prev, ...map }));
+        setLastStatusCheck(new Date());
     } catch (e) {
-        // Silencioso: permanecer con datos mock
+        console.error('[ComputerMonitoringSection] Error al obtener estado:', e);
+        // Silencioso: permanecer con datos locales
     } finally {
         if (!cancelled) setLoadingDevices(false);
     }
     };
-    fetchDevices();
-    const id = setInterval(fetchDevices, 30000);
+    fetchComputersStatus();
+    // Refrescar cada 30 segundos
+    const id = setInterval(fetchComputersStatus, 30000);
     return () => { cancelled = true; clearInterval(id); };
 }, []);
 
@@ -845,7 +1079,32 @@ return (
         </div>
         <div className="flex items-center gap-2">
             <Wifi size={14} className="text-green-500" />
-            <span>Online: <b className="text-white">{currentRoom.stats.online}</b></span>
+            <span>Online: <b className="text-green-400">{Object.values(deviceStatusOverrides).filter(s => s.status === 'online').length || '...'}</b></span>
+        </div>
+        <div className="flex items-center gap-2">
+            <WifiOff size={14} className="text-red-500" />
+            <span>Offline: <b className="text-red-400">{Object.values(deviceStatusOverrides).filter(s => s.status === 'offline').length || '...'}</b></span>
+        </div>
+        
+        {/* Indicador de verificación de estado */}
+        <div className="flex items-center gap-2 ml-auto">
+            {isCheckingStatus ? (
+            <div className="flex items-center gap-2 text-cyan-400">
+                <Activity size={14} className="animate-pulse" />
+                <span className="text-[10px]">Verificando...</span>
+            </div>
+            ) : (
+            <button
+                onClick={() => checkAllPCsStatus()}
+                className="flex items-center gap-1.5 text-gray-500 hover:text-cyan-400 transition-colors"
+                title="Actualizar estado de PCs"
+            >
+                <RotateCw size={12} />
+                <span className="text-[10px]">
+                {lastStatusCheck ? `Actualizado ${lastStatusCheck.toLocaleTimeString('es-CO', { hour: '2-digit', minute: '2-digit' })}` : 'Actualizar'}
+                </span>
+            </button>
+            )}
         </div>
         </div>
 
@@ -887,14 +1146,15 @@ return (
             onClick={() => {
             const allPCs = [];
             const isSingleColumn = selectedSala === 'sala1' || selectedSala === 'salaAdicional' || selectedSala === 'salaAdicional2';
+            const salaNum = getSalaNumber(selectedSala);
             if (isSingleColumn) {
                 currentRoom.layout.forEach(col => {
-                if (col.pcs) col.pcs.forEach(pc => allPCs.push({ id: pc.id, ip: pc.ip }));
+                if (col.pcs) col.pcs.forEach(pc => allPCs.push({ id: pc.id, ip: pc.ip, dbId: pc.dbId, salaNumber: salaNum }));
                 });
             } else {
                 currentRoom.layout.forEach(fila => {
-                if (fila.izquierda) fila.izquierda.forEach(pc => allPCs.push({ id: pc.id, ip: pc.ip }));
-                if (fila.derecha) fila.derecha.forEach(pc => allPCs.push({ id: pc.id, ip: pc.ip }));
+                if (fila.izquierda) fila.izquierda.forEach(pc => allPCs.push({ id: pc.id, ip: pc.ip, dbId: pc.dbId, salaNumber: salaNum }));
+                if (fila.derecha) fila.derecha.forEach(pc => allPCs.push({ id: pc.id, ip: pc.ip, dbId: pc.dbId, salaNumber: salaNum }));
                 });
             }
             // Toggle: si todos están seleccionados, deselecciona; si no, selecciona todos
@@ -928,14 +1188,15 @@ return (
             onClick={() => {
             const allPCs = [];
             const isSingleColumn = selectedSala === 'sala1' || selectedSala === 'salaAdicional' || selectedSala === 'salaAdicional2';
+            const salaNum = getSalaNumber(selectedSala);
             if (isSingleColumn) {
                 currentRoom.layout.forEach(col => {
-                if (col.pcs) col.pcs.forEach(pc => allPCs.push({ id: pc.id, ip: pc.ip }));
+                if (col.pcs) col.pcs.forEach(pc => allPCs.push({ id: pc.id, ip: pc.ip, dbId: pc.dbId, salaNumber: salaNum }));
                 });
             } else {
                 currentRoom.layout.forEach(fila => {
-                if (fila.izquierda) fila.izquierda.forEach(pc => allPCs.push({ id: pc.id, ip: pc.ip }));
-                if (fila.derecha) fila.derecha.forEach(pc => allPCs.push({ id: pc.id, ip: pc.ip }));
+                if (fila.izquierda) fila.izquierda.forEach(pc => allPCs.push({ id: pc.id, ip: pc.ip, dbId: pc.dbId, salaNumber: salaNum }));
+                if (fila.derecha) fila.derecha.forEach(pc => allPCs.push({ id: pc.id, ip: pc.ip, dbId: pc.dbId, salaNumber: salaNum }));
                 });
             }
             setSelectedList(new Set(allPCs));
@@ -1235,8 +1496,8 @@ return (
                 { id: 'start', label: 'Encender (WOL)', icon: Zap, color: 'hover:bg-green-500/20 hover:text-green-400', span: false },
                 { id: 'restart', label: 'Reiniciar', icon: RotateCw, color: 'hover:bg-blue-500/20 hover:text-blue-400', span: false },
                 { id: 'lock', label: 'Bloquear Sesión', icon: Lock, color: 'hover:bg-orange-500/20 hover:text-orange-400', span: false },
-                { id: 'format', label: 'Limpiar', icon: HardDrive, color: 'hover:bg-yellow-500/20 hover:text-yellow-400', span: true },
-                { id: 'install', label: 'Instalar Apps', icon: Package, color: 'hover:bg-purple-500/20 hover:text-purple-400', span: true },
+                { id: 'format', label: 'Limpiar', icon: HardDrive, color: 'hover:bg-yellow-500/20 hover:text-yellow-400', span: false },
+                { id: 'install', label: 'Instalar Apps', icon: Package, color: 'hover:bg-purple-500/20 hover:text-purple-400', span: false },
                 { id: 'report', label: 'Reportar Problema', icon: AlertCircle, color: 'hover:bg-orange-500/20 hover:text-orange-400', span: true },
                 ].map(action => (
                 <button
@@ -1325,8 +1586,8 @@ return (
                 { id: 'start', label: 'Encender (WOL)', icon: Zap, color: 'hover:bg-green-500/20 hover:text-green-400', span: false },
                 { id: 'restart', label: 'Reiniciar', icon: RotateCw, color: 'hover:bg-blue-500/20 hover:text-blue-400', span: false },
                 { id: 'lock', label: 'Bloquear Sesión', icon: Lock, color: 'hover:bg-orange-500/20 hover:text-orange-400', span: false },
-                { id: 'format', label: 'Limpiar', icon: HardDrive, color: 'hover:bg-yellow-500/20 hover:text-yellow-400', span: true },
-                { id: 'install', label: 'Instalar Apps', icon: Package, color: 'hover:bg-purple-500/20 hover:text-purple-400', span: true },
+                { id: 'format', label: 'Limpiar', icon: HardDrive, color: 'hover:bg-yellow-500/20 hover:text-yellow-400', span: false },
+                { id: 'install', label: 'Instalar Apps', icon: Package, color: 'hover:bg-purple-500/20 hover:text-purple-400', span: false },
                 ].map(action => (
                 <button
                     key={action.id}

@@ -11,7 +11,10 @@ Play,
 Pause,
 Download,
 Maximize2,
-X
+X,
+Loader,
+CheckCircle,
+AlertCircle
 } from 'lucide-react';
 
 import { controlService } from '../../../services';
@@ -22,24 +25,37 @@ const [isConnected, setIsConnected] = useState(false);
 const [selectedScreen, setSelectedScreen] = useState(null);
 const [showFullscreen, setShowFullscreen] = useState(false);
 const [isLoading, setIsLoading] = useState(false);
+const [isMonitoringActive, setIsMonitoringActive] = useState(false);
+const [toast, setToast] = useState(null);
 
 const clientRef = useRef(null);
 const historyRef = useRef({});
 const MAX_HISTORY_SIZE = 100;
 const BACKEND_URL = 'https://api.envyguard.crudzaso.com';
 
-// CONTROL REMOTO - Usando controlService centralizado
+// CONTROL DE MONITOREO DE EXÁMENES - Usando endpoint /control/{action}
 const sendControl = async (action) => {
     setIsLoading(true);
     try {
-    console.log('🎮 Enviando control:', action);
-    await controlService.sendAction(action);
-    console.log(`✅ Orden ${action} enviada correctamente.`);
+    console.log('🎮 Enviando control de monitoreo:', action);
+    
+    if (action === 'START') {
+        await controlService.startExamMonitoring();
+        setIsMonitoringActive(true);
+        setToast({ type: 'success', msg: 'Monitoreo de pantallas INICIADO' });
+    } else if (action === 'STOP') {
+        await controlService.stopExamMonitoring();
+        setIsMonitoringActive(false);
+        setToast({ type: 'success', msg: 'Monitoreo de pantallas DETENIDO' });
+    }
+    
+    console.log(`✅ Comando ${action} enviado correctamente a todos los agentes.`);
     } catch (e) { 
     console.error('❌ Error:', e);
-    alert("Error contactando al servidor. Verifica la conexión."); 
+    setToast({ type: 'error', msg: e.message || 'Error al enviar comando' });
     } finally {
     setIsLoading(false);
+    setTimeout(() => setToast(null), 3000);
     }
 };
 
@@ -154,35 +170,69 @@ return (
             <h3 className="text-sm font-bold text-gray-400 uppercase tracking-wider">Control de Clase</h3>
             <span className="text-xs text-gray-600">|</span>
             <span className="text-xs text-gray-500">{screenEntries.length} pantallas activas</span>
+            <span className="text-xs text-gray-600">|</span>
+            <div className="flex items-center gap-1.5">
+            <div className={`w-2 h-2 rounded-full ${isMonitoringActive ? 'bg-green-500 animate-pulse shadow-[0_0_8px_rgba(34,197,94,0.6)]' : 'bg-gray-500'}`} />
+            <span className={`text-xs font-bold ${isMonitoringActive ? 'text-green-400' : 'text-gray-500'}`}>
+                {isMonitoringActive ? 'MONITOREANDO' : 'INACTIVO'}
+            </span>
+            </div>
         </div>
         <div className="flex gap-3">
             <motion.button
             whileHover={{ scale: 1.02 }}
             whileTap={{ scale: 0.98 }}
             onClick={() => sendControl('START')}
-            disabled={isLoading}
-            className="group flex items-center gap-2.5 px-5 py-2.5 bg-transparent border border-green-500/40 hover:border-green-400 text-green-400 hover:text-green-300 rounded-lg font-medium text-sm transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed hover:bg-green-500/10 hover:shadow-[0_0_20px_rgba(34,197,94,0.15)]"
+            disabled={isLoading || isMonitoringActive}
+            className={`group flex items-center gap-2.5 px-5 py-2.5 bg-transparent border rounded-lg font-medium text-sm transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed ${
+                isMonitoringActive 
+                ? 'border-green-500/20 text-green-500/50' 
+                : 'border-green-500/40 hover:border-green-400 text-green-400 hover:text-green-300 hover:bg-green-500/10 hover:shadow-[0_0_20px_rgba(34,197,94,0.15)]'
+            }`}
             >
             <span className="p-1 rounded-md bg-green-500/10 group-hover:bg-green-500/20 transition-colors">
-              <Play size={14} />
+              {isLoading ? <Loader size={14} className="animate-spin" /> : <Play size={14} />}
             </span>
-            INICIAR CLASE
+            {isMonitoringActive ? 'EN PROGRESO' : 'INICIAR CLASE'}
             </motion.button>
             <motion.button
             whileHover={{ scale: 1.02 }}
             whileTap={{ scale: 0.98 }}
             onClick={() => sendControl('STOP')}
-            disabled={isLoading}
-            className="group flex items-center gap-2.5 px-5 py-2.5 bg-transparent border border-red-500/40 hover:border-red-400 text-red-400 hover:text-red-300 rounded-lg font-medium text-sm transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed hover:bg-red-500/10 hover:shadow-[0_0_20px_rgba(239,68,68,0.15)]"
+            disabled={isLoading || !isMonitoringActive}
+            className={`group flex items-center gap-2.5 px-5 py-2.5 bg-transparent border rounded-lg font-medium text-sm transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed ${
+                !isMonitoringActive 
+                ? 'border-red-500/20 text-red-500/50' 
+                : 'border-red-500/40 hover:border-red-400 text-red-400 hover:text-red-300 hover:bg-red-500/10 hover:shadow-[0_0_20px_rgba(239,68,68,0.15)]'
+            }`}
             >
             <span className="p-1 rounded-md bg-red-500/10 group-hover:bg-red-500/20 transition-colors">
-              <Pause size={14} />
+              {isLoading ? <Loader size={14} className="animate-spin" /> : <Pause size={14} />}
             </span>
             TERMINAR CLASE
             </motion.button>
         </div>
         </div>
     </div>
+
+    {/* Toast Notification */}
+    <AnimatePresence>
+        {toast && (
+        <motion.div
+            initial={{ opacity: 0, y: -20 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -20 }}
+            className={`fixed top-4 right-4 z-[200] flex items-center gap-2 px-4 py-3 rounded-lg shadow-lg ${
+            toast.type === 'success' ? 'bg-green-500/20 border border-green-500/30 text-green-400' :
+            toast.type === 'error' ? 'bg-red-500/20 border border-red-500/30 text-red-400' :
+            'bg-yellow-500/20 border border-yellow-500/30 text-yellow-400'
+            }`}
+        >
+            {toast.type === 'success' ? <CheckCircle size={18} /> : <AlertCircle size={18} />}
+            <span className="text-sm font-medium">{toast.msg}</span>
+        </motion.div>
+        )}
+    </AnimatePresence>
 
     {/* Stats */}
     <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">

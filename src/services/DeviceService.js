@@ -106,6 +106,68 @@ const deviceService = {
   sendCommand: async (deviceId, command, params = {}) => {
     return deviceService.executeAction(deviceId, command);
   },
+
+  // ============================================
+  // COMPUTERS STATUS (Radar en tiempo real)
+  // ============================================
+
+  /**
+   * Obtener lista de todos los computadores con su estado actual
+   * GET /api/computers
+   * @returns {Promise<Array>} Lista de computadores con status ONLINE/OFFLINE
+   * Cada computador tiene: id, name, ipAddress, macAddress, status, lastSeen, 
+   * labName, roomNumber, positionInRoom, createdAt, updatedAt
+   */
+  getComputersStatus: async () => {
+    try {
+      apiLog('log', 'Obteniendo estado de computadores...', null);
+      
+      const response = await axiosInstance.get('/computers');
+      
+      apiLog('log', `${response.data?.length || 0} computadores obtenidos`);
+      return response.data || [];
+    } catch (error) {
+      apiLog('error', 'Error al obtener estado de computadores', error.message);
+      
+      // Manejar errores específicos
+      if (error.response?.status === 403) {
+        throw new Error('Sin permisos para ver computadores. Verifica tu rol de usuario.');
+      }
+      if (error.response?.status === 401) {
+        throw new Error('Sesión expirada. Por favor, inicia sesión nuevamente.');
+      }
+      
+      throw new Error(error.response?.data?.message || 'Error al obtener estado de computadores');
+    }
+  },
+
+  /**
+   * Obtener computadores filtrados por estado
+   * @param {string} status - 'ONLINE' o 'OFFLINE'
+   * @returns {Promise<Array>} Lista filtrada de computadores
+   */
+  getComputersByStatus: async (status) => {
+    try {
+      const computers = await deviceService.getComputersStatus();
+      return computers.filter(c => c.status?.toUpperCase() === status.toUpperCase());
+    } catch (error) {
+      throw error;
+    }
+  },
+
+  /**
+   * Obtener computadores por sala (roomNumber)
+   * @param {number} roomNumber - Número de sala
+   * @returns {Promise<Array>} Lista de computadores de esa sala
+   */
+  getComputersByRoom: async (roomNumber) => {
+    try {
+      const computers = await deviceService.getComputersStatus();
+      return computers.filter(c => c.roomNumber === roomNumber);
+    } catch (error) {
+      throw error;
+    }
+  },
 };
 
 export default deviceService;

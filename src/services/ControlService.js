@@ -4,8 +4,12 @@
  * Incluye: shutdown, restart, lock, etc.
  */
 
+import axios from 'axios';
 import axiosInstance from './api/axiosInstance';
 import { API_CONFIG, replaceUrlParams, apiLog } from '../config/apiConfig';
+
+// URL base sin /api para endpoints que no lo requieren
+const BASE_URL_NO_API = 'https://api.envyguard.crudzaso.com';
 
 // Acciones disponibles para control remoto
 export const CONTROL_ACTIONS = {
@@ -15,6 +19,12 @@ export const CONTROL_ACTIONS = {
   UNLOCK: 'unlock',
   SLEEP: 'sleep',
   WAKE: 'wake',
+};
+
+// Acciones de monitoreo de exámenes
+export const EXAM_CONTROL_ACTIONS = {
+  START: 'START',
+  STOP: 'STOP',
 };
 
 const controlService = {
@@ -84,6 +94,81 @@ const controlService = {
    */
   wake: async () => {
     return controlService.sendAction(CONTROL_ACTIONS.WAKE);
+  },
+
+  // ============================================
+  // CONTROL DE MONITOREO DE EXÁMENES
+  // ============================================
+
+  /**
+   * Enviar comando de control de examen (START/STOP) a todos los agentes
+   * POST /control/{action} (sin prefijo /api)
+   * @param {string} action - 'START' o 'STOP'
+   * @returns {Promise<string>} Mensaje de confirmación
+   */
+  sendExamControl: async (action) => {
+    try {
+      const validActions = ['START', 'STOP'];
+      if (!validActions.includes(action.toUpperCase())) {
+        throw new Error(`Acción inválida. Use: ${validActions.join(' o ')}`);
+      }
+
+      apiLog('log', `Enviando control de examen: ${action}...`);
+      
+      // Este endpoint NO tiene prefijo /api, usa URL base diferente
+      const endpoint = `${BASE_URL_NO_API}/control/${action.toUpperCase()}`;
+      
+      // Obtener token para autenticación
+      const token = localStorage.getItem('authToken');
+      
+      const response = await axios.post(endpoint, {}, {
+        headers: {
+          'Content-Type': 'application/json',
+          ...(token && { Authorization: `Bearer ${token}` })
+        }
+      });
+      
+      apiLog('log', `Control de examen ${action} enviado exitosamente`, response.data);
+      return response.data;
+    } catch (error) {
+      apiLog('error', `Error al enviar control de examen ${action}`, error.message);
+      console.error('[ControlService] Exam control error:', error.response?.data);
+      console.error('[ControlService] Status:', error.response?.status);
+      
+      const backendMessage = error.response?.data?.message || error.response?.data;
+      
+      if (error.response?.status === 400) {
+        throw new Error('Acción inválida (use START o STOP)');
+      }
+      
+      if (error.response?.status === 403) {
+        throw new Error('No tienes permisos para controlar el monitoreo de exámenes');
+      }
+      
+      if (error.response?.status === 401) {
+        throw new Error('Sesión expirada. Por favor, inicia sesión nuevamente');
+      }
+      
+      throw new Error(backendMessage || `Error al enviar control de examen: ${action}`);
+    }
+  },
+
+  /**
+   * Iniciar monitoreo de examen en todos los agentes
+   * Envía comando START via RabbitMQ fanout exchange
+   * @returns {Promise<string>} Mensaje de confirmación
+   */
+  startExamMonitoring: async () => {
+    return controlService.sendExamControl(EXAM_CONTROL_ACTIONS.START);
+  },
+
+  /**
+   * Detener monitoreo de examen en todos los agentes
+   * Envía comando STOP via RabbitMQ fanout exchange
+   * @returns {Promise<string>} Mensaje de confirmación
+   */
+  stopExamMonitoring: async () => {
+    return controlService.sendExamControl(EXAM_CONTROL_ACTIONS.STOP);
   },
 };
 
