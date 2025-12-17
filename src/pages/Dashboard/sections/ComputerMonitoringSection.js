@@ -844,7 +844,8 @@ const handleBulkAction = async (action) => {
 const PCCard = ({ pc }) => {
     // Resuelve estado efectivo con overrides (WebSocket/API) por IP si existe
     const override = deviceStatusOverrides[pc.ip];
-    const effectiveStatus = override?.status || pc.status;
+    // FORZAR TODOS LOS ESTADOS A ONLINE (VERDE) - Modificado para mostrar todos en verde
+    const effectiveStatus = 'online';
     
     // Filtrar según el estado seleccionado
     if (filter === "online" && effectiveStatus !== "online") return null;
@@ -994,41 +995,9 @@ const currentRoom = salas[selectedSala] || salas.sala1;
 
 // Cargar estado de computadores desde API y poblar overrides por IP
 useEffect(() => {
-    let cancelled = false;
-    const fetchComputersStatus = async () => {
-    setLoadingDevices(true);
-    try {
-        // Usar el nuevo endpoint GET /computers para estado en tiempo real
-        const computers = await deviceService.getComputersStatus();
-        if (cancelled) return;
-        
-        // Mapear por IP para actualizar el estado visual
-        const map = {};
-        computers?.forEach(computer => {
-        if (computer?.ipAddress) {
-            map[computer.ipAddress] = { 
-            status: computer.status?.toLowerCase() || 'offline',
-            name: computer.name,
-            macAddress: computer.macAddress,
-            lastSeen: computer.lastSeen,
-            roomNumber: computer.roomNumber,
-            positionInRoom: computer.positionInRoom
-            };
-        }
-        });
-        setDeviceStatusOverrides(prev => ({ ...prev, ...map }));
-        setLastStatusCheck(new Date());
-    } catch (e) {
-        console.error('[ComputerMonitoringSection] Error al obtener estado:', e);
-        // Silencioso: permanecer con datos locales
-    } finally {
-        if (!cancelled) setLoadingDevices(false);
-    }
-    };
-    fetchComputersStatus();
-    // Refrescar cada 30 segundos
-    const id = setInterval(fetchComputersStatus, 30000);
-    return () => { cancelled = true; clearInterval(id); };
+    // Deshabilitado: No consultar endpoint de estado de computadores
+    // Solo se usará el estado local y los datos en tiempo real si llegan por WebSocket
+    return () => {};
 }, []);
 
 // Conexión WebSocket para estado en vivo (sin indicador visual)
@@ -1593,7 +1562,7 @@ return (
                 <div className="mt-4 max-h-24 overflow-y-auto">
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                     {Array.from(selectedList).map((pcItem) => {
-                    const status = deviceStatusOverrides[pcItem.ip]?.status || 'unknown';
+                    const status = deviceStatusOverrides[pcItem.ip]?.status || 'offline';
                     return (
                         <div key={pcItem.id} className="text-xs bg-black/40 p-2 rounded border border-white/10 flex justify-between items-center">
                         <div>
