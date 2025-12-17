@@ -92,6 +92,7 @@ useEffect(() => {
     client.subscribe('/topic/screens', (msg) => {
         try {
         const data = JSON.parse(msg.body);
+        console.log("🔥 LLEGÓ UN MENSAJE:", data);
         const pcId = data.PcId || data.pcId;
         const img = data.ImageBase64 || data.image;
 
