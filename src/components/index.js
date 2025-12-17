@@ -10,6 +10,7 @@ export * from './common';
 export * from './layout';
 
 // Standalone components
+
 export { default as ProtectedRoute } from './ProtectedRoute';
 export { default as InstallPrompt } from './InstallPrompt';
 export { default as UpdateNotification } from './UpdateNotification';
