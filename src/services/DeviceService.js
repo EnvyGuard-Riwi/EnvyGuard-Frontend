@@ -121,14 +121,15 @@ const deviceService = {
   getComputersStatus: async () => {
     try {
       apiLog('log', 'Obteniendo estado de computadores...', null);
-      
-      const response = await axiosInstance.get('/computers');
-      
+
+      // Usar el endpoint público para obtener estado de computadores
+      const response = await axiosInstance.get(API_CONFIG.ENDPOINTS.COMPUTERS.LIST);
+
       apiLog('log', `${response.data?.length || 0} computadores obtenidos`);
       return response.data || [];
     } catch (error) {
       apiLog('error', 'Error al obtener estado de computadores', error.message);
-      
+
       // Manejar errores específicos
       if (error.response?.status === 403) {
         throw new Error('Sin permisos para ver computadores. Verifica tu rol de usuario.');
@@ -136,7 +137,7 @@ const deviceService = {
       if (error.response?.status === 401) {
         throw new Error('Sesión expirada. Por favor, inicia sesión nuevamente.');
       }
-      
+
       throw new Error(error.response?.data?.message || 'Error al obtener estado de computadores');
     }
   },

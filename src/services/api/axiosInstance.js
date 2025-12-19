@@ -18,16 +18,16 @@ const axiosInstance = axios.create({
 axiosInstance.interceptors.request.use(
   (config) => {
     const token = localStorage.getItem('authToken');
-    
+
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
     }
-    
+
     // Log en desarrollo
     apiLog('log', `Request: ${config.method?.toUpperCase()} ${config.url}`, {
       hasToken: !!token,
     });
-    
+
     return config;
   },
   (error) => {
@@ -44,7 +44,7 @@ axiosInstance.interceptors.response.use(
   },
   (error) => {
     const status = error.response?.status;
-    
+
     apiLog('error', `Response error: ${status} ${error.config?.url}`, {
       message: error.message,
       data: error.response?.data,
@@ -52,14 +52,24 @@ axiosInstance.interceptors.response.use(
 
     // Manejar errores de autenticación
     if (status === API_CONFIG.ERRORS.UNAUTHORIZED) {
-      apiLog('warn', 'Token inválido o expirado - Limpiando sesión');
-      localStorage.removeItem('authToken');
-      localStorage.removeItem('user');
-      localStorage.removeItem('loginTime');
-      
-      // Solo redirigir si no estamos ya en la página de login
-      if (!window.location.pathname.includes('/login') && window.location.pathname !== '/') {
-        window.location.href = '/';
+      // Verificar si el error viene de un intento de login
+      const isLoginAttempt = error.config?.url?.includes('/auth/login') ||
+        error.config?.url?.includes('/login');
+
+      if (!isLoginAttempt) {
+        // Solo limpiar sesión y redireccionar si NO es un intento de login
+        apiLog('warn', 'Token inválido o expirado - Limpiando sesión');
+        localStorage.removeItem('authToken');
+        localStorage.removeItem('user');
+        localStorage.removeItem('loginTime');
+
+        // Solo redirigir si no estamos ya en la página de login
+        if (!window.location.pathname.includes('/login') && window.location.pathname !== '/') {
+          window.location.href = '/';
+        }
+      } else {
+        // Es un intento de login fallido, no redireccionar
+        apiLog('warn', 'Login fallido - Credenciales incorrectas');
       }
     }
 
