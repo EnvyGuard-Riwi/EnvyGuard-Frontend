@@ -1,6 +1,8 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import iconLogo from '../assets/icons/icon.png';
+import { useNavigate } from 'react-router-dom';
+import { useInstallPrompt } from '../hooks/useInstallPrompt';
 import { 
   Terminal, 
   Activity, 
@@ -10,88 +12,21 @@ import {
   Download,
   Lock,
   LayoutGrid,
-  ChevronRight
+  ChevronRight,
+  Mail,
+  Key,
+  Eye,
+  EyeOff
 } from 'lucide-react';
 
-// --- UTILS & HOOKS ---
-
-function useMousePosition() {
-  const [mousePosition, setMousePosition] = useState({ x: 0, y: 0 });
-
-  useEffect(() => {
-    const updateMousePosition = (ev) => {
-      setMousePosition({ x: ev.clientX, y: ev.clientY });
-    };
-    window.addEventListener("mousemove", updateMousePosition);
-    return () => window.removeEventListener("mousemove", updateMousePosition);
-  }, []);
-
-  return mousePosition;
-}
-
-// Hook para efecto de texto "Matrix/Desencriptado"
-const useScrambleText = (text) => {
-  const [displayText, setDisplayText] = useState(text);
-  const [isHovering, setIsHovering] = useState(false);
-  const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789@#$%&";
-
-  useEffect(() => {
-    let interval;
-    if (isHovering) {
-      let iteration = 0;
-      interval = setInterval(() => {
-        setDisplayText(prev => 
-          text
-            .split("")
-            .map((letter, index) => {
-              if (index < iteration) {
-                return text[index];
-              }
-              return chars[Math.floor(Math.random() * chars.length)];
-            })
-            .join("")
-        );
-
-        if (iteration >= text.length) {
-          clearInterval(interval);
-        }
-
-        iteration += 1 / 3;
-      }, 30);
-    } else {
-      setDisplayText(text);
-    }
-
-    return () => clearInterval(interval);
-  }, [isHovering, text]);
-
-  return { displayText, setIsHovering };
-};
+// Importar hooks desde la carpeta correcta
+import { useMousePosition } from '../hooks/useMousePosition';
+import { useScrambleText } from '../hooks/useScrambleText';
+import AuthService from '../services/AuthService';
 
 // --- VISUAL COMPONENTS ---
 
 // 0. Custom Cursor
-const CustomCursor = () => {
-  const mouse = useMousePosition();
-  
-  return (
-    <>
-      <motion.div 
-        className="fixed top-0 left-0 w-8 h-8 border border-cyan-500 rounded-full pointer-events-none z-[9999] hidden md:flex items-center justify-center mix-blend-difference"
-        animate={{ x: mouse.x - 16, y: mouse.y - 16 }}
-        transition={{ type: "spring", stiffness: 500, damping: 28 }}
-      >
-        <div className="w-2 h-2 bg-cyan-400 rounded-full shadow-lg shadow-cyan-500/80" />
-      </motion.div>
-      <motion.div 
-         className="fixed top-0 left-0 w-2 h-2 bg-white rounded-full pointer-events-none z-[9999] hidden md:block mix-blend-difference"
-         animate={{ x: mouse.x - 4, y: mouse.y - 4 }}
-         transition={{ type: "spring", stiffness: 1500, damping: 28 }}
-      />
-    </>
-  );
-};
-
 // 1. Boot Sequence Overlay
 const BootSequence = ({ onComplete }) => {
   const [lines, setLines] = useState([]);
@@ -148,13 +83,13 @@ const BootSequence = ({ onComplete }) => {
 const GlitchTitle = ({ text }) => {
   return (
     <div className="relative inline-block group">
-      <h1 className="text-5xl md:text-7xl font-bold leading-tight mb-6 tracking-tight relative z-10">
+      <h1 className="text-3xl sm:text-5xl md:text-6xl lg:text-7xl font-bold leading-tight mb-6 tracking-tight relative z-10 break-words">
         {text}
       </h1>
-      <h1 className="text-5xl md:text-7xl font-bold leading-tight mb-6 tracking-tight absolute top-0 left-0 -z-10 text-red-500 opacity-0 group-hover:opacity-70 group-hover:animate-pulse translate-x-[2px]">
+      <h1 className="text-3xl sm:text-5xl md:text-6xl lg:text-7xl font-bold leading-tight mb-6 tracking-tight absolute top-0 left-0 -z-10 text-red-500 opacity-0 group-hover:opacity-70 group-hover:animate-pulse translate-x-[2px] break-words">
         {text}
       </h1>
-      <h1 className="text-5xl md:text-7xl font-bold leading-tight mb-6 tracking-tight absolute top-0 left-0 -z-10 text-cyan-500 opacity-0 group-hover:opacity-70 group-hover:animate-pulse -translate-x-[2px]">
+      <h1 className="text-3xl sm:text-5xl md:text-6xl lg:text-7xl font-bold leading-tight mb-6 tracking-tight absolute top-0 left-0 -z-10 text-cyan-500 opacity-0 group-hover:opacity-70 group-hover:animate-pulse -translate-x-[2px] break-words">
         {text}
       </h1>
     </div>
@@ -253,7 +188,8 @@ const TerminalPreview = () => {
       "> PKG_INSTALL: 'chrome_installer.msi'",
       "> SUCCESS: DEPLOYMENT_COMPLETE",
       "> UPLOADING_LOGS...",
-      "> HEARTBEAT_ACK"
+      "> HEARTBEAT_ACK",
+      "> CREATE: JERO_C"
     ];
     
     let i = 0;
@@ -269,7 +205,7 @@ const TerminalPreview = () => {
   }, []);
 
   return (
-    <div className="relative w-full max-w-md rounded-lg overflow-hidden border border-white/10 shadow-2xl bg-[#050505] group">
+    <div className="relative w-full max-w-lg sm:max-w-md rounded-lg overflow-hidden border border-white/10 shadow-2xl bg-[#050505] group">
       
       {/* CRT Screen Glow */}
       <div className="absolute inset-0 bg-cyan-500/5 opacity-0 group-hover:opacity-100 transition-opacity duration-700 pointer-events-none z-0" />
@@ -285,7 +221,7 @@ const TerminalPreview = () => {
       </div>
 
       {/* Content */}
-      <div className="p-5 h-64 flex flex-col justify-end font-mono text-xs relative overflow-hidden">
+      <div className="p-3 sm:p-5 h-48 sm:h-64 flex flex-col justify-end font-mono text-xs relative overflow-hidden">
         {/* Scanline Effect */}
         <div className="absolute inset-0 bg-[linear-gradient(rgba(18,16,16,0)_50%,rgba(0,0,0,0.25)_50%),linear-gradient(90deg,rgba(255,0,0,0.06),rgba(0,255,0,0.02),rgba(0,0,255,0.06))] z-20 bg-[length:100%_4px,3px_100%] pointer-events-none" />
         <div className="absolute inset-0 bg-cyan-500/5 blur-[0.5px] z-10 pointer-events-none" />
@@ -316,116 +252,239 @@ const TerminalPreview = () => {
 };
 
 // --- LOGIN MODAL COMPONENT ---
-const LoginModal = ({ isOpen, onClose, buttonRef }) => {
+const LoginModal = ({ isOpen, onClose, buttonRef, onSuccess }) => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const mouse = useMousePosition();
+  const navigate = useNavigate();
 
-  // Obtener posición del botón para la animación de origen
+  // 1. Calcular la posición del botón para la animación de origen/destino
   const getButtonPosition = () => {
     if (buttonRef && buttonRef.current) {
-      return buttonRef.current.getBoundingClientRect();
+      const rect = buttonRef.current.getBoundingClientRect();
+      return { top: rect.top, right: window.innerWidth - rect.right, width: rect.width, height: rect.height };
     }
-    return { top: 0, right: 0, width: 120, height: 40 };
+    return { top: 20, right: 20, width: 120, height: 40 };
   };
 
   const buttonPos = getButtonPosition();
+
+  // Animación del contenedor del modal
+  const modalVariants = {
+    hidden: { 
+      opacity: 0,
+      scale: 0.3,
+      transformOrigin: `${window.innerWidth - buttonPos.right}px ${buttonPos.top + (buttonPos.height / 2)}px`,
+      x: 0,
+      y: 0
+    },
+    visible: { 
+      opacity: 1,
+      scale: 1,
+      x: 0,
+      y: 0,
+      transition: { 
+        delay: 0.05, 
+        duration: 0.4, 
+        ease: [0.22, 1, 0.36, 1]
+      }
+    },
+    exit: { 
+      opacity: 0,
+      scale: 0.3,
+      transformOrigin: `${window.innerWidth - buttonPos.right}px ${buttonPos.top + (buttonPos.height / 2)}px`,
+      transition: { duration: 0.3, ease: "easeIn" }
+    }
+  };
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setError('');
+    setLoading(true);
+    setIsSubmitting(true);
+    
+    try {
+      // Validar que los campos no estén vacíos
+      if (!email || !password) {
+        setError('Por favor completa todos los campos');
+        setLoading(false);
+        setIsSubmitting(false);
+        return;
+      }
+
+      // Validar formato de email básico
+      if (!email.includes('@')) {
+        setError('Por favor ingresa un correo electrónico válido');
+        setLoading(false);
+        setIsSubmitting(false);
+        return;
+      }
+
+      // Llamar a AuthService.login
+      const response = await AuthService.login(email, password);
+      
+      console.log('=== LOGIN EXITOSO ===');
+      console.log('Response completa:', response);
+      console.log('Response.user:', response.user);
+      
+      // Limpiar error
+      setError('');
+      setLoading(false);
+      setIsSubmitting(false);
+      
+      // Cerrar modal y activar la animación de transición
+      onClose();
+      if (onSuccess) {
+        onSuccess('¡Bienvenido! Inicio de sesión exitoso');
+      }
+      
+    } catch (err) {
+      console.error('Error de login:', err);
+      
+      // Traducir mensajes de error comunes
+      let errorMessage = 'Error al iniciar sesión. Verifica tus credenciales.';
+      
+      const errorText = err.message?.toLowerCase() || '';
+      const errorData = err.response?.data?.message?.toLowerCase() || '';
+      
+      if (errorText.includes('invalid') || errorText.includes('incorrect') || 
+          errorText.includes('wrong') || errorData.includes('invalid') ||
+          errorText.includes('unauthorized') || errorData.includes('unauthorized') ||
+          err.response?.status === 401) {
+        errorMessage = 'Correo o contraseña incorrectos. Por favor verifica tus datos.';
+      } else if (errorText.includes('not found') || errorData.includes('not found') ||
+                 err.response?.status === 404) {
+        errorMessage = 'Usuario no encontrado. Verifica tu correo electrónico.';
+      } else if (errorText.includes('network') || errorText.includes('timeout')) {
+        errorMessage = 'Error de conexión. Por favor verifica tu conexión a internet.';
+      } else if (errorText.includes('too many') || err.response?.status === 429) {
+        errorMessage = 'Demasiados intentos. Por favor espera unos minutos.';
+      } else if (err.response?.status === 500) {
+        errorMessage = 'Error del servidor. Por favor intenta más tarde.';
+      } else if (err.response?.data?.message) {
+        // Si el backend envía un mensaje específico, usarlo
+        errorMessage = err.response.data.message;
+      }
+      
+      setError(errorMessage);
+      setLoading(false);
+      setIsSubmitting(false);
+    }
+  };
+
+  // Resetear estados cuando se cierra el modal
+  React.useEffect(() => {
+    if (!isOpen) {
+      setShowPassword(false);
+    }
+  }, [isOpen]);
 
   return (
     <AnimatePresence>
       {isOpen && (
         <>
-          {/* Backdrop con efecto de contracción hacia el botón */}
+          {/* Backdrop mejorado */}
           <motion.div
-            initial={{ 
-              scale: 1, 
-              opacity: 0,
-              originX: 1,
-              originY: 0
-            }}
-            animate={{ 
-              scale: 1, 
-              opacity: 0.5,
-              originX: 1,
-              originY: 0
-            }}
-            exit={{ 
-              scale: 1, 
-              opacity: 0,
-              originX: 1,
-              originY: 0,
-              transition: { duration: 0.4, delay: 0.2 }
-            }}
-            transition={{ duration: 0.5 }}
+            initial={{ opacity: 0, backdropFilter: "blur(0px)" }}
+            animate={{ opacity: 0.7, backdropFilter: "blur(8px)" }}
+            exit={{ opacity: 0, backdropFilter: "blur(0px)" }}
+            transition={{ duration: 0.4 }}
             onClick={onClose}
-            className="fixed inset-0 bg-black z-[200] cursor-pointer"
+            className="fixed inset-0 bg-black/60 z-[200] cursor-pointer"
           />
 
-          {/* Contenedor del modal con animación */}
+          {/* Contenedor del modal */}
           <motion.div
-            initial={{ 
-              opacity: 0,
-              x: 0,
-              originX: 1,
-              originY: 0,
-              scale: 0.3,
-              transformOrigin: `${buttonPos.right}px ${buttonPos.top}px`
-            }}
-            animate={{ 
-              opacity: 1,
-              x: 0,
-              scale: 1,
-              transition: { delay: 0.05, duration: 0.35, ease: "easeOut" }
-            }}
-            exit={{ 
-              opacity: 0,
-              x: 600,
-              scale: 0.3,
-              transformOrigin: `${buttonPos.right}px ${buttonPos.top}px`,
-              transition: { duration: 0.2, ease: "easeIn" }
-            }}
-            className="fixed top-0 right-0 h-screen w-full md:w-[500px] z-[300]"
+            variants={modalVariants}
+            initial="hidden"
+            animate="visible"
+            exit="exit"
+            className="fixed inset-y-0 right-0 sm:w-96 md:w-[500px] z-[300] overflow-y-auto"
           >
             {/* Panel del modal */}
-            <div className="w-full h-full bg-gradient-to-br from-black via-black to-cyan-950/20 border-l border-cyan-500/50 backdrop-blur-2xl flex flex-col p-8 relative overflow-hidden shadow-2xl shadow-cyan-500/20">
+            <div className="w-full h-full bg-gradient-to-br from-gray-950 via-gray-900 to-gray-950 border-0 sm:border-l border-gray-700/50 backdrop-blur-2xl flex flex-col p-6 sm:p-10 relative overflow-hidden shadow-2xl shadow-gray-600/10">
               
-              {/* Efecto de línea de escaneo */}
-              <div className="absolute inset-0 bg-[linear-gradient(rgba(18,16,16,0)_50%,rgba(0,0,0,0.25)_50%),linear-gradient(90deg,rgba(255,0,0,0.06),rgba(0,255,0,0.02),rgba(0,0,255,0.06))] z-0 bg-[length:100%_4px,3px_100%] pointer-events-none" />
-              
-              {/* Glow effects - Mejorados */}
-              <div className="absolute top-0 right-0 w-96 h-96 bg-cyan-500/15 blur-[140px] pointer-events-none" />
-              <div className="absolute bottom-0 left-0 w-80 h-80 bg-blue-500/10 blur-[120px] pointer-events-none" />
-              
-              {/* Borde luminoso animado */}
-              <motion.div 
-                className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-cyan-500 to-transparent"
-                animate={{ opacity: [0.3, 0.8, 0.3] }}
-                transition={{ repeat: Infinity, duration: 3 }}
+              {/* Cuadrícula de fondo animada - ACORDE CON EL DISEÑO DE LA PÁGINA */}
+              <div 
+                className="absolute inset-0 opacity-20 pointer-events-none"
+                style={{
+                  backgroundImage: `linear-gradient(to right, rgba(107, 114, 128, 0.15) 1px, transparent 1px), linear-gradient(to bottom, rgba(107, 114, 128, 0.15) 1px, transparent 1px)`,
+                  backgroundSize: '50px 50px',
+                  backgroundPosition: `${(mouse.x % 50)}px ${(mouse.y % 50)}px`,
+                  transition: 'background-position 0.1s linear'
+                }}
               />
 
-              {/* Contenido */}
+              {/* Líneas de escaneo CRT */}
+              <div className="absolute inset-0 bg-[linear-gradient(rgba(18,16,16,0)_50%,rgba(0,0,0,0.25)_50%),linear-gradient(90deg,rgba(107,114,128,0.03),rgba(107,114,128,0.02),rgba(107,114,128,0.03))] z-0 bg-[length:100%_4px,3px_100%] pointer-events-none opacity-60" />
+              
+              {/* Glow effects mejorados */}
+              <div className="absolute top-0 right-0 w-96 h-96 bg-gray-600/8 blur-[120px] pointer-events-none rounded-full" />
+              <div className="absolute bottom-0 left-0 w-96 h-96 bg-gray-500/8 blur-[120px] pointer-events-none rounded-full" />
+              
+              {/* Borde superior animado con más intensidad */}
+              <motion.div 
+                className="absolute top-0 left-0 right-0 h-0.5 bg-gradient-to-r from-transparent via-gray-600 to-transparent"
+                animate={{ opacity: [0.4, 1, 0.4], boxShadow: ["0 0 10px rgba(107, 114, 128, 0.5)", "0 0 30px rgba(107, 114, 128, 1)", "0 0 10px rgba(107, 114, 128, 0.5)"] }}
+                transition={{ repeat: Infinity, duration: 4 }}
+              />
+
+                {/* Partículas decorativas */}
+                <div className="absolute inset-0 pointer-events-none">
+                  {[...Array(5)].map((_, i) => (
+                    <motion.div
+                      key={i}
+                      className="absolute w-1 h-1 bg-gray-500 rounded-full"
+                      initial={{ x: Math.random() * 100 + "%", y: Math.random() * 100 + "%" }}
+                      animate={{ 
+                        x: [null, Math.random() * 100 + "%"],
+                        y: [null, Math.random() * 100 + "%"],
+                        opacity: [0.5, 0.8, 0.5]
+                      }}
+                      transition={{ 
+                        duration: Math.random() * 8 + 6, 
+                        repeat: Infinity, 
+                        ease: "linear" 
+                      }}
+                    />
+                  ))}
+                </div>
+
+              {/* Contenido principal */}
               <div className="relative z-10 flex flex-col h-full">
+                
                 {/* Header */}
-                <div className="flex items-center justify-between mb-8">
+                <div className="flex items-center justify-between mb-8 sm:mb-10 flex-col sm:flex-row gap-4">
                   <motion.div
-                    initial={{ opacity: 0, x: -20 }}
+                    initial={{ opacity: 0, x: -30 }}
                     animate={{ opacity: 1, x: 0 }}
-                    transition={{ delay: 0.15, duration: 0.3 }}
+                    transition={{ delay: 0.15, duration: 0.4 }}
+                    className="flex-1"
                   >
-                    <h2 className="text-4xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-cyan-300 to-blue-400 drop-shadow-lg">
-                      Acceso Seguro
+                    <h2 className="text-2xl sm:text-4xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-cyan-300 via-blue-400 to-purple-400 drop-shadow-lg font-sans">
+                      Acceso de Root
                     </h2>
-                    <p className="text-xs text-cyan-500/80 font-mono mt-2 flex items-center gap-2">
-                      <span className="inline-block w-2 h-2 bg-cyan-500 rounded-full animate-pulse"></span>
-                      Sistema Restringido
+                    <p className="text-[10px] sm:text-xs text-cyan-500/70 font-mono mt-2 sm:mt-3 flex items-center gap-2">
+                      <span className="inline-block w-1.5 h-1.5 bg-green-400 rounded-full"></span>
+                      ENVYGUARD ORQUESTADOR v1.2.5
                     </p>
                   </motion.div>
                   <motion.button
-                    whileHover={{ rotate: 90, scale: 1.2 }}
-                    whileTap={{ scale: 0.9 }}
+                    whileHover={{ rotate: 90, scale: 1.15 }}
+                    whileTap={{ scale: 0.85 }}
                     onClick={onClose}
-                    className="text-gray-400 hover:text-cyan-300 transition-colors flex-shrink-0 hover:shadow-lg hover:shadow-cyan-500/50"
+                    className="text-gray-400 hover:text-cyan-400 transition-colors flex-shrink-0 relative"
                   >
-                    <svg className="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <motion.div
+                      className="absolute inset-0 bg-cyan-500/20 rounded-full"
+                      animate={{ scale: [1, 1.2, 1] }}
+                      transition={{ repeat: Infinity, duration: 3, opacity: [0.5, 0, 0.5] }}
+                    />
+                    <svg className="w-6 sm:w-7 h-6 sm:h-7 relative" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
                     </svg>
                   </motion.button>
@@ -435,108 +494,129 @@ const LoginModal = ({ isOpen, onClose, buttonRef }) => {
                 <motion.div
                   initial={{ scaleX: 0 }}
                   animate={{ scaleX: 1 }}
-                  transition={{ delay: 0.2, duration: 0.4 }}
-                  className="h-px bg-gradient-to-r from-cyan-500/30 via-cyan-500/60 to-transparent mb-8 origin-left shadow-lg shadow-cyan-500/30"
+                  transition={{ delay: 0.2, duration: 0.5 }}
+                  className="h-0.5 bg-gradient-to-r from-transparent via-gray-600 to-transparent mb-6 sm:mb-10 origin-left shadow-lg shadow-gray-600/50"
                 />
 
-                {/* Form */}
+                {/* Formulario */}
                 <motion.form 
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  transition={{ delay: 0.1, duration: 0.3 }}
-                  className="flex-1 flex flex-col gap-6"
+                  onSubmit={handleSubmit}
+                  className="flex-1 flex flex-col gap-4 sm:gap-6 mb-6 sm:mb-8"
                 >
+                  {/* Error Message */}
+                  {error && (
+                    <motion.div
+                      initial={{ opacity: 0, y: -10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      className="bg-red-500/20 border border-red-500/50 rounded-lg px-3 sm:px-4 py-2 sm:py-3 text-red-400 text-xs sm:text-sm font-mono"
+                    >
+                      ❌ {error}
+                    </motion.div>
+                  )}
+
                   {/* Email Input */}
                   <motion.div
-                    initial={{ opacity: 0, y: 10 }}
+                    initial={{ opacity: 0, y: 15 }}
                     animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: 0.2, duration: 0.3 }}
+                    transition={{ delay: 0.3, duration: 0.4 }}
+                    className="group"
                   >
-                    <label className="block text-sm font-mono text-cyan-300 mb-2 flex items-center gap-2">
-                      <span className="text-cyan-400 font-bold">#</span> Correo Electrónico
+                    <label className="block text-[11px] sm:text-xs font-mono text-cyan-400 mb-2 sm:mb-3 flex items-center gap-2 tracking-wider">
+                      <Mail size={14} className="text-cyan-400 flex-shrink-0" /> 
+                      USUARIO / CORREO
                     </label>
-                    <motion.input
-                      whileFocus={{ 
-                        borderColor: "rgb(34, 211, 238)", 
-                        boxShadow: "0 0 30px rgba(34, 211, 238, 0.5), inset 0 0 10px rgba(34, 211, 238, 0.1)",
-                        scale: 1.02
-                      }}
-                      type="email"
-                      value={email}
-                      onChange={(e) => setEmail(e.target.value)}
-                      placeholder="admin@envyguard.com"
-                      className="w-full bg-black/60 border-2 border-cyan-500/30 rounded-lg px-4 py-3 text-white placeholder-gray-500 focus:outline-none transition-all font-mono text-sm hover:border-cyan-500/50"
-                    />
+                    <div className="relative">
+                      <input
+                        type="text"
+                        value={email}
+                        onChange={(e) => setEmail(e.target.value)}
+                        placeholder="admin@envyguard"
+                        disabled={loading}
+                        className="w-full bg-black/40 border border-cyan-500/30 rounded-lg px-3 sm:px-4 py-2 sm:py-3 text-white text-sm placeholder-gray-600 focus:outline-none focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500/50 transition-all font-mono group-focus-within:shadow-[0_0_20px_rgba(6,182,212,0.2)] disabled:opacity-50 disabled:cursor-not-allowed"
+                      />
+                      <div className="absolute right-3 top-1/2 transform -translate-y-1/2 text-cyan-500/30 group-focus-within:text-cyan-500/60 transition-colors">
+                        <Terminal size={16} />
+                      </div>
+                    </div>
                   </motion.div>
 
                   {/* Password Input */}
                   <motion.div
-                    initial={{ opacity: 0, y: 10 }}
+                    initial={{ opacity: 0, y: 15 }}
                     animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: 0.25, duration: 0.3 }}
+                    transition={{ delay: 0.4, duration: 0.4 }}
+                    className="group"
                   >
-                    <label className="block text-sm font-mono text-cyan-300 mb-2 flex items-center gap-2">
-                      <span className="text-cyan-400 font-bold">#</span> Contraseña
+                    <label className="block text-[11px] sm:text-xs font-mono text-cyan-400 mb-2 sm:mb-3 flex items-center gap-2 tracking-wider">
+                      <Key size={14} className="text-cyan-400 flex-shrink-0" /> 
+                      CONTRASEÑA
                     </label>
-                    <motion.input
-                      whileFocus={{ 
-                        borderColor: "rgb(34, 211, 238)", 
-                        boxShadow: "0 0 30px rgba(34, 211, 238, 0.5), inset 0 0 10px rgba(34, 211, 238, 0.1)",
-                        scale: 1.02
-                      }}
-                      type="password"
-                      value={password}
-                      onChange={(e) => setPassword(e.target.value)}
-                      placeholder="••••••••••"
-                      className="w-full bg-black/60 border-2 border-cyan-500/30 rounded-lg px-4 py-3 text-white placeholder-gray-500 focus:outline-none transition-all font-mono text-sm hover:border-cyan-500/50"
-                    />
-                  </motion.div>
-
-                  {/* Remember Me */}
-                  <motion.div
-                    initial={{ opacity: 0, y: 10 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: 0.3, duration: 0.3 }}
-                    className="flex items-center gap-3 p-3 bg-cyan-950/20 rounded-lg border border-cyan-500/20 hover:border-cyan-500/40 transition-all"
-                  >
-                    <input
-                      type="checkbox"
-                      id="remember"
-                      className="w-5 h-5 accent-cyan-500 cursor-pointer rounded"
-                    />
-                    <label htmlFor="remember" className="text-sm text-cyan-300 cursor-pointer font-mono flex-1">
-                      Recuérdame en este dispositivo
-                    </label>
+                    <div className="relative">
+                      <input
+                        type={showPassword ? "text" : "password"}
+                        value={password}
+                        onChange={(e) => setPassword(e.target.value)}
+                        placeholder="••••••••••••••••"
+                        disabled={loading}
+                        className="w-full bg-black/40 border border-cyan-500/30 rounded-lg px-3 sm:px-4 py-2 sm:py-3 text-white text-sm placeholder-gray-600 focus:outline-none focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500/50 transition-all font-mono group-focus-within:shadow-[0_0_20px_rgba(6,182,212,0.2)] disabled:opacity-50 disabled:cursor-not-allowed pr-10"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setShowPassword(!showPassword)}
+                        className="absolute right-3 top-1/2 transform -translate-y-1/2 text-cyan-500/30 group-focus-within:text-cyan-500/60 hover:text-cyan-500/80 transition-colors"
+                        title={showPassword ? "Ocultar contraseña" : "Mostrar contraseña"}
+                      >
+                        {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+                      </button>
+                    </div>
                   </motion.div>
 
                   {/* Login Button */}
                   <motion.button
-                    initial={{ opacity: 0, y: 10 }}
+                    initial={{ opacity: 0, y: 15 }}
                     animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: 0.35, duration: 0.3 }}
-                    whileHover={{ 
-                      scale: 1.03, 
-                      boxShadow: "0 0 40px rgba(34, 211, 238, 0.8), 0 0 60px rgba(59, 130, 246, 0.4)",
-                      y: -2
-                    }}
-                    whileTap={{ scale: 0.97 }}
-                    type="button"
-                    className="w-full bg-gradient-to-r from-cyan-500 via-cyan-400 to-blue-600 text-black font-bold py-3 rounded-lg hover:shadow-2xl transition-all flex items-center justify-center gap-2 mt-4 hover:from-cyan-400 hover:to-blue-500"
+                    transition={{ delay: 0.5, duration: 0.4 }}
+                    whileHover={!loading ? { 
+                      scale: 1.02,
+                      boxShadow: "0 0 40px rgba(6, 182, 212, 1), inset 0 0 20px rgba(34, 211, 238, 0.3)"
+                    } : {}}
+                    whileTap={!loading ? { scale: 0.98 } : {}}
+                    type="submit"
+                    disabled={loading}
+                    className="w-full bg-gradient-to-r from-cyan-600 via-cyan-500 to-blue-600 text-white font-bold py-2 sm:py-3 px-4 rounded-lg hover:shadow-2xl transition-all flex items-center justify-center gap-2 sm:gap-3 mt-2 sm:mt-4 font-sans text-sm sm:text-base tracking-wider border border-cyan-400/50 relative overflow-hidden group disabled:opacity-50 disabled:cursor-not-allowed"
                   >
-                    <Lock size={18} />
-                    INICIAR SESIÓN
+                    <div className="absolute inset-0 bg-white/10 translate-y-full group-hover:translate-y-0 transition-transform duration-300" />
+                    {loading ? (
+                      <>
+                        <motion.div
+                          animate={{ rotate: 360 }}
+                          transition={{ repeat: Infinity, duration: 1 }}
+                          className="relative"
+                        >
+                          <Lock size={16} className="sm:w-[18px] sm:h-[18px]" />
+                        </motion.div>
+                        <span className="relative">CONECTANDO...</span>
+                      </>
+                    ) : (
+                      <>
+                        <Lock size={16} className="sm:w-[18px] sm:h-[18px] relative" />
+                        <span className="relative">INICIAR SESIÓN</span>
+                      </>
+                    )}
                   </motion.button>
+
                 </motion.form>
 
-                {/* Footer mejorado */}
+                {/* Footer de seguridad */}
                 <motion.div 
-                  initial={{ opacity: 0, y: 10 }}
+                  initial={{ opacity: 0, y: 15 }}
                   animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: 0.4, duration: 0.3 }}
-                  className="text-center text-xs text-cyan-500/80 pt-6 border-t border-cyan-500/20 mt-8 font-mono space-y-2"
+                  transition={{ delay: 0.7, duration: 0.4 }}
+                  className="text-center text-[10px] sm:text-xs text-cyan-500/60 pt-6 sm:pt-8 border-t border-cyan-500/20 mt-auto font-mono space-y-1 sm:space-y-2"
                 >
-                  <p className="font-bold tracking-widest">█ SISTEMA SEGURO █</p>
-                  <p>Acceso restringido a usuarios autorizados</p>
+                  <p className="font-bold tracking-widest text-cyan-500/80">🔒 PUERTA SEGURA</p>
+                  <p>Acceso restringido - Solo personal autorizado</p>
+                  <p className="text-[9px] sm:text-[10px] text-cyan-600/50">Sesión registrada y monitoreada</p>
                 </motion.div>
               </div>
             </div>
@@ -547,34 +627,317 @@ const LoginModal = ({ isOpen, onClose, buttonRef }) => {
   );
 };
 
+// --- TOAST COMPONENT ---
+// --- TOAST COMPONENT (Estilo Terminal) ---
+const Toast = ({ toast, onClose }) => {
+  React.useEffect(() => {
+    if (!toast) return;
+    const timer = setTimeout(() => onClose(), 4000);
+    return () => clearTimeout(timer);
+  }, [toast, onClose]);
+
+  if (!toast) return null;
+
+  return (
+    <AnimatePresence>
+      <motion.div 
+        key="toast"
+        initial={{ x: 400, opacity: 0 }} 
+        animate={{ x: 0, opacity: 1 }} 
+        exit={{ x: 400, opacity: 0 }}
+        transition={{ type: "spring", stiffness: 400, damping: 30 }}
+        className="fixed top-6 right-6 max-w-md z-[99999]"
+      >
+        {/* Terminal Window */}
+        <div className={`bg-[#0a0a0a] border rounded-lg overflow-hidden shadow-2xl ${
+          toast.type === 'success' 
+            ? 'border-green-500/50 shadow-green-500/20' 
+            : toast.type === 'warn' 
+            ? 'border-yellow-500/50 shadow-yellow-500/20' 
+            : 'border-red-500/50 shadow-red-500/20'
+        }`}>
+          {/* Terminal Header */}
+          <div className={`px-3 py-1.5 flex items-center gap-2 border-b ${
+            toast.type === 'success' 
+              ? 'bg-green-500/10 border-green-500/30' 
+              : toast.type === 'warn' 
+              ? 'bg-yellow-500/10 border-yellow-500/30' 
+              : 'bg-red-500/10 border-red-500/30'
+          }`}>
+            <div className="flex gap-1">
+              <div className="w-2 h-2 rounded-full bg-red-500/50" />
+              <div className="w-2 h-2 rounded-full bg-yellow-500/50" />
+              <div className="w-2 h-2 rounded-full bg-green-500/50" />
+            </div>
+            <span className={`text-[9px] font-mono uppercase tracking-wider ${
+              toast.type === 'success' ? 'text-green-500' : toast.type === 'warn' ? 'text-yellow-500' : 'text-red-500'
+            }`}>
+              {toast.type === 'success' ? 'SYSTEM_OK' : toast.type === 'warn' ? 'WARNING' : 'ERROR'}
+            </span>
+            <button
+              onClick={onClose}
+              className="ml-auto text-gray-500 hover:text-white transition-colors"
+            >
+              <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
+                <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
+              </svg>
+            </button>
+          </div>
+          
+          {/* Terminal Content */}
+          <div className="px-4 py-3 font-mono text-sm">
+            <div className="flex items-start gap-3">
+              <span className={`text-xs ${
+                toast.type === 'success' ? 'text-green-600' : toast.type === 'warn' ? 'text-yellow-600' : 'text-red-600'
+              }`}>
+                {toast.type === 'success' ? '>' : toast.type === 'warn' ? '!' : 'X'}
+              </span>
+              <div className="flex-1">
+                <motion.span
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  transition={{ duration: 0.3 }}
+                  className={`${
+                    toast.type === 'success' ? 'text-green-400' : toast.type === 'warn' ? 'text-yellow-400' : 'text-red-400'
+                  }`}
+                >
+                  {toast.msg}
+                </motion.span>
+                {toast.type === 'success' && (
+                  <motion.span
+                    initial={{ opacity: 0, scale: 0 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    transition={{ delay: 0.2 }}
+                    className="text-green-400 ml-2"
+                  >
+                    ✓
+                  </motion.span>
+                )}
+              </div>
+            </div>
+          </div>
+          
+          {/* Progress bar */}
+          <motion.div
+            initial={{ scaleX: 1 }}
+            animate={{ scaleX: 0 }}
+            transition={{ duration: 4, ease: "linear" }}
+            className={`h-0.5 origin-left ${
+              toast.type === 'success' ? 'bg-green-500' : toast.type === 'warn' ? 'bg-yellow-500' : 'bg-red-500'
+            }`}
+          />
+        </div>
+      </motion.div>
+    </AnimatePresence>
+  );
+};
+
+// --- TRANSICIÓN DE SUMERGIMIENTO ---
+const DiveTransition = ({ isActive, onComplete }) => {
+  const [bootLines, setBootLines] = useState([]);
+  
+  useEffect(() => {
+    if (isActive) {
+      // Secuencia de boot estilo terminal
+      const lines = [
+        { text: "> CREDENTIALS_VERIFIED", delay: 0 },
+        { text: "> ESTABLISHING_SECURE_TUNNEL...", delay: 200 },
+        { text: "> ENCRYPTION_LAYER: AES-256 [OK]", delay: 400 },
+        { text: "> LOADING_USER_PROFILE...", delay: 600 },
+        { text: "> INITIALIZING_DASHBOARD...", delay: 800 },
+        { text: "> ACCESS_GRANTED", delay: 1000 },
+      ];
+      
+      lines.forEach(({ text, delay }) => {
+        setTimeout(() => {
+          setBootLines(prev => [...prev, text]);
+        }, delay);
+      });
+      
+      // Ejecutar onComplete después de la animación
+      const timer = setTimeout(() => {
+        onComplete();
+      }, 1800);
+      return () => clearTimeout(timer);
+    }
+  }, [isActive, onComplete]);
+
+  if (!isActive) return null;
+
+  return (
+    <motion.div
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      className="fixed inset-0 z-[999] flex items-center justify-center bg-black overflow-hidden"
+    >
+      {/* Grid de fondo animado */}
+      <div 
+        className="absolute inset-0 opacity-20"
+        style={{
+          backgroundImage: `linear-gradient(to right, #0891b2 1px, transparent 1px), linear-gradient(to bottom, #0891b2 1px, transparent 1px)`,
+          backgroundSize: '40px 40px',
+        }}
+      />
+      
+      {/* Glow central */}
+      <motion.div
+        initial={{ scale: 0, opacity: 0 }}
+        animate={{ scale: [0, 1.5, 1], opacity: [0, 0.5, 0.3] }}
+        transition={{ duration: 0.8, ease: "easeOut" }}
+        className="absolute w-96 h-96 bg-cyan-500/30 rounded-full blur-[100px]"
+      />
+      
+      {/* Terminal de acceso */}
+      <motion.div
+        initial={{ scale: 0.8, opacity: 0, y: 20 }}
+        animate={{ scale: 1, opacity: 1, y: 0 }}
+        transition={{ duration: 0.4, ease: [0.22, 1, 0.36, 1] }}
+        className="relative z-10 w-full max-w-md mx-4"
+      >
+        {/* Ventana de terminal */}
+        <div className="bg-[#0a0a0a] border border-cyan-500/30 rounded-lg overflow-hidden shadow-2xl shadow-cyan-500/20">
+          {/* Header del terminal */}
+          <div className="bg-[#111] px-4 py-2 flex items-center gap-2 border-b border-cyan-500/20">
+            <div className="flex gap-1.5">
+              <div className="w-2.5 h-2.5 rounded-full bg-red-500/50" />
+              <div className="w-2.5 h-2.5 rounded-full bg-yellow-500/50" />
+              <div className="w-2.5 h-2.5 rounded-full bg-green-500/50" />
+            </div>
+            <span className="text-[10px] text-cyan-500/70 font-mono ml-2">envyguard@secure-gateway</span>
+          </div>
+          
+          {/* Contenido del terminal */}
+          <div className="p-4 font-mono text-sm space-y-1 min-h-[180px]">
+            {bootLines.map((line, idx) => (
+              <motion.div
+                key={idx}
+                initial={{ opacity: 0, x: -10 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ duration: 0.2 }}
+                className={`flex items-center gap-2 ${
+                  line.includes('ACCESS_GRANTED') 
+                    ? 'text-green-400' 
+                    : line.includes('[OK]') 
+                    ? 'text-cyan-400' 
+                    : 'text-gray-400'
+                }`}
+              >
+                <span className="text-cyan-600 text-xs">{`0x${(100 + idx).toString(16).toUpperCase()}`}</span>
+                <span>{line}</span>
+                {line.includes('ACCESS_GRANTED') && (
+                  <motion.span
+                    initial={{ scale: 0 }}
+                    animate={{ scale: 1 }}
+                    className="text-green-400 ml-1"
+                  >
+                    ✓
+                  </motion.span>
+                )}
+              </motion.div>
+            ))}
+            
+            {/* Cursor parpadeante */}
+            <motion.div
+              animate={{ opacity: [1, 0] }}
+              transition={{ repeat: Infinity, duration: 0.6 }}
+              className="w-2 h-4 bg-cyan-400 mt-2"
+            />
+          </div>
+        </div>
+        
+        {/* Barra de progreso */}
+        <motion.div
+          initial={{ scaleX: 0 }}
+          animate={{ scaleX: 1 }}
+          transition={{ duration: 1.5, ease: "easeInOut" }}
+          className="h-1 bg-gradient-to-r from-cyan-500 via-blue-500 to-purple-500 rounded-full mt-4 origin-left"
+        />
+        
+        {/* Texto de estado */}
+        <motion.p
+          initial={{ opacity: 0 }}
+          animate={{ opacity: [0, 1, 1, 0] }}
+          transition={{ duration: 1.8, times: [0, 0.2, 0.8, 1] }}
+          className="text-center text-cyan-500/70 text-xs font-mono mt-3 tracking-widest"
+        >
+          INICIANDO SESIÓN SEGURA...
+        </motion.p>
+      </motion.div>
+
+      {/* Scanlines CRT */}
+      <div className="absolute inset-0 bg-[linear-gradient(rgba(18,16,16,0)_50%,rgba(0,0,0,0.25)_50%)] bg-[length:100%_4px] pointer-events-none opacity-20" />
+      
+      {/* Partículas flotantes */}
+      {[...Array(15)].map((_, i) => (
+        <motion.div
+          key={i}
+          initial={{ 
+            x: Math.random() * window.innerWidth,
+            y: window.innerHeight + 20,
+            opacity: 0
+          }}
+          animate={{ 
+            y: -20,
+            opacity: [0, 0.8, 0]
+          }}
+          transition={{ 
+            duration: Math.random() * 2 + 1,
+            delay: Math.random() * 0.5,
+            ease: "linear"
+          }}
+          className="absolute w-1 h-1 bg-cyan-400 rounded-full"
+        />
+      ))}
+    </motion.div>
+  );
+};
+
 // --- MAIN APP ---
 
 export default function Home() {
   const [loading, setLoading] = useState(true);
   const [showLoginModal, setShowLoginModal] = useState(false);
+  const [showDiveTransition, setShowDiveTransition] = useState(false);
+  const [toast, setToast] = useState(null);
   const loginButtonRef = useRef(null);
+  const navigate = useNavigate();
+  const { handleInstall, canInstall, isInstalling } = useInstallPrompt();
+  
+  // Función para mostrar toast
+  const showToast = (msg, type = 'success') => {
+    setToast({ msg, type });
+  };
+  
+  // Función para manejar el login exitoso con efecto de transición
+  const handleLoginSuccess = (msg) => {
+    showToast(msg, 'success');
+    setShowDiveTransition(true);
+  };
+  
+  // Función que se ejecuta cuando termina la animación
+  const handleTransitionComplete = () => {
+    navigate('/dashboard');
+  };
 
   return (
-    <div className="min-h-screen bg-black text-white selection:bg-cyan-500/30 overflow-x-hidden font-sans cursor-none">
+    <div className="min-h-screen bg-black text-white selection:bg-cyan-500/30 overflow-x-hidden font-sans">
       
       {/* Boot Sequence */}
       <AnimatePresence>
         {loading && <BootSequence onComplete={() => setLoading(false)} />}
       </AnimatePresence>
-
-      <CustomCursor />
       
       {/* Noise Texture Overlay */}
       <div className="fixed inset-0 z-[60] pointer-events-none opacity-[0.04] mix-blend-overlay" 
-           style={{ backgroundImage: `url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E")` }} 
+          style={{ backgroundImage: `url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E")` }} 
       />
 
       {/* Navigation */}
       <nav className="fixed top-0 w-full z-50 border-b border-white/5 bg-black/80 backdrop-blur-xl">
-        <div className="max-w-7xl mx-auto px-6 h-16 flex items-center justify-between">
-          <div className="flex items-center gap-3 group cursor-none">
-            <img src={iconLogo} alt="EnvyGuard" className="w-14 h-14 object-contain group-hover:scale-110 transition-transform" />
-            <span className="font-bold text-lg tracking-wider font-mono text-transparent bg-clip-text bg-gradient-to-r from-white to-gray-400">EnvyGuard</span>
+        <div className="max-w-7xl mx-auto px-3 sm:px-6 h-14 sm:h-16 flex items-center justify-between">
+          <div className="flex items-center gap-2 sm:gap-3 group">
+            <img src={iconLogo} alt="EnvyGuard" className="w-7 sm:w-9 h-7 sm:h-9 object-contain group-hover:scale-110 transition-transform" />
+            <span className="font-bold text-sm sm:text-lg tracking-wider font-mono text-transparent bg-clip-text bg-gradient-to-r from-white to-gray-400">EnvyGuard</span>
           </div>
           <div className="hidden md:flex items-center gap-8 text-sm font-medium text-gray-400">
             <motion.button
@@ -582,7 +945,7 @@ export default function Home() {
               onClick={() => setShowLoginModal(true)}
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
-              className="bg-white/5 border border-white/10 hover:border-cyan-500/50 text-white px-4 py-2 rounded-full text-xs font-mono transition-all hover:bg-cyan-500/10 flex items-center gap-3 group cursor-none"
+              className="bg-white/5 border border-white/10 hover:border-cyan-500/50 text-white px-3 sm:px-4 py-2 rounded-full text-xs font-mono transition-all hover:bg-cyan-500/10 flex items-center gap-2 sm:gap-3 group"
             >
               PANEL DE ACCESO
               <motion.div
@@ -593,21 +956,32 @@ export default function Home() {
               </motion.div>
             </motion.button>
           </div>
+          {/* Mobile Login Button */}
+          <motion.button
+            ref={loginButtonRef}
+            onClick={() => setShowLoginModal(true)}
+            whileHover={{ scale: 1.05 }}
+            whileTap={{ scale: 0.95 }}
+            className="md:hidden bg-white/5 border border-white/10 hover:border-cyan-500/50 text-white px-3 py-1.5 rounded-full text-[10px] font-mono transition-all hover:bg-cyan-500/10 flex items-center gap-1 group"
+          >
+            ACCESO
+            <ChevronRight size={12} className="group-hover:text-cyan-400 transition-colors"/>
+          </motion.button>
         </div>
       </nav>
 
       {/* Hero Section */}
-      <section className="relative min-h-screen flex items-center justify-center pt-20 px-6 overflow-hidden">
+      <section className="relative min-h-screen flex items-center justify-center pt-16 sm:pt-20 px-4 sm:px-6 overflow-hidden">
         <RetroGrid />
         
-        <div className="max-w-7xl w-full mx-auto relative z-10 grid lg:grid-cols-2 gap-16 items-center mt-10">
+        <div className="max-w-7xl w-full mx-auto relative z-10 grid lg:grid-cols-2 gap-8 lg:gap-16 items-center mt-6 sm:mt-10">
           <div className="order-2 lg:order-1">
             <motion.div 
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.8, delay: loading ? 0 : 0.5 }}
             >
-              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-cyan-950/30 border border-cyan-500/20 text-cyan-400 text-xs font-mono mb-6 shadow-[0_0_10px_rgba(6,182,212,0.1)]">
+              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-cyan-950/30 border border-cyan-500/20 text-cyan-400 text-[10px] sm:text-xs font-mono mb-4 sm:mb-6 shadow-[0_0_10px_rgba(6,182,212,0.1)]">
                 <span className="relative flex h-2 w-2">
                   <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-cyan-400 opacity-75"></span>
                   <span className="relative inline-flex rounded-full h-2 w-2 bg-cyan-500"></span>
@@ -616,29 +990,47 @@ export default function Home() {
               </div>
               
               <GlitchTitle text="Control Total." />
-              <h1 className="text-5xl md:text-7xl font-bold leading-tight mb-6 tracking-tight">
+              <h1 className="text-3xl sm:text-5xl md:text-6xl lg:text-7xl font-bold leading-tight mb-4 sm:mb-6 tracking-tight">
                 <span className="text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 via-blue-500 to-purple-600 animate-gradient">Sin Latencia.</span>
               </h1>
               
-              <p className="text-gray-400 text-lg mb-8 max-w-lg leading-relaxed border-l-2 border-cyan-900/50 pl-6">
+              <p className="text-gray-400 text-sm sm:text-base md:text-lg mb-6 sm:mb-8 max-w-lg leading-relaxed border-l-2 border-cyan-900/50 pl-4">
                 Orquesta agentes remotos con precisión de nivel militar. 
                 Telemetría en tiempo real, despliegue silencioso y control absoluto sobre tu infraestructura.
               </p>
 
-              <div className="flex flex-col sm:flex-row gap-4">
-                <button className="relative px-8 py-4 bg-cyan-500 text-black font-bold rounded-lg overflow-hidden group cursor-none">
+              <div className="flex flex-col sm:flex-row gap-3 sm:gap-4">
+                <button 
+                  onClick={() => canInstall && handleInstall()}
+                  disabled={isInstalling && !canInstall}
+                  className="relative px-6 sm:px-8 py-3 sm:py-4 bg-cyan-500 disabled:bg-cyan-600/50 text-black font-bold rounded-lg overflow-hidden group text-sm sm:text-base transition-all disabled:cursor-not-allowed"
+                >
                   <div className="absolute inset-0 bg-white/20 translate-y-full group-hover:translate-y-0 transition-transform duration-300" />
                   <span className="relative flex items-center justify-center gap-2">
-                    <Download size={20} /> Desplegar Agente
+                    {isInstalling ? (
+                      <>
+                        <motion.div
+                          animate={{ rotate: 360 }}
+                          transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
+                        >
+                          <Download size={18} />
+                        </motion.div>
+                        Instalando...
+                      </>
+                    ) : (
+                      <>
+                        <Download size={18} /> Descargar
+                      </>
+                    )}
                   </span>
                 </button>
-                <button className="px-8 py-4 bg-transparent border border-gray-800 hover:border-cyan-500/50 text-white rounded-lg transition-all flex items-center justify-center gap-2 group hover:bg-cyan-950/10 cursor-none">
-                  <Terminal size={20} className="group-hover:text-cyan-400" />
+                <button className="px-6 sm:px-8 py-3 sm:py-4 bg-transparent border border-gray-800 hover:border-cyan-500/50 text-white rounded-lg transition-all flex items-center justify-center gap-2 group hover:bg-cyan-950/10 text-sm sm:text-base">
+                  <Terminal size={18} className="group-hover:text-cyan-400" />
                   <span>Documentación</span>
                 </button>
               </div>
 
-              <div className="mt-12 flex flex-wrap gap-3">
+              <div className="mt-8 sm:mt-12 flex flex-wrap gap-2 sm:gap-3">
                 <CipherBadge label="C# .NET" icon={Terminal} />
                 <CipherBadge label="Spring Boot" icon={Server} />
                 <CipherBadge label="RabbitMQ" icon={Activity} />
@@ -663,13 +1055,13 @@ export default function Home() {
               <motion.div 
                 animate={{ y: [0, -10, 0] }}
                 transition={{ repeat: Infinity, duration: 4, ease: "easeInOut" }}
-                className="absolute -right-8 top-12 bg-black/80 border border-gray-800 p-4 rounded-xl shadow-2xl backdrop-blur-xl w-40"
+                className="absolute -right-4 sm:-right-8 top-8 sm:top-12 bg-black/80 border border-gray-800 p-3 sm:p-4 rounded-xl shadow-2xl backdrop-blur-xl w-32 sm:w-40"
               >
-                <div className="flex items-center gap-3 mb-2">
-                  <Wifi className="text-green-400" size={16} />
-                  <span className="text-[10px] font-mono text-gray-400">RED</span>
+                <div className="flex items-center gap-2 sm:gap-3 mb-2">
+                  <Wifi className="text-green-400 flex-shrink-0" size={14} />
+                  <span className="text-[9px] sm:text-[10px] font-mono text-gray-400">RED</span>
                 </div>
-                <div className="text-2xl font-bold text-white font-mono tracking-tighter">98.2%</div>
+                <div className="text-xl sm:text-2xl font-bold text-white font-mono tracking-tighter">98.2%</div>
                 <div className="w-full h-1 bg-gray-800 mt-2 rounded-full overflow-hidden">
                   <div className="h-full w-[98%] bg-green-500" />
                 </div>
@@ -678,14 +1070,14 @@ export default function Home() {
               <motion.div 
                 animate={{ y: [0, 10, 0] }}
                 transition={{ repeat: Infinity, duration: 5, ease: "easeInOut", delay: 1 }}
-                className="absolute -left-20 -bottom-14 bg-black/80 border border-gray-800 p-4 rounded-xl shadow-2xl backdrop-blur-xl w-48"
+                className="absolute -left-12 sm:-left-20 -bottom-10 sm:-bottom-14 bg-black/80 border border-gray-800 p-3 sm:p-4 rounded-xl shadow-2xl backdrop-blur-xl w-40 sm:w-48"
               >
-                <div className="flex items-center gap-3 mb-2">
-                  <ShieldAlert className="text-purple-400" size={16} />
-                  <span className="text-[10px] font-mono text-gray-400">AMENAZAS</span>
+                <div className="flex items-center gap-2 sm:gap-3 mb-2">
+                  <ShieldAlert className="text-purple-400 flex-shrink-0" size={14} />
+                  <span className="text-[9px] sm:text-[10px] font-mono text-gray-400">AMENAZAS</span>
                 </div>
-                <div className="text-xl font-bold text-white font-mono">142 BLOQUEADOS</div>
-                <div className="text-[10px] text-gray-500 mt-1">Últimas 24 horas</div>
+                <div className="text-lg sm:text-xl font-bold text-white font-mono">142 BLOQUEADOS</div>
+                <div className="text-[9px] sm:text-[10px] text-gray-500 mt-1">Últimas 24 horas</div>
               </motion.div>
             </div>
           </motion.div>
@@ -695,9 +1087,21 @@ export default function Home() {
       {/* Login Modal */}
       <LoginModal 
         isOpen={showLoginModal} 
-        onClose={() => setShowLoginModal(false)}
+        onClose={() => {
+          setShowLoginModal(false);
+        }}
         buttonRef={loginButtonRef}
+        onSuccess={handleLoginSuccess}
       />
+      
+      {/* Transición de Sumergimiento */}
+      <DiveTransition 
+        isActive={showDiveTransition} 
+        onComplete={handleTransitionComplete} 
+      />
+      
+      {/* Toast Notification */}
+      <Toast toast={toast} onClose={() => setToast(null)} />
     </div>
   );
 }

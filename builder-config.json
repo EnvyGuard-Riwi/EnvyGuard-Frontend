@@ -1,0 +1,25 @@
+{
+  "appId": "com.envyguard.app",
+  "productName": "EnvyGuard",
+  "files": [
+    "build/**/*",
+    "node_modules/**/*",
+    "public/electron.js",
+    "public/preload.js"
+  ],
+  "directories": {
+    "buildResources": "public"
+  },
+  "win": {
+    "target": [
+      "portable"
+    ],
+    "sign": null
+  },
+  "nsis": {
+    "oneClick": false,
+    "allowToChangeInstallationDirectory": true,
+    "createDesktopShortcut": true,
+    "createStartMenuShortcut": true
+  }
+}
