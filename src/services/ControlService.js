@@ -9,7 +9,7 @@ import axiosInstance from './api/axiosInstance';
 import { API_CONFIG, replaceUrlParams, apiLog } from '../config/apiConfig';
 
 // URL base con /api para el endpoint de control de exámenes
-const BASE_URL_API = 'https://api.envyguard.crudzaso.com/api';
+const BASE_URL_API = 'https://api.andrescortes.dev/api';
 
 // Acciones disponibles para control remoto
 export const CONTROL_ACTIONS = {
@@ -114,46 +114,46 @@ const controlService = {
       }
 
       apiLog('log', `Enviando control de examen: ${action}...`);
-      
+
       // Endpoint con prefijo /api
       const endpoint = `${BASE_URL_API}/control/${action.toUpperCase()}`;
-      
+
       // Obtener token para autenticación
       const token = localStorage.getItem('authToken');
       const user = JSON.parse(localStorage.getItem('user') || '{}');
-      
+
       console.log('[ControlService] Token presente:', !!token);
       console.log('[ControlService] Usuario:', user.email, '- Rol:', user.role);
       console.log('[ControlService] Endpoint:', endpoint);
-      
+
       const response = await axios.post(endpoint, {}, {
         headers: {
           'Content-Type': 'application/json',
           ...(token && { Authorization: `Bearer ${token}` })
         }
       });
-      
+
       apiLog('log', `Control de examen ${action} enviado exitosamente`, response.data);
       return response.data;
     } catch (error) {
       apiLog('error', `Error al enviar control de examen ${action}`, error.message);
       console.error('[ControlService] Exam control error:', error.response?.data);
       console.error('[ControlService] Status:', error.response?.status);
-      
+
       const backendMessage = error.response?.data?.message || error.response?.data;
-      
+
       if (error.response?.status === 400) {
         throw new Error('Acción inválida (use START o STOP)');
       }
-      
+
       if (error.response?.status === 403) {
         throw new Error('No tienes permisos para controlar el monitoreo de exámenes');
       }
-      
+
       if (error.response?.status === 401) {
         throw new Error('Sesión expirada. Por favor, inicia sesión nuevamente');
       }
-      
+
       throw new Error(backendMessage || `Error al enviar control de examen: ${action}`);
     }
   },
