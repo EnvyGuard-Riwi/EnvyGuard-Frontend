@@ -7,7 +7,9 @@ class WebSocketService {
     this.listeners = {};
     this.connected = false;
     // URL del WebSocket STOMP del backend Java
-    this.wsUrl = process.env.REACT_APP_WS_URL || 'http://localhost:8080/api/ws-spy';
+    // URL del WebSocket STOMP del backend Java
+    const baseUrl = process.env.REACT_APP_WS_URL || 'https://api.andrescortes.dev';
+    this.wsUrl = `${baseUrl}/ws-spy`;
   }
 
   // Conectar a WebSocket usando STOMP/SockJS
