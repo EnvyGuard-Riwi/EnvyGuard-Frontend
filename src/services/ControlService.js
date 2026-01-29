@@ -8,8 +8,8 @@ import axios from 'axios';
 import axiosInstance from './api/axiosInstance';
 import { API_CONFIG, replaceUrlParams, apiLog } from '../config/apiConfig';
 
-// URL base con /api para el endpoint de control de exámenes
-const BASE_URL_API = 'https://api.andrescortes.dev/api';
+// URL base SIN /api - Nginx ya añade /api automáticamente en el proxy
+const BASE_URL_API = 'https://api.andrescortes.dev';
 
 // Acciones disponibles para control remoto
 export const CONTROL_ACTIONS = {
