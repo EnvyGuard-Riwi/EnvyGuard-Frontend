@@ -17,7 +17,7 @@ const AuthService = {
   login: async (email, password) => {
     try {
       const response = await axiosInstance.post(API_CONFIG.ENDPOINTS.AUTH.LOGIN, {
-        email,
+        email: email.toLowerCase(),
         password,
       });
 

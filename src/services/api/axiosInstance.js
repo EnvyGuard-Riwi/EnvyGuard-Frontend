@@ -54,7 +54,8 @@ axiosInstance.interceptors.response.use(
     if (status === API_CONFIG.ERRORS.UNAUTHORIZED) {
       // Verificar si el error viene de un intento de login
       const isLoginAttempt = error.config?.url?.includes('/auth/login') ||
-        error.config?.url?.includes('/login');
+        error.config?.url?.includes('/login') ||
+        error.config?.url?.includes('/auth/users');
 
       if (!isLoginAttempt) {
         // Solo limpiar sesión y redireccionar si NO es un intento de login
