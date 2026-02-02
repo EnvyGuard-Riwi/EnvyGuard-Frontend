@@ -911,7 +911,7 @@ const ComputerMonitoringSection = ({ showDeployModal, setShowDeployModal, deploy
         // Resuelve estado efectivo con overrides (WebSocket/API) por IP si existe
         const override = deviceStatusOverrides[pc.ip];
         // Estado base del PC (online por defecto)
-        const effectiveStatus = override?.status || 'online';
+        const effectiveStatus = override?.status || 'offline';
 
         // Verificar si este PC tiene una novedad pendiente
         const hasIncident = pcsWithIncidents.has(pc.ip);
@@ -1076,10 +1076,11 @@ const ComputerMonitoringSection = ({ showDeployModal, setShowDeployModal, deploy
     const currentRoom = salas[selectedSala] || salas.sala1;
 
     // Cargar estado de computadores desde API y poblar overrides por IP
+    // Cargar estado de computadores desde API y poblar overrides por IP
     useEffect(() => {
-        // Deshabilitado: No consultar endpoint de estado de computadores
-        // Solo se usará el estado local y los datos en tiempo real si llegan por WebSocket
-        return () => { };
+        checkAllPCsStatus();
+        const interval = setInterval(checkAllPCsStatus, 30000);
+        return () => clearInterval(interval);
     }, []);
 
     // Conexión WebSocket para estado en vivo (sin indicador visual)
