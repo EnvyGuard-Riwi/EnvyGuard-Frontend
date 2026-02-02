@@ -536,9 +536,10 @@ const ComputerMonitoringSection = ({ showDeployModal, setShowDeployModal, deploy
             let online = 0, offline = 0;
 
             computers?.forEach(computer => {
-                if (computer?.ipAddress) {
+                const ip = computer?.ipAddress || computer?.ip;
+                if (ip) {
                     const isOnline = computer.status?.toUpperCase() === 'ONLINE';
-                    newOverrides[computer.ipAddress] = {
+                    newOverrides[ip] = {
                         status: isOnline ? 'online' : 'offline',
                         name: computer.name,
                         macAddress: computer.macAddress,
