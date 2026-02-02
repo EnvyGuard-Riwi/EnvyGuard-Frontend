@@ -915,10 +915,8 @@ const ComputerMonitoringSection = ({ showDeployModal, setShowDeployModal, deploy
     };
 
     const PCCard = ({ pc }) => {
-        // Resuelve estado efectivo con overrides (WebSocket/API) por ID primero, luego por IP
-        const override = deviceStatusOverrides[`id_${pc.dbId}`] || deviceStatusOverrides[pc.ip];
-        // Estado base del PC (online por defecto)
-        const effectiveStatus = override?.status || 'offline';
+        // Resuelve estado efectivo - SIEMPRE ONLINE por solicitud del usuario
+        const effectiveStatus = 'online';
 
         // Verificar si este PC tiene una novedad pendiente
         const hasIncident = pcsWithIncidents.has(pc.ip);
@@ -1084,13 +1082,17 @@ const ComputerMonitoringSection = ({ showDeployModal, setShowDeployModal, deploy
 
     // Cargar estado de computadores desde API y poblar overrides por IP
     // Cargar estado de computadores desde API y poblar overrides por IP
+    // Actualización de estado desactivada
     useEffect(() => {
-        checkAllPCsStatus();
-        const interval = setInterval(checkAllPCsStatus, 30000);
-        return () => clearInterval(interval);
+        // checkAllPCsStatus();
+        // const interval = setInterval(checkAllPCsStatus, 30000);
+        // return () => clearInterval(interval);
+        return () => { };
     }, []);
 
     // Conexión WebSocket para estado en vivo (sin indicador visual)
+    // Conexión WebSocket para estado desactivada
+    /*
     useEffect(() => {
         let mounted = true;
         const onMessage = (data) => {
@@ -1118,6 +1120,7 @@ const ComputerMonitoringSection = ({ showDeployModal, setShowDeployModal, deploy
             WebSocketService.disconnect();
         };
     }, []);
+    */
 
     return (
         <div className="space-y-6 h-full flex flex-col">
