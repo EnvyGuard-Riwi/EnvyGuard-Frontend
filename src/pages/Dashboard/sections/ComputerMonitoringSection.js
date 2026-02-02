@@ -537,9 +537,11 @@ const ComputerMonitoringSection = ({ showDeployModal, setShowDeployModal, deploy
 
             computers?.forEach(computer => {
                 const ip = computer?.ipAddress || computer?.ip;
-                if (ip) {
+                const id = computer?.id;
+
+                if (ip || id) {
                     const isOnline = computer.status?.toUpperCase() === 'ONLINE';
-                    newOverrides[ip] = {
+                    const statusData = {
                         status: isOnline ? 'online' : 'offline',
                         name: computer.name,
                         macAddress: computer.macAddress,
@@ -548,6 +550,10 @@ const ComputerMonitoringSection = ({ showDeployModal, setShowDeployModal, deploy
                         positionInRoom: computer.positionInRoom,
                         lastCheck: new Date()
                     };
+
+                    if (ip) newOverrides[ip] = statusData;
+                    if (id) newOverrides[`id_${id}`] = statusData;
+
                     if (isOnline) online++; else offline++;
                 }
             });
@@ -1092,7 +1098,8 @@ const ComputerMonitoringSection = ({ showDeployModal, setShowDeployModal, deploy
             if (data.type === 'device_status' && (data.ip || data.id)) {
                 setDeviceStatusOverrides(prev => ({
                     ...prev,
-                    ...(data.ip ? { [data.ip]: { status: data.status, latencyMs: data.latencyMs } } : {})
+                    ...(data.ip ? { [data.ip]: { status: data.status, latencyMs: data.latencyMs } } : {}),
+                    ...(data.id ? { [`id_${data.id}`]: { status: data.status, latencyMs: data.latencyMs } } : {})
                 }));
             }
         };
