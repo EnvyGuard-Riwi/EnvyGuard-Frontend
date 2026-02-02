@@ -1010,9 +1010,7 @@ const ComputerMonitoringSection = ({ showDeployModal, setShowDeployModal, deploy
                     <div className="text-[10px] font-mono text-gray-400">{pc.cpuCode}</div>
                 )}
                 <div className="text-[10px] text-gray-500 font-mono group-hover:text-cyan-400 transition-colors">{pc.ip}</div>
-                {override?.latencyMs !== undefined && (
-                    <div className="mt-1 text-[10px] font-mono text-gray-600">{override.latencyMs} ms</div>
-                )}
+                {/* Latencia desactivada */}
             </motion.div>
         );
     };
