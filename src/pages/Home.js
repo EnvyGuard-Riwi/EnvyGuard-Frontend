@@ -3,13 +3,13 @@ import { motion, AnimatePresence } from 'framer-motion';
 import iconLogo from '../assets/icons/icon.png';
 import { useNavigate } from 'react-router-dom';
 import { useInstallPrompt } from '../hooks/useInstallPrompt';
-import { 
-  Terminal, 
-  Activity, 
-  ShieldAlert, 
-  Wifi, 
-  Server, 
-  
+import {
+  Terminal,
+  Activity,
+  ShieldAlert,
+  Wifi,
+  Server,
+
   Download,
   Lock,
   LayoutGrid,
@@ -24,6 +24,7 @@ import {
 import { useMousePosition } from '../hooks/useMousePosition';
 import { useScrambleText } from '../hooks/useScrambleText';
 import AuthService from '../services/AuthService';
+import { useAuth } from '../context/AuthContext';
 
 // --- VISUAL COMPONENTS ---
 
@@ -31,7 +32,7 @@ import AuthService from '../services/AuthService';
 // 1. Boot Sequence Overlay
 const BootSequence = ({ onComplete }) => {
   const [lines, setLines] = useState([]);
-  
+
   useEffect(() => {
     const bootLines = [
       "INITIALIZING_KERNEL...",
@@ -55,7 +56,7 @@ const BootSequence = ({ onComplete }) => {
   }, [onComplete]);
 
   return (
-    <motion.div 
+    <motion.div
       className="fixed inset-0 bg-black z-[999] flex items-center justify-center font-mono text-cyan-500"
       exit={{ opacity: 0, filter: "blur(10px)" }}
       transition={{ duration: 0.8 }}
@@ -67,13 +68,13 @@ const BootSequence = ({ onComplete }) => {
             {line}
           </div>
         ))}
-        <motion.div 
-          animate={{ opacity: [0, 1] }} 
+        <motion.div
+          animate={{ opacity: [0, 1] }}
           transition={{ repeat: Infinity, duration: 0.5 }}
           className="w-3 h-5 bg-cyan-500 mt-2"
         />
       </div>
-      
+
       {/* Scanline for Boot */}
       <div className="absolute inset-0 bg-[linear-gradient(rgba(18,16,16,0)_50%,rgba(0,0,0,0.25)_50%),linear-gradient(90deg,rgba(255,0,0,0.06),rgba(0,255,0,0.02),rgba(0,0,255,0.06))] z-20 bg-[length:100%_4px,3px_100%] pointer-events-none opacity-50" />
     </motion.div>
@@ -100,9 +101,9 @@ const GlitchTitle = ({ text }) => {
 // 3. Cipher Text Badge
 const CipherBadge = ({ label, icon: Icon }) => {
   const { displayText, setIsHovering } = useScrambleText(label);
-  
+
   return (
-    <div 
+    <div
       onMouseEnter={() => setIsHovering(true)}
       onMouseLeave={() => setIsHovering(false)}
       className="group relative flex items-center gap-2 px-4 py-2 rounded-full bg-black border border-white/10 overflow-hidden cursor-crosshair transition-all hover:border-cyan-500/50 hover:bg-cyan-950/20"
@@ -120,17 +121,17 @@ const RetroGrid = () => {
     <div className="absolute inset-0 z-0 overflow-hidden pointer-events-none">
       {/* Background Gradient */}
       <div className="absolute inset-0 bg-gradient-to-b from-black via-black to-[#050505]" />
-      
+
       {/* Global Scanline */}
       <div className="fixed inset-0 z-50 pointer-events-none bg-[url('https://grainy-gradients.vercel.app/noise.svg')] opacity-20 brightness-100 contrast-150 mix-blend-overlay"></div>
-      <motion.div 
+      <motion.div
         className="fixed inset-0 z-40 pointer-events-none bg-gradient-to-b from-transparent via-cyan-500/5 to-transparent h-[10vh]"
         animate={{ top: ['-10%', '110%'] }}
         transition={{ duration: 8, repeat: Infinity, ease: "linear" }}
       />
-      
+
       {/* Moving Grid Perspective */}
-      <div 
+      <div
         className="absolute inset-0 opacity-20"
         style={{
           backgroundImage: `linear-gradient(to right, #222 1px, transparent 1px), linear-gradient(to bottom, #222 1px, transparent 1px)`,
@@ -140,7 +141,7 @@ const RetroGrid = () => {
           transformOrigin: 'top center',
         }}
       >
-        <motion.div 
+        <motion.div
           className="w-full h-full"
           animate={{ y: [0, 40] }}
           transition={{ repeat: Infinity, duration: 2, ease: "linear" }}
@@ -153,20 +154,20 @@ const RetroGrid = () => {
           <motion.div
             key={i}
             className="absolute bg-cyan-500 rounded-full box-shadow-[0_0_10px_cyan]"
-            initial={{ 
-              x: Math.random() * 100 + "%", 
-              y: Math.random() * 100 + "%", 
+            initial={{
+              x: Math.random() * 100 + "%",
+              y: Math.random() * 100 + "%",
               scale: Math.random() * 0.5 + 0.5,
               opacity: Math.random() * 0.5
             }}
-            animate={{ 
+            animate={{
               y: [null, Math.random() * -100 + "%"],
               opacity: [0, 1, 0]
             }}
-            transition={{ 
-              duration: Math.random() * 10 + 10, 
-              repeat: Infinity, 
-              ease: "linear" 
+            transition={{
+              duration: Math.random() * 10 + 10,
+              repeat: Infinity,
+              ease: "linear"
             }}
             style={{ width: Math.random() * 2 + 1 + 'px', height: Math.random() * 2 + 1 + 'px' }}
           />
@@ -192,7 +193,7 @@ const TerminalPreview = () => {
       "> HEARTBEAT_ACK",
       "> CREATE: JERO_C"
     ];
-    
+
     let i = 0;
     const interval = setInterval(() => {
       setLines(prev => {
@@ -207,7 +208,7 @@ const TerminalPreview = () => {
 
   return (
     <div className="relative w-full max-w-lg sm:max-w-md rounded-lg overflow-hidden border border-white/10 shadow-2xl bg-[#050505] group">
-      
+
       {/* CRT Screen Glow */}
       <div className="absolute inset-0 bg-cyan-500/5 opacity-0 group-hover:opacity-100 transition-opacity duration-700 pointer-events-none z-0" />
 
@@ -229,17 +230,17 @@ const TerminalPreview = () => {
 
         <div className="relative z-30 space-y-1">
           {lines.map((line, idx) => (
-            <motion.div 
-              key={idx} 
-              initial={{ opacity: 0, x: -5 }} 
+            <motion.div
+              key={idx}
+              initial={{ opacity: 0, x: -5 }}
               animate={{ opacity: 1, x: 0 }}
               className={`${line.includes("SUCCESS") ? "text-green-400" : line.includes("PKG") ? "text-yellow-400" : "text-gray-400"}`}
             >
-              <span className="opacity-50 mr-2">{(new Date()).toLocaleTimeString('en-US', {hour12: false})}</span>
+              <span className="opacity-50 mr-2">{(new Date()).toLocaleTimeString('en-US', { hour12: false })}</span>
               {line}
             </motion.div>
           ))}
-          <motion.div 
+          <motion.div
             animate={{ opacity: [1, 0] }}
             transition={{ repeat: Infinity, duration: 0.8 }}
             className="text-cyan-500 mt-2 font-bold"
@@ -262,6 +263,7 @@ const LoginModal = ({ isOpen, onClose, buttonRef, onSuccess }) => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const mouse = useMousePosition();
   const navigate = useNavigate();
+  const { login } = useAuth();
 
   // 1. Calcular la posición del botón para la animación de origen/destino
   const getButtonPosition = () => {
@@ -276,25 +278,25 @@ const LoginModal = ({ isOpen, onClose, buttonRef, onSuccess }) => {
 
   // Animación del contenedor del modal
   const modalVariants = {
-    hidden: { 
+    hidden: {
       opacity: 0,
       scale: 0.3,
       transformOrigin: `${window.innerWidth - buttonPos.right}px ${buttonPos.top + (buttonPos.height / 2)}px`,
       x: 0,
       y: 0
     },
-    visible: { 
+    visible: {
       opacity: 1,
       scale: 1,
       x: 0,
       y: 0,
-      transition: { 
-        delay: 0.05, 
-        duration: 0.4, 
+      transition: {
+        delay: 0.05,
+        duration: 0.4,
         ease: [0.22, 1, 0.36, 1]
       }
     },
-    exit: { 
+    exit: {
       opacity: 0,
       scale: 0.3,
       transformOrigin: `${window.innerWidth - buttonPos.right}px ${buttonPos.top + (buttonPos.height / 2)}px`,
@@ -307,7 +309,7 @@ const LoginModal = ({ isOpen, onClose, buttonRef, onSuccess }) => {
     setError('');
     setLoading(true);
     setIsSubmitting(true);
-    
+
     try {
       // Validar que los campos no estén vacíos
       if (!email || !password) {
@@ -325,40 +327,40 @@ const LoginModal = ({ isOpen, onClose, buttonRef, onSuccess }) => {
         return;
       }
 
-      // Llamar a AuthService.login
-      const response = await AuthService.login(email, password);
-      
+      // Llamar a login del contexto
+      const response = await login(email, password);
+
       console.log('=== LOGIN EXITOSO ===');
       console.log('Response completa:', response);
       console.log('Response.user:', response.user);
-      
+
       // Limpiar error
       setError('');
       setLoading(false);
       setIsSubmitting(false);
-      
+
       // Cerrar modal y activar la animación de transición
       onClose();
       if (onSuccess) {
         onSuccess('¡Bienvenido! Inicio de sesión exitoso');
       }
-      
+
     } catch (err) {
       console.error('Error de login:', err);
-      
+
       // Traducir mensajes de error comunes
       let errorMessage = 'Error al iniciar sesión. Verifica tus credenciales.';
-      
+
       const errorText = err.message?.toLowerCase() || '';
       const errorData = err.response?.data?.message?.toLowerCase() || '';
-      
-      if (errorText.includes('invalid') || errorText.includes('incorrect') || 
-          errorText.includes('wrong') || errorData.includes('invalid') ||
-          errorText.includes('unauthorized') || errorData.includes('unauthorized') ||
-          err.response?.status === 401) {
+
+      if (errorText.includes('invalid') || errorText.includes('incorrect') ||
+        errorText.includes('wrong') || errorData.includes('invalid') ||
+        errorText.includes('unauthorized') || errorData.includes('unauthorized') ||
+        err.response?.status === 401) {
         errorMessage = 'Correo o contraseña incorrectos. Por favor verifica tus datos.';
       } else if (errorText.includes('not found') || errorData.includes('not found') ||
-                 err.response?.status === 404) {
+        err.response?.status === 404) {
         errorMessage = 'Usuario no encontrado. Verifica tu correo electrónico.';
       } else if (errorText.includes('network') || errorText.includes('timeout')) {
         errorMessage = 'Error de conexión. Por favor verifica tu conexión a internet.';
@@ -370,7 +372,7 @@ const LoginModal = ({ isOpen, onClose, buttonRef, onSuccess }) => {
         // Si el backend envía un mensaje específico, usarlo
         errorMessage = err.response.data.message;
       }
-      
+
       setError(errorMessage);
       setLoading(false);
       setIsSubmitting(false);
@@ -408,9 +410,9 @@ const LoginModal = ({ isOpen, onClose, buttonRef, onSuccess }) => {
           >
             {/* Panel del modal */}
             <div className="w-full h-full bg-gradient-to-br from-gray-950 via-gray-900 to-gray-950 border-0 sm:border-l border-gray-700/50 backdrop-blur-2xl flex flex-col p-6 sm:p-10 relative overflow-hidden shadow-2xl shadow-gray-600/10">
-              
+
               {/* Cuadrícula de fondo animada - ACORDE CON EL DISEÑO DE LA PÁGINA */}
-              <div 
+              <div
                 className="absolute inset-0 opacity-20 pointer-events-none"
                 style={{
                   backgroundImage: `linear-gradient(to right, rgba(107, 114, 128, 0.15) 1px, transparent 1px), linear-gradient(to bottom, rgba(107, 114, 128, 0.15) 1px, transparent 1px)`,
@@ -422,42 +424,42 @@ const LoginModal = ({ isOpen, onClose, buttonRef, onSuccess }) => {
 
               {/* Líneas de escaneo CRT */}
               <div className="absolute inset-0 bg-[linear-gradient(rgba(18,16,16,0)_50%,rgba(0,0,0,0.25)_50%),linear-gradient(90deg,rgba(107,114,128,0.03),rgba(107,114,128,0.02),rgba(107,114,128,0.03))] z-0 bg-[length:100%_4px,3px_100%] pointer-events-none opacity-60" />
-              
+
               {/* Glow effects mejorados */}
               <div className="absolute top-0 right-0 w-96 h-96 bg-gray-600/8 blur-[120px] pointer-events-none rounded-full" />
               <div className="absolute bottom-0 left-0 w-96 h-96 bg-gray-500/8 blur-[120px] pointer-events-none rounded-full" />
-              
+
               {/* Borde superior animado con más intensidad */}
-              <motion.div 
+              <motion.div
                 className="absolute top-0 left-0 right-0 h-0.5 bg-gradient-to-r from-transparent via-gray-600 to-transparent"
                 animate={{ opacity: [0.4, 1, 0.4], boxShadow: ["0 0 10px rgba(107, 114, 128, 0.5)", "0 0 30px rgba(107, 114, 128, 1)", "0 0 10px rgba(107, 114, 128, 0.5)"] }}
                 transition={{ repeat: Infinity, duration: 4 }}
               />
 
-                {/* Partículas decorativas */}
-                <div className="absolute inset-0 pointer-events-none">
-                  {[...Array(5)].map((_, i) => (
-                    <motion.div
-                      key={i}
-                      className="absolute w-1 h-1 bg-gray-500 rounded-full"
-                      initial={{ x: Math.random() * 100 + "%", y: Math.random() * 100 + "%" }}
-                      animate={{ 
-                        x: [null, Math.random() * 100 + "%"],
-                        y: [null, Math.random() * 100 + "%"],
-                        opacity: [0.5, 0.8, 0.5]
-                      }}
-                      transition={{ 
-                        duration: Math.random() * 8 + 6, 
-                        repeat: Infinity, 
-                        ease: "linear" 
-                      }}
-                    />
-                  ))}
-                </div>
+              {/* Partículas decorativas */}
+              <div className="absolute inset-0 pointer-events-none">
+                {[...Array(5)].map((_, i) => (
+                  <motion.div
+                    key={i}
+                    className="absolute w-1 h-1 bg-gray-500 rounded-full"
+                    initial={{ x: Math.random() * 100 + "%", y: Math.random() * 100 + "%" }}
+                    animate={{
+                      x: [null, Math.random() * 100 + "%"],
+                      y: [null, Math.random() * 100 + "%"],
+                      opacity: [0.5, 0.8, 0.5]
+                    }}
+                    transition={{
+                      duration: Math.random() * 8 + 6,
+                      repeat: Infinity,
+                      ease: "linear"
+                    }}
+                  />
+                ))}
+              </div>
 
               {/* Contenido principal */}
               <div className="relative z-10 flex flex-col h-full">
-                
+
                 {/* Header */}
                 <div className="flex items-center justify-between mb-8 sm:mb-10 flex-col sm:flex-row gap-4">
                   <motion.div
@@ -500,7 +502,7 @@ const LoginModal = ({ isOpen, onClose, buttonRef, onSuccess }) => {
                 />
 
                 {/* Formulario */}
-                <motion.form 
+                <motion.form
                   onSubmit={handleSubmit}
                   className="flex-1 flex flex-col gap-4 sm:gap-6 mb-6 sm:mb-8"
                 >
@@ -523,7 +525,7 @@ const LoginModal = ({ isOpen, onClose, buttonRef, onSuccess }) => {
                     className="group"
                   >
                     <label className="block text-[11px] sm:text-xs font-mono text-cyan-400 mb-2 sm:mb-3 flex items-center gap-2 tracking-wider">
-                      <Mail size={14} className="text-cyan-400 flex-shrink-0" /> 
+                      <Mail size={14} className="text-cyan-400 flex-shrink-0" />
                       USUARIO / CORREO
                     </label>
                     <div className="relative">
@@ -549,7 +551,7 @@ const LoginModal = ({ isOpen, onClose, buttonRef, onSuccess }) => {
                     className="group"
                   >
                     <label className="block text-[11px] sm:text-xs font-mono text-cyan-400 mb-2 sm:mb-3 flex items-center gap-2 tracking-wider">
-                      <Key size={14} className="text-cyan-400 flex-shrink-0" /> 
+                      <Key size={14} className="text-cyan-400 flex-shrink-0" />
                       CONTRASEÑA
                     </label>
                     <div className="relative">
@@ -577,7 +579,7 @@ const LoginModal = ({ isOpen, onClose, buttonRef, onSuccess }) => {
                     initial={{ opacity: 0, y: 15 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ delay: 0.5, duration: 0.4 }}
-                    whileHover={!loading ? { 
+                    whileHover={!loading ? {
                       scale: 1.02,
                       boxShadow: "0 0 40px rgba(6, 182, 212, 1), inset 0 0 20px rgba(34, 211, 238, 0.3)"
                     } : {}}
@@ -609,7 +611,7 @@ const LoginModal = ({ isOpen, onClose, buttonRef, onSuccess }) => {
                 </motion.form>
 
                 {/* Footer de seguridad */}
-                <motion.div 
+                <motion.div
                   initial={{ opacity: 0, y: 15 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: 0.7, duration: 0.4 }}
@@ -641,38 +643,35 @@ const Toast = ({ toast, onClose }) => {
 
   return (
     <AnimatePresence>
-      <motion.div 
+      <motion.div
         key="toast"
-        initial={{ x: 400, opacity: 0 }} 
-        animate={{ x: 0, opacity: 1 }} 
+        initial={{ x: 400, opacity: 0 }}
+        animate={{ x: 0, opacity: 1 }}
         exit={{ x: 400, opacity: 0 }}
         transition={{ type: "spring", stiffness: 400, damping: 30 }}
         className="fixed top-6 right-6 max-w-md z-[99999]"
       >
         {/* Terminal Window */}
-        <div className={`bg-[#0a0a0a] border rounded-lg overflow-hidden shadow-2xl ${
-          toast.type === 'success' 
-            ? 'border-green-500/50 shadow-green-500/20' 
-            : toast.type === 'warn' 
-            ? 'border-yellow-500/50 shadow-yellow-500/20' 
+        <div className={`bg-[#0a0a0a] border rounded-lg overflow-hidden shadow-2xl ${toast.type === 'success'
+          ? 'border-green-500/50 shadow-green-500/20'
+          : toast.type === 'warn'
+            ? 'border-yellow-500/50 shadow-yellow-500/20'
             : 'border-red-500/50 shadow-red-500/20'
-        }`}>
-          {/* Terminal Header */}
-          <div className={`px-3 py-1.5 flex items-center gap-2 border-b ${
-            toast.type === 'success' 
-              ? 'bg-green-500/10 border-green-500/30' 
-              : toast.type === 'warn' 
-              ? 'bg-yellow-500/10 border-yellow-500/30' 
-              : 'bg-red-500/10 border-red-500/30'
           }`}>
+          {/* Terminal Header */}
+          <div className={`px-3 py-1.5 flex items-center gap-2 border-b ${toast.type === 'success'
+            ? 'bg-green-500/10 border-green-500/30'
+            : toast.type === 'warn'
+              ? 'bg-yellow-500/10 border-yellow-500/30'
+              : 'bg-red-500/10 border-red-500/30'
+            }`}>
             <div className="flex gap-1">
               <div className="w-2 h-2 rounded-full bg-red-500/50" />
               <div className="w-2 h-2 rounded-full bg-yellow-500/50" />
               <div className="w-2 h-2 rounded-full bg-green-500/50" />
             </div>
-            <span className={`text-[9px] font-mono uppercase tracking-wider ${
-              toast.type === 'success' ? 'text-green-500' : toast.type === 'warn' ? 'text-yellow-500' : 'text-red-500'
-            }`}>
+            <span className={`text-[9px] font-mono uppercase tracking-wider ${toast.type === 'success' ? 'text-green-500' : toast.type === 'warn' ? 'text-yellow-500' : 'text-red-500'
+              }`}>
               {toast.type === 'success' ? 'SYSTEM_OK' : toast.type === 'warn' ? 'WARNING' : 'ERROR'}
             </span>
             <button
@@ -684,13 +683,12 @@ const Toast = ({ toast, onClose }) => {
               </svg>
             </button>
           </div>
-          
+
           {/* Terminal Content */}
           <div className="px-4 py-3 font-mono text-sm">
             <div className="flex items-start gap-3">
-              <span className={`text-xs ${
-                toast.type === 'success' ? 'text-green-600' : toast.type === 'warn' ? 'text-yellow-600' : 'text-red-600'
-              }`}>
+              <span className={`text-xs ${toast.type === 'success' ? 'text-green-600' : toast.type === 'warn' ? 'text-yellow-600' : 'text-red-600'
+                }`}>
                 {toast.type === 'success' ? '>' : toast.type === 'warn' ? '!' : 'X'}
               </span>
               <div className="flex-1">
@@ -698,9 +696,8 @@ const Toast = ({ toast, onClose }) => {
                   initial={{ opacity: 0 }}
                   animate={{ opacity: 1 }}
                   transition={{ duration: 0.3 }}
-                  className={`${
-                    toast.type === 'success' ? 'text-green-400' : toast.type === 'warn' ? 'text-yellow-400' : 'text-red-400'
-                  }`}
+                  className={`${toast.type === 'success' ? 'text-green-400' : toast.type === 'warn' ? 'text-yellow-400' : 'text-red-400'
+                    }`}
                 >
                   {toast.msg}
                 </motion.span>
@@ -717,15 +714,14 @@ const Toast = ({ toast, onClose }) => {
               </div>
             </div>
           </div>
-          
+
           {/* Progress bar */}
           <motion.div
             initial={{ scaleX: 1 }}
             animate={{ scaleX: 0 }}
             transition={{ duration: 4, ease: "linear" }}
-            className={`h-0.5 origin-left ${
-              toast.type === 'success' ? 'bg-green-500' : toast.type === 'warn' ? 'bg-yellow-500' : 'bg-red-500'
-            }`}
+            className={`h-0.5 origin-left ${toast.type === 'success' ? 'bg-green-500' : toast.type === 'warn' ? 'bg-yellow-500' : 'bg-red-500'
+              }`}
           />
         </div>
       </motion.div>
@@ -736,7 +732,7 @@ const Toast = ({ toast, onClose }) => {
 // --- TRANSICIÓN DE SUMERGIMIENTO ---
 const DiveTransition = ({ isActive, onComplete }) => {
   const [bootLines, setBootLines] = useState([]);
-  
+
   useEffect(() => {
     if (isActive) {
       // Secuencia de boot estilo terminal
@@ -748,13 +744,13 @@ const DiveTransition = ({ isActive, onComplete }) => {
         { text: "> INITIALIZING_DASHBOARD...", delay: 800 },
         { text: "> ACCESS_GRANTED", delay: 1000 },
       ];
-      
+
       lines.forEach(({ text, delay }) => {
         setTimeout(() => {
           setBootLines(prev => [...prev, text]);
         }, delay);
       });
-      
+
       // Ejecutar onComplete después de la animación
       const timer = setTimeout(() => {
         onComplete();
@@ -772,14 +768,14 @@ const DiveTransition = ({ isActive, onComplete }) => {
       className="fixed inset-0 z-[999] flex items-center justify-center bg-black overflow-hidden"
     >
       {/* Grid de fondo animado */}
-      <div 
+      <div
         className="absolute inset-0 opacity-20"
         style={{
           backgroundImage: `linear-gradient(to right, #0891b2 1px, transparent 1px), linear-gradient(to bottom, #0891b2 1px, transparent 1px)`,
           backgroundSize: '40px 40px',
         }}
       />
-      
+
       {/* Glow central */}
       <motion.div
         initial={{ scale: 0, opacity: 0 }}
@@ -787,7 +783,7 @@ const DiveTransition = ({ isActive, onComplete }) => {
         transition={{ duration: 0.8, ease: "easeOut" }}
         className="absolute w-96 h-96 bg-cyan-500/30 rounded-full blur-[100px]"
       />
-      
+
       {/* Terminal de acceso */}
       <motion.div
         initial={{ scale: 0.8, opacity: 0, y: 20 }}
@@ -806,7 +802,7 @@ const DiveTransition = ({ isActive, onComplete }) => {
             </div>
             <span className="text-[10px] text-cyan-500/70 font-mono ml-2">envyguard@secure-gateway</span>
           </div>
-          
+
           {/* Contenido del terminal */}
           <div className="p-4 font-mono text-sm space-y-1 min-h-[180px]">
             {bootLines.map((line, idx) => (
@@ -815,13 +811,12 @@ const DiveTransition = ({ isActive, onComplete }) => {
                 initial={{ opacity: 0, x: -10 }}
                 animate={{ opacity: 1, x: 0 }}
                 transition={{ duration: 0.2 }}
-                className={`flex items-center gap-2 ${
-                  line.includes('ACCESS_GRANTED') 
-                    ? 'text-green-400' 
-                    : line.includes('[OK]') 
-                    ? 'text-cyan-400' 
+                className={`flex items-center gap-2 ${line.includes('ACCESS_GRANTED')
+                  ? 'text-green-400'
+                  : line.includes('[OK]')
+                    ? 'text-cyan-400'
                     : 'text-gray-400'
-                }`}
+                  }`}
               >
                 <span className="text-cyan-600 text-xs">{`0x${(100 + idx).toString(16).toUpperCase()}`}</span>
                 <span>{line}</span>
@@ -836,7 +831,7 @@ const DiveTransition = ({ isActive, onComplete }) => {
                 )}
               </motion.div>
             ))}
-            
+
             {/* Cursor parpadeante */}
             <motion.div
               animate={{ opacity: [1, 0] }}
@@ -845,7 +840,7 @@ const DiveTransition = ({ isActive, onComplete }) => {
             />
           </div>
         </div>
-        
+
         {/* Barra de progreso */}
         <motion.div
           initial={{ scaleX: 0 }}
@@ -853,7 +848,7 @@ const DiveTransition = ({ isActive, onComplete }) => {
           transition={{ duration: 1.5, ease: "easeInOut" }}
           className="h-1 bg-gradient-to-r from-cyan-500 via-blue-500 to-purple-500 rounded-full mt-4 origin-left"
         />
-        
+
         {/* Texto de estado */}
         <motion.p
           initial={{ opacity: 0 }}
@@ -867,21 +862,21 @@ const DiveTransition = ({ isActive, onComplete }) => {
 
       {/* Scanlines CRT */}
       <div className="absolute inset-0 bg-[linear-gradient(rgba(18,16,16,0)_50%,rgba(0,0,0,0.25)_50%)] bg-[length:100%_4px] pointer-events-none opacity-20" />
-      
+
       {/* Partículas flotantes */}
       {[...Array(15)].map((_, i) => (
         <motion.div
           key={i}
-          initial={{ 
+          initial={{
             x: Math.random() * window.innerWidth,
             y: window.innerHeight + 20,
             opacity: 0
           }}
-          animate={{ 
+          animate={{
             y: -20,
             opacity: [0, 0.8, 0]
           }}
-          transition={{ 
+          transition={{
             duration: Math.random() * 2 + 1,
             delay: Math.random() * 0.5,
             ease: "linear"
@@ -903,18 +898,18 @@ export default function Home() {
   const loginButtonRef = useRef(null);
   const navigate = useNavigate();
   const { handleInstall, canInstall, isInstalling } = useInstallPrompt();
-  
+
   // Función para mostrar toast
   const showToast = (msg, type = 'success') => {
     setToast({ msg, type });
   };
-  
+
   // Función para manejar el login exitoso con efecto de transición
   const handleLoginSuccess = (msg) => {
     showToast(msg, 'success');
     setShowDiveTransition(true);
   };
-  
+
   // Función que se ejecuta cuando termina la animación
   const handleTransitionComplete = () => {
     navigate('/dashboard');
@@ -922,15 +917,15 @@ export default function Home() {
 
   return (
     <div className="min-h-screen bg-black text-white selection:bg-cyan-500/30 overflow-x-hidden font-sans">
-      
+
       {/* Boot Sequence */}
       <AnimatePresence>
         {loading && <BootSequence onComplete={() => setLoading(false)} />}
       </AnimatePresence>
-      
+
       {/* Noise Texture Overlay */}
-      <div className="fixed inset-0 z-[60] pointer-events-none opacity-[0.04] mix-blend-overlay" 
-          style={{ backgroundImage: `url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E")` }} 
+      <div className="fixed inset-0 z-[60] pointer-events-none opacity-[0.04] mix-blend-overlay"
+        style={{ backgroundImage: `url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E")` }}
       />
 
       {/* Navigation */}
@@ -953,7 +948,7 @@ export default function Home() {
                 animate={{ x: [0, 6, 0] }}
                 transition={{ repeat: Infinity, duration: 1.5, ease: "easeInOut" }}
               >
-                <ChevronRight size={14} className="group-hover:text-cyan-400 transition-colors"/>
+                <ChevronRight size={14} className="group-hover:text-cyan-400 transition-colors" />
               </motion.div>
             </motion.button>
           </div>
@@ -966,7 +961,7 @@ export default function Home() {
             className="md:hidden bg-white/5 border border-white/10 hover:border-cyan-500/50 text-white px-3 py-1.5 rounded-full text-[10px] font-mono transition-all hover:bg-cyan-500/10 flex items-center gap-1 group"
           >
             ACCESO
-            <ChevronRight size={12} className="group-hover:text-cyan-400 transition-colors"/>
+            <ChevronRight size={12} className="group-hover:text-cyan-400 transition-colors" />
           </motion.button>
         </div>
       </nav>
@@ -974,10 +969,10 @@ export default function Home() {
       {/* Hero Section */}
       <section className="relative min-h-screen flex items-center justify-center pt-16 sm:pt-20 px-4 sm:px-6 overflow-hidden">
         <RetroGrid />
-        
+
         <div className="max-w-7xl w-full mx-auto relative z-10 grid lg:grid-cols-2 gap-8 lg:gap-16 items-center mt-6 sm:mt-10">
           <div className="order-2 lg:order-1">
-            <motion.div 
+            <motion.div
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.8, delay: loading ? 0 : 0.5 }}
@@ -989,19 +984,19 @@ export default function Home() {
                 </span>
                 ESTADO DEL SISTEMA: EN LÍNEA
               </div>
-              
+
               <GlitchTitle text="Control Total." />
               <h1 className="text-3xl sm:text-5xl md:text-6xl lg:text-7xl font-bold leading-tight mb-4 sm:mb-6 tracking-tight">
                 <span className="text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 via-blue-500 to-purple-600 animate-gradient">Sin Latencia.</span>
               </h1>
-              
+
               <p className="text-gray-400 text-sm sm:text-base md:text-lg mb-6 sm:mb-8 max-w-lg leading-relaxed border-l-2 border-cyan-900/50 pl-4">
-                Orquesta agentes remotos con precisión de nivel militar. 
+                Orquesta agentes remotos con precisión de nivel militar.
                 Telemetría en tiempo real, despliegue silencioso y control absoluto sobre tu infraestructura.
               </p>
 
               <div className="flex flex-col sm:flex-row gap-3 sm:gap-4">
-                <button 
+                <button
                   onClick={() => canInstall && handleInstall()}
                   disabled={isInstalling && !canInstall}
                   className="relative px-6 sm:px-8 py-3 sm:py-4 bg-cyan-500 disabled:bg-cyan-600/50 text-black font-bold rounded-lg overflow-hidden group text-sm sm:text-base transition-all disabled:cursor-not-allowed"
@@ -1040,7 +1035,7 @@ export default function Home() {
             </motion.div>
           </div>
 
-          <motion.div 
+          <motion.div
             initial={{ opacity: 0, scale: 0.9, rotateX: 10 }}
             animate={{ opacity: 1, scale: 1, rotateX: 0 }}
             transition={{ delay: 0.2, duration: 1 }}
@@ -1048,12 +1043,12 @@ export default function Home() {
           >
             {/* Glow behind terminal */}
             <div className="absolute inset-0 bg-cyan-500/10 blur-[100px] rounded-full" />
-            
+
             <div className="relative transform transition-transform hover:scale-[1.02] duration-500">
               <TerminalPreview />
-              
+
               {/* Floating Widgets */}
-              <motion.div 
+              <motion.div
                 animate={{ y: [0, -10, 0] }}
                 transition={{ repeat: Infinity, duration: 4, ease: "easeInOut" }}
                 className="absolute -right-4 sm:-right-8 top-8 sm:top-12 bg-black/80 border border-gray-800 p-3 sm:p-4 rounded-xl shadow-2xl backdrop-blur-xl w-32 sm:w-40"
@@ -1068,7 +1063,7 @@ export default function Home() {
                 </div>
               </motion.div>
 
-              <motion.div 
+              <motion.div
                 animate={{ y: [0, 10, 0] }}
                 transition={{ repeat: Infinity, duration: 5, ease: "easeInOut", delay: 1 }}
                 className="absolute -left-12 sm:-left-20 -bottom-10 sm:-bottom-14 bg-black/80 border border-gray-800 p-3 sm:p-4 rounded-xl shadow-2xl backdrop-blur-xl w-40 sm:w-48"
@@ -1086,21 +1081,21 @@ export default function Home() {
       </section>
 
       {/* Login Modal */}
-      <LoginModal 
-        isOpen={showLoginModal} 
+      <LoginModal
+        isOpen={showLoginModal}
         onClose={() => {
           setShowLoginModal(false);
         }}
         buttonRef={loginButtonRef}
         onSuccess={handleLoginSuccess}
       />
-      
+
       {/* Transición de Sumergimiento */}
-      <DiveTransition 
-        isActive={showDiveTransition} 
-        onComplete={handleTransitionComplete} 
+      <DiveTransition
+        isActive={showDiveTransition}
+        onComplete={handleTransitionComplete}
       />
-      
+
       {/* Toast Notification */}
       <Toast toast={toast} onClose={() => setToast(null)} />
     </div>
