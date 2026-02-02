@@ -20,13 +20,13 @@ const AuthService = {
         email,
         password,
       });
-      
+
       apiLog('log', 'Respuesta de login recibida', response.data);
-      
+
       // Intentar obtener el usuario - Manejo flexible de respuestas
       let userData = null;
       let token = null;
-      
+
       // Opción 1: response.data tiene estructura {token, user}
       if (response.data.token && response.data.user) {
         token = response.data.token;
@@ -52,28 +52,28 @@ const AuthService = {
         token = response.data.token;
         userData = response.data;
       }
-      
+
       // Asegurar que userData tenga el role
       if (userData && !userData.role) {
         userData.role = userData.rol || userData.type || 'OPERATOR';
         apiLog('warn', 'Role no encontrado, asignando valor por defecto', userData.role);
       }
-      
+
       if (token) {
         localStorage.setItem('authToken', token);
         localStorage.setItem('user', JSON.stringify(userData));
         localStorage.setItem('loginTime', new Date().toISOString());
-        
+
         apiLog('log', 'Datos guardados en localStorage');
-        
+
         // Obtener el rol desde /auth/users ya que /auth/login no lo devuelve
         try {
           apiLog('log', 'Obteniendo rol desde /auth/users...');
           const usersResponse = await axiosInstance.get(API_CONFIG.ENDPOINTS.USERS.GET_ALL);
-          
+
           const users = Array.isArray(usersResponse.data) ? usersResponse.data : [];
           const foundUser = users.find(u => u.email === userData.email);
-          
+
           if (foundUser && foundUser.role) {
             apiLog('log', 'Rol obtenido desde /auth/users', foundUser.role);
             userData.role = foundUser.role;
@@ -91,7 +91,7 @@ const AuthService = {
       } else {
         apiLog('error', 'No hay token en la respuesta');
       }
-      
+
       return response.data;
     } catch (error) {
       apiLog('error', 'Error en login', error.response?.data || error.message);
@@ -152,14 +152,14 @@ const AuthService = {
       if (!user || typeof user !== 'string') {
         return null;
       }
-      
+
       const parsed = JSON.parse(user);
-      
+
       // Asegurar que el role siempre existe
       if (!parsed.role) {
         parsed.role = parsed.rol || 'OPERATOR';
       }
-      
+
       return parsed;
     } catch (error) {
       apiLog('error', 'Error al obtener usuario', error);
@@ -213,7 +213,7 @@ const AuthService = {
   getUserRole: async () => {
     try {
       const currentUser = AuthService.getCurrentUser();
-      
+
       if (currentUser?.role && currentUser.role !== 'Bearer') {
         return currentUser.role;
       }
@@ -221,22 +221,22 @@ const AuthService = {
       apiLog('log', 'Obteniendo rol real desde la API...');
       const response = await axiosInstance.get(API_CONFIG.ENDPOINTS.USERS.GET_ALL);
       const users = Array.isArray(response.data) ? response.data : [];
-      
+
       const userEmail = currentUser?.email;
       const foundUser = users.find(u => u.email === userEmail);
-      
+
       if (foundUser) {
         const actualRole = foundUser.role || 'OPERATOR';
-        
+
         if (currentUser) {
           currentUser.role = actualRole;
           localStorage.setItem('user', JSON.stringify(currentUser));
           apiLog('log', 'Rol actualizado en localStorage', actualRole);
         }
-        
+
         return actualRole;
       }
-      
+
       apiLog('warn', 'Usuario NO encontrado en la API');
       return 'OPERATOR';
     } catch (error) {

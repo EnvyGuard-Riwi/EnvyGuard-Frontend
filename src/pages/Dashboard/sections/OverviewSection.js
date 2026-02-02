@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { Monitor, Power, WifiOff, Globe, TrendingUp, Activity } from 'lucide-react';
+import { Monitor, Power, WifiOff, Globe, TrendingUp, Activity, AlertTriangle } from 'lucide-react';
 import blockedWebsitesService from '../../../services/BlockedWebsitesService';
 import deviceService from '../../../services/DeviceService';
 
@@ -113,7 +113,7 @@ const OverviewSection = ({ problemReports = [] }) => {
                 {[
                     { label: "Total Computadores", value: pcStats.total.toString().padStart(2, '0'), icon: Monitor, color: "text-cyan-400", bg: "from-cyan-500/10 to-transparent", border: "border-cyan-500/20" },
                     { label: "Prendidos", value: pcStats.online.toString().padStart(2, '0'), icon: Power, color: "text-green-400", bg: "from-green-500/10 to-transparent", border: "border-green-500/20" },
-                    { label: "Sin Internet", value: pcStats.offline.toString().padStart(2, '0'), icon: WifiOff, color: "text-orange-400", bg: "from-orange-500/10 to-transparent", border: "border-orange-500/20" },
+                    { label: "Novedades", value: problemReports.filter(r => r.status === "open").length.toString().padStart(2, '0'), icon: AlertTriangle, color: "text-orange-400", bg: "from-orange-500/10 to-transparent", border: "border-orange-500/20" },
                     { label: "Sitios Bloqueados", value: blockedSitesCount.toString(), icon: Globe, color: "text-red-400", bg: "from-red-500/10 to-transparent", border: "border-red-500/20" },
                 ].map((stat, idx) => (
                     <motion.div
