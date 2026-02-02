@@ -915,8 +915,8 @@ const ComputerMonitoringSection = ({ showDeployModal, setShowDeployModal, deploy
     };
 
     const PCCard = ({ pc }) => {
-        // Resuelve estado efectivo con overrides (WebSocket/API) por IP si existe
-        const override = deviceStatusOverrides[pc.ip];
+        // Resuelve estado efectivo con overrides (WebSocket/API) por ID primero, luego por IP
+        const override = deviceStatusOverrides[`id_${pc.dbId}`] || deviceStatusOverrides[pc.ip];
         // Estado base del PC (online por defecto)
         const effectiveStatus = override?.status || 'offline';
 
