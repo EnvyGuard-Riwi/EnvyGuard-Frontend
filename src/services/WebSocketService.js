@@ -31,12 +31,22 @@ class WebSocketService {
           this.connected = true;
           this.emit('connected');
 
-          // Suscribirse al topic de actualizaciones de estado de PCs
-          this.client.subscribe('/topic/pc-status', (message) => {
-            const data = JSON.parse(message.body);
+          // Suscribirse al topic de actualizaciones de estado de PCs (Sala4 entity)
+          this.client.subscribe('/topic/computers', (message) => {
+            const rawData = JSON.parse(message.body);
+
+            // Normalizar datos para que el frontend los entienda
+            const data = {
+              type: 'device_status',
+              ip: rawData.ip,
+              status: rawData.status,
+              id: rawData.id,
+              latencyMs: rawData.latencyMs // Si el backend lo envía (quizás no, pero no está de más)
+            };
+
             this.emit('message', data);
             this.emit('pc-status', data);
-            console.log('📨 Estado de PC recibido:', data);
+            console.log('📨 Estado de PC recibido (Tiempo Real):', data);
           });
 
           // Suscribirse al topic de screenshots
