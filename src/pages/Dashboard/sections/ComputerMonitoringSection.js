@@ -917,7 +917,7 @@ const ComputerMonitoringSection = ({ showDeployModal, setShowDeployModal, deploy
     const PCCard = ({ pc }) => {
         // Obtener estado real desde overrides (API) o estado base del layout
         const override = deviceStatusOverrides[pc.ip] || deviceStatusOverrides[`id_${pc.dbId || pc.id}`];
-        const effectiveStatus = override?.status || pc.status || status;
+        const effectiveStatus = override?.status || pc.status || 'offline';
 
         // Verificar si este PC tiene una novedad pendiente
         const hasIncident = pcsWithIncidents.has(pc.ip);
