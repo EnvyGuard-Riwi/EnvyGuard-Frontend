@@ -372,58 +372,58 @@ const ComputerMonitoringSection = ({ showDeployModal, setShowDeployModal, deploy
             layout: [
                 {
                     izquierda: [
-                        { id: "s4-iz-pc1", dbId: 1, name: "PC 1", status: "online", ip: "10.0.120.2", cpuCode: "0697" },
-                        { id: "s4-iz-pc2", dbId: 2, name: "PC 2", status: "online", ip: "10.0.120.6", cpuCode: "0700" },
-                        { id: "s4-iz-pc3", dbId: 3, name: "PC 3", status: "online", ip: "10.0.120.25", cpuCode: "0703" },
-                        { id: "s4-iz-pc4", dbId: 4, name: "PC 4", status: "online", ip: "10.0.120.7", cpuCode: "0706" }
+                        { id: "s4-iz-pc1", dbId: 1, name: "PC 1", status: "online", ip: "10.0.120.10", cpuCode: "0697" },
+                        { id: "s4-iz-pc2", dbId: 2, name: "PC 2", status: "online", ip: "10.0.120.11", cpuCode: "0700" },
+                        { id: "s4-iz-pc3", dbId: 3, name: "PC 3", status: "online", ip: "10.0.120.28", cpuCode: "0703" },
+                        { id: "s4-iz-pc4", dbId: 4, name: "PC 4", status: "online", ip: "10.0.120.19", cpuCode: "0706" }
                     ],
                     derecha: [
                         { id: "s4-der-pc1", dbId: 5, name: "PC 1", status: "online", ip: "10.0.120.27", cpuCode: "0622" },
                         { id: "s4-der-pc2", dbId: 6, name: "PC 2", status: "online", ip: "10.0.120.25", cpuCode: "0619" },
                         { id: "s4-der-pc3", dbId: 7, name: "PC 3", status: "online", ip: "10.0.120.24", cpuCode: "0616" },
-                        { id: "s4-der-pc4", dbId: 8, name: "PC 4", status: "online", ip: "10.0.120.4", cpuCode: "0613" }
+                        { id: "s4-der-pc4", dbId: 8, name: "PC 4", status: "online", ip: "10.0.120.21", cpuCode: "0613" }
                     ]
                 },
                 {
                     izquierda: [
-                        { id: "s4-iz2-pc1", dbId: 9, name: "PC 1", status: "online", ip: "10.0.120.21", cpuCode: "0694" },
-                        { id: "s4-iz2-pc2", dbId: 10, name: "PC 2", status: "online", ip: "10.0.120.22", cpuCode: "0691" },
-                        { id: "s4-iz2-pc3", dbId: 11, name: "PC 3", status: "online", ip: "10.0.120.14", cpuCode: "0688" },
-                        { id: "s4-iz2-pc4", dbId: 12, name: "PC 4", status: "online", ip: "10.0.120.5", cpuCode: "0685" }
+                        { id: "s4-iz2-pc1", dbId: 9, name: "PC 1", status: "online", ip: "10.0.120.4", cpuCode: "0694" },
+                        { id: "s4-iz2-pc2", dbId: 10, name: "PC 2", status: "online", ip: "10.0.120.30", cpuCode: "0691" },
+                        { id: "s4-iz2-pc3", dbId: 11, name: "PC 3", status: "online", ip: "10.0.120.32", cpuCode: "0688" },
+                        { id: "s4-iz2-pc4", dbId: 12, name: "PC 4", status: "online", ip: "10.0.120.34", cpuCode: "0685" }
                     ],
                     derecha: [
-                        { id: "s4-der2-pc1", dbId: 13, name: "PC 1", status: "online", ip: "10.0.120.23", cpuCode: "0625" },
-                        { id: "s4-der2-pc2", dbId: 14, name: "PC 2", status: "no_internet", ip: "10.0.120.12", cpuCode: "0628" },
-                        { id: "s4-der2-pc3", dbId: 15, name: "PC 3", status: "online", ip: "10.0.120.19", cpuCode: "0631" },
-                        { id: "s4-der2-pc4", dbId: 16, name: "PC 4", status: "online", ip: "10.0.120.32", cpuCode: "0634" }
+                        { id: "s4-der2-pc1", dbId: 13, name: "PC 1", status: "online", ip: "10.0.120.35", cpuCode: "0625" },
+                        { id: "s4-der2-pc2", dbId: 14, name: "PC 2", status: "no_internet", ip: "10.0.120.36", cpuCode: "0628" },
+                        { id: "s4-der2-pc3", dbId: 15, name: "PC 3", status: "online", ip: "10.0.120.12", cpuCode: "0631" },
+                        { id: "s4-der2-pc4", dbId: 16, name: "PC 4", status: "online", ip: "10.0.120.37", cpuCode: "0634" }
                     ]
                 },
                 {
                     izquierda: [
-                        { id: "s4-iz3-pc1", dbId: 17, name: "PC 1", status: "online", ip: "10.0.120.29", cpuCode: "0673" },
-                        { id: "s4-iz3-pc2", dbId: 18, name: "PC 2", status: "online", ip: "10.0.120.15", cpuCode: "0676" },
-                        { id: "s4-iz3-pc3", dbId: 19, name: "PC 3", status: "online", ip: "10.0.120.16", cpuCode: "0679" },
-                        { id: "s4-iz3-pc4", dbId: 20, name: "PC 4", status: "online", ip: "10.0.120.10", cpuCode: "0682" }
+                        { id: "s4-iz3-pc1", dbId: 17, name: "PC 1", status: "online", ip: "10.0.120.5", cpuCode: "0673" },
+                        { id: "s4-iz3-pc2", dbId: 18, name: "PC 2", status: "online", ip: "10.0.120.29", cpuCode: "0676" },
+                        { id: "s4-iz3-pc3", dbId: 19, name: "PC 3", status: "online", ip: "10.0.120.38", cpuCode: "0679" },
+                        { id: "s4-iz3-pc4", dbId: 20, name: "PC 4", status: "online", ip: "10.0.120.39", cpuCode: "0682" }
                     ],
                     derecha: [
-                        { id: "s4-der3-pc1", dbId: 21, name: "PC 1", status: "offline", ip: "10.0.120.", cpuCode: "0646" },
-                        { id: "s4-der3-pc2", dbId: 22, name: "PC 2", status: "online", ip: "10.0.120.18", cpuCode: "0643" },
-                        { id: "s4-der3-pc3", dbId: 23, name: "PC 3", status: "online", ip: "10.0.120.3", cpuCode: "0640" },
-                        { id: "s4-der3-pc4", dbId: 24, name: "PC 4", status: "online", ip: "10.0.120.33", cpuCode: "0637" }
+                        { id: "s4-der3-pc1", dbId: 21, name: "PC 1", status: "offline", ip: "10.0.120.2", cpuCode: "0646" },
+                        { id: "s4-der3-pc2", dbId: 22, name: "PC 2", status: "online", ip: "10.0.120.26", cpuCode: "0643" },
+                        { id: "s4-der3-pc3", dbId: 23, name: "PC 3", status: "online", ip: "10.0.120.18", cpuCode: "0640" },
+                        { id: "s4-der3-pc4", dbId: 24, name: "PC 4", status: "online", ip: "10.0.120.3", cpuCode: "0637" }
                     ]
                 },
                 {
                     izquierda: [
-                        { id: "s4-iz4-pc1", dbId: 25, name: "PC 1", status: "online", ip: "10.0.120.31", cpuCode: "0670" },
-                        { id: "s4-iz4-pc2", dbId: 26, name: "PC 2", status: "online", ip: "10.0.120.17", cpuCode: "0667" },
-                        { id: "s4-iz4-pc3", dbId: 27, name: "PC 3", status: "online", ip: "10.0.120.20", cpuCode: "0664" },
-                        { id: "s4-iz4-pc4", dbId: 28, name: "PC 4", status: "offline", ip: "10.0.120.9", cpuCode: "0661" }
+                        { id: "s4-iz4-pc1", dbId: 25, name: "PC 1", status: "online", ip: "10.0.120.33", cpuCode: "0670" },
+                        { id: "s4-iz4-pc2", dbId: 26, name: "PC 2", status: "online", ip: "10.0.120.40", cpuCode: "0667" },
+                        { id: "s4-iz4-pc3", dbId: 27, name: "PC 3", status: "online", ip: "10.0.120.17", cpuCode: "0664" },
+                        { id: "s4-iz4-pc4", dbId: 28, name: "PC 4", status: "offline", ip: "10.0.120.20", cpuCode: "0661" }
                     ],
                     derecha: [
-                        { id: "s4-der4-pc1", dbId: 29, name: "PC 1", status: "online", ip: "10.0.120.", cpuCode: "0492" },
-                        { id: "s4-der4-pc2", dbId: 30, name: "PC 2", status: "online", ip: "10.0.120.30", cpuCode: "0450" },
-                        { id: "s4-der4-pc3", dbId: 31, name: "PC 3", status: "online", ip: "10.0.120.11", cpuCode: "0655" },
-                        { id: "s4-der4-pc4", dbId: 32, name: "PC 4", status: "online", ip: "10.0.120.8", cpuCode: "0658" }
+                        { id: "s4-der4-pc1", dbId: 29, name: "PC 1", status: "online", ip: "10.0.120.9", cpuCode: "0492" },
+                        { id: "s4-der4-pc2", dbId: 30, name: "PC 2", status: "online", ip: "10.0.120.8", cpuCode: "0450" },
+                        { id: "s4-der4-pc3", dbId: 31, name: "PC 3", status: "online", ip: "10.0.120.30", cpuCode: "0655" },
+                        { id: "s4-der4-pc4", dbId: 32, name: "PC 4", status: "online", ip: "10.0.120.11", cpuCode: "0658" }
                     ]
                 }
             ]
