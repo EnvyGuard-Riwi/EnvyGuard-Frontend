@@ -97,6 +97,9 @@ const ScreenMonitoringSection = () => {
                     const img = data.ImageBase64 || data.image;
 
                     if (pcId && img) {
+                        // Auto-recover active state if data is flowing
+                        setIsMonitoringActive(true);
+
                         setScreens(prev => ({
                             ...prev,
                             [pcId]: {
