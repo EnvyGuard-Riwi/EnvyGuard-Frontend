@@ -485,7 +485,6 @@ const DashboardLayout = () => {
   const links = [
     { label: "Panel Principal", href: "#dashboard", icon: <LayoutGrid />, page: "dashboard", color: "cyan" },
     { label: "Monitoreo Remoto", href: "#computers", icon: <Monitor />, page: "computers", color: "blue" },
-    { label: "Vigilancia de Pantallas", href: "#screens", icon: <Eye />, page: "screens", color: "purple" },
     { label: "Bloqueo de Sitios", href: "#blocking", icon: <AlertTriangle />, page: "blocking", color: "red" },
     ...((userRole === 'ADMIN') ? [{ label: "Gestión de Usuarios", href: "/usuarios", icon: <UserPlus />, page: "users", color: "green" }] : []),
     { label: "Novedades", href: "#novedades", icon: <Bell />, page: "novedades", color: "orange" },
