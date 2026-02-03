@@ -25,7 +25,7 @@ const ScreenMonitoringSection = () => {
     const [selectedScreen, setSelectedScreen] = useState(null);
     const [showFullscreen, setShowFullscreen] = useState(false);
     const [isLoading, setIsLoading] = useState(false);
-    const [isMonitoringActive, setIsMonitoringActive] = useState(false);
+    const [isMonitoringActive, setIsMonitoringActive] = useState(() => localStorage.getItem('monitoring_active') === 'true');
     const [toast, setToast] = useState(null);
 
     const clientRef = useRef(null);
@@ -40,12 +40,17 @@ const ScreenMonitoringSection = () => {
             console.log('🎮 Enviando control de monitoreo:', action);
 
             if (action === 'START') {
-                await controlService.startExamMonitoring();
+                // Actualizar estado INMEDIATAMENTE (Optimistic UI) para persistencia
                 setIsMonitoringActive(true);
+                localStorage.setItem('monitoring_active', 'true');
+
+                await controlService.startExamMonitoring();
                 setToast({ type: 'success', msg: 'Monitoreo de pantallas INICIADO' });
             } else if (action === 'STOP') {
-                await controlService.stopExamMonitoring();
                 setIsMonitoringActive(false);
+                localStorage.removeItem('monitoring_active');
+
+                await controlService.stopExamMonitoring();
                 setToast({ type: 'success', msg: 'Monitoreo de pantallas DETENIDO' });
             }
 
