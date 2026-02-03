@@ -6,7 +6,7 @@
 
 export const API_CONFIG = {
     // URL base de la API
-    BASE_URL: process.env.REACT_APP_API_URL || 'https://api.andrescortes.dev',
+    BASE_URL: process.env.REACT_APP_API_URL || '/api',
 
     // Endpoints específicos
     ENDPOINTS: {

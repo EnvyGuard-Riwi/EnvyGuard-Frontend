@@ -17,12 +17,17 @@ import {
     Terminal,
     AlertCircle,
     Lock,
-    Activity
+    Activity,
+    Eye,
+    Loader,
+    Download
 } from 'lucide-react';
 import { deviceService, WebSocketService, incidentService, INCIDENT_SEVERITY, commandService, COMMAND_ACTIONS } from '../../../services';
 import Toast from '../components/Toast';
 import ScrollArea from '../components/ScrollArea';
 import ReportProblemModal from '../components/ReportProblemModal';
+import { salas, getLocationFromPC, getSalaNumber, findPCAndLocation } from '../../../utils/monitorUtils';
+import { useScreenMonitoring } from '../../../hooks/useScreenMonitoring';
 
 const ComputerMonitoringSection = ({ showDeployModal, setShowDeployModal, deployTargetPCs, setDeployTargetPCs, problemReports, setProblemReports }) => {
     const [selectedPC, setSelectedPC] = useState(null);
@@ -41,394 +46,12 @@ const ComputerMonitoringSection = ({ showDeployModal, setShowDeployModal, deploy
     const [lastStatusCheck, setLastStatusCheck] = useState(null);
     // Estado para PCs con novedades pendientes (IPs de PCs con incidentes activos)
     const [pcsWithIncidents, setPcsWithIncidents] = useState(new Set());
+    // Estados para vigilancia de pantallas
+    const { screens, isConnected: isScreenConnected, isMonitoringActive, isLoading: isMonitorLoading, sendControl, downloadEvidence } = useScreenMonitoring();
+    const [selectedScreenPC, setSelectedScreenPC] = useState(null); // PC seleccionado para ver pantalla
 
-    // Configuración de Salas - DATOS COMPLETOS
-    const salas = {
-        sala1: {
-            nombre: "Sala 1",
-            stats: { total: 36, online: 36, power: "3.6kW" },
-            layout: [
-                // LADO IZQUIERDO - Fila 1 (4 PCs)
-                {
-                    row: 1,
-                    pcs: [
-                        { id: "s1-row1-pc1", dbId: 1, status: "online", ip: "10.0.20.35", cpuCode: "0374" },
-                        { id: "s1-row1-pc2", dbId: 2, status: "online", ip: "10.0.20.34", cpuCode: "0371" },
-                        { id: "s1-row1-pc3", dbId: 3, status: "online", ip: "10.0.20.24", cpuCode: "0368" },
-                        { id: "s1-row1-pc4", dbId: 4, status: "online", ip: "10.0.20.31", cpuCode: "0365" }
-                    ]
-                },
-                // LADO IZQUIERDO - Fila 2 (4 PCs)
-                {
-                    row: 2,
-                    pcs: [
-                        { id: "s1-row2-pc1", dbId: 5, status: "online", ip: "10.0.20.20", cpuCode: "0353" },
-                        { id: "s1-row2-pc2", dbId: 6, status: "online", ip: "10.0.20.13", cpuCode: "0356" },
-                        { id: "s1-row2-pc3", dbId: 7, status: "online", ip: "10.0.20.36", cpuCode: "0943" },
-                        { id: "s1-row2-pc4", dbId: 8, status: "online", ip: "10.0.20.32", cpuCode: "0442" }
-                    ]
-                },
-                // LADO IZQUIERDO - Fila 3 (4 PCs)
-                {
-                    row: 3,
-                    pcs: [
-                        { id: "s1-row3-pc1", dbId: 9, status: "online", ip: "10.0.20.12", cpuCode: "0350" },
-                        { id: "s1-row3-pc2", dbId: 10, status: "online", ip: "10.0.20.39", cpuCode: "0347" },
-                        { id: "s1-row3-pc3", dbId: 11, status: "online", ip: "10.0.20.33", cpuCode: "0344" },
-                        { id: "s1-row3-pc4", dbId: 12, status: "online", ip: "10.0.20.43", cpuCode: "0341" }
-                    ]
-                },
-                // LADO IZQUIERDO - Fila 4 (4 PCs)
-                {
-                    row: 4,
-                    pcs: [
-                        { id: "s1-row4-pc1", dbId: 13, status: "online", ip: "10.0.20.41", cpuCode: "0329" },
-                        { id: "s1-row4-pc2", dbId: 14, status: "online", ip: "10.0.20.42", cpuCode: "0332" },
-                        { id: "s1-row4-pc3", dbId: 15, status: "online", ip: "10.0.20.17", cpuCode: "0335" },
-                        { id: "s1-row4-pc4", dbId: 16, status: "online", ip: "10.0.20.37", cpuCode: "0338" }
-                    ]
-                },
-                // LADO IZQUIERDO - Fila 5 (4 PCs)
-                {
-                    row: 5,
-                    pcs: [
-                        { id: "s1-row5-pc1", dbId: 17, status: "online", ip: "10.0.20.46", cpuCode: "0326" },
-                        { id: "s1-row5-pc2", dbId: 18, status: "online", ip: "10.0.20.14", cpuCode: "0323" },
-                        { id: "s1-row5-pc3", dbId: 19, status: "online", ip: "10.0.20.38", cpuCode: "0320" },
-                        { id: "s1-row5-pc4", dbId: 20, status: "online", ip: "10.0.20.16", cpuCode: "0317" }
-                    ]
-                },
-                // LADO IZQUIERDO - Fila 6 (4 PCs)
-                {
-                    row: 6,
-                    pcs: [
-                        { id: "s1-row6-pc1", dbId: 21, status: "online", ip: "10.0.20.5", cpuCode: "0308" },
-                        { id: "s1-row6-pc2", dbId: 22, status: "online", ip: "10.0.20.11", cpuCode: "0311" },
-                        { id: "s1-row6-pc3", dbId: 23, status: "online", ip: "10.0.20.44", cpuCode: "0305" },
-                        { id: "s1-row6-pc4", dbId: 24, status: "online", ip: "10.0.20.21", cpuCode: "0314" }
-                    ]
-                },
-                // LADO DERECHO - Columna 1 (6 PCs)
-                {
-                    col: 1,
-                    pcs: [
-                        { id: "s1-col1-pc1", dbId: 25, status: "online", ip: "10.0.20.19", cpuCode: "0377" },
-                        { id: "s1-col1-pc2", dbId: 26, status: "online", ip: "10.0.20.53", cpuCode: "0380" },
-                        { id: "s1-col1-pc3", dbId: 27, status: "online", ip: "10.0.20.49", cpuCode: "0363" },
-                        { id: "s1-col1-pc4", dbId: 28, status: "online", ip: "10.0.20.9", cpuCode: "0386" },
-                        { id: "s1-col1-pc5", dbId: 29, status: "online", ip: "10.0.20.52", cpuCode: "0389" },
-                        { id: "s1-col1-pc6", dbId: 30, status: "online", ip: "10.0.20.51", cpuCode: "0392" }
-                    ]
-                },
-                // LADO DERECHO - Columna 2 (6 PCs)
-                {
-                    col: 2,
-                    pcs: [
-                        { id: "s1-col2-pc1", dbId: 31, status: "online", ip: "10.0.20.40", cpuCode: "0411" },
-                        { id: "s1-col2-pc2", dbId: 32, status: "online", ip: "10.0.20.45", cpuCode: "0407" },
-                        { id: "s1-col2-pc3", dbId: 33, status: "online", ip: "10.0.20.56", cpuCode: "0404" },
-                        { id: "s1-col2-pc4", dbId: 34, status: "online", ip: "10.0.20.50", cpuCode: "0401" },
-                        { id: "s1-col2-pc5", dbId: 35, status: "online", ip: "10.0.20.48", cpuCode: "0398" },
-                        { id: "s1-col2-pc6", dbId: 36, status: "online", ip: "10.0.20.48", cpuCode: "0395" }
-                    ]
-                }
-            ]
-        },
-        salaAdicional: {
-            nombre: "workshop - Piso 1",
-            stats: { total: 18, online: 18, power: "1.8kW" },
-            layout: [
-                {
-                    col: 1,
-                    pcs: [
-                        { id: "sa-col1-pc1", dbId: 1, status: "online", ip: "192.168.4.10", cpuCode: "0650" },
-                        { id: "sa-col1-pc2", dbId: 2, status: "online", ip: "192.168.4.11", cpuCode: "0651" },
-                        { id: "sa-col1-pc3", dbId: 3, status: "online", ip: "192.168.4.12", cpuCode: "0652" }
-                    ]
-                },
-                {
-                    col: 2,
-                    pcs: [
-                        { id: "sa-col2-pc1", dbId: 4, status: "online", ip: "192.168.4.20", cpuCode: "0653" },
-                        { id: "sa-col2-pc2", dbId: 5, status: "online", ip: "192.168.4.21", cpuCode: "0654" },
-                        { id: "sa-col2-pc3", dbId: 6, status: "online", ip: "192.168.4.22", cpuCode: "0655" }
-                    ]
-                },
-                {
-                    col: 3,
-                    pcs: [
-                        { id: "sa-col3-pc1", dbId: 7, status: "online", ip: "192.168.4.30", cpuCode: "0656" },
-                        { id: "sa-col3-pc2", dbId: 8, status: "online", ip: "192.168.4.31", cpuCode: "0657" },
-                        { id: "sa-col3-pc3", dbId: 9, status: "online", ip: "192.168.4.32", cpuCode: "0658" }
-                    ]
-                },
-                {
-                    col: 4,
-                    pcs: [
-                        { id: "sa-col4-pc1", dbId: 10, status: "online", ip: "192.168.4.40", cpuCode: "0659" },
-                        { id: "sa-col4-pc2", dbId: 11, status: "online", ip: "192.168.4.41", cpuCode: "0660" },
-                        { id: "sa-col4-pc3", dbId: 12, status: "online", ip: "192.168.4.42", cpuCode: "0661" }
-                    ]
-                },
-                {
-                    col: 5,
-                    pcs: [
-                        { id: "sa-col5-pc1", dbId: 13, status: "online", ip: "192.168.4.50", cpuCode: "0662" },
-                        { id: "sa-col5-pc2", dbId: 14, status: "online", ip: "192.168.4.51", cpuCode: "0663" },
-                        { id: "sa-col5-pc3", dbId: 15, status: "online", ip: "192.168.4.52", cpuCode: "0664" }
-                    ]
-                },
-                {
-                    col: 6,
-                    pcs: [
-                        { id: "sa-col6-pc1", dbId: 16, status: "online", ip: "192.168.4.60", cpuCode: "0665" },
-                        { id: "sa-col6-pc2", dbId: 17, status: "online", ip: "192.168.4.61", cpuCode: "0666" },
-                        { id: "sa-col6-pc3", dbId: 18, status: "online", ip: "192.168.4.62", cpuCode: "0667" }
-                    ]
-                }
-            ]
-        },
-        sala2: {
-            nombre: "Sala 2",
-            stats: { total: 32, online: 32, power: "3.1kW" },
-            layout: [
-                {
-                    izquierda: [
-                        { id: "s2-iz-pc1", dbId: 1, status: "online", ip: "192.168.2.30", cpuCode: "0552" },
-                        { id: "s2-iz-pc2", dbId: 2, status: "no_internet", ip: "192.168.2.31", cpuCode: "0551" },
-                        { id: "s2-iz-pc3", dbId: 3, status: "online", ip: "192.168.2.32", cpuCode: "0546" },
-                        { id: "s2-iz-pc4", dbId: 4, status: "offline", ip: "192.168.2.33", cpuCode: "0543" }
-                    ],
-                    derecha: [
-                        { id: "s2-der-pc1", dbId: 5, status: "online", ip: "192.168.2.40", cpuCode: "0557" },
-                        { id: "s2-der-pc2", dbId: 6, status: "online", ip: "192.168.2.41", cpuCode: "0584" },
-                        { id: "s2-der-pc3", dbId: 7, status: "no_internet", ip: "192.168.2.42", cpuCode: "0581" },
-                        { id: "s2-der-pc4", dbId: 8, status: "online", ip: "192.168.2.43", cpuCode: "0578" }
-                    ]
-                },
-                {
-                    izquierda: [
-                        { id: "s2-iz2-pc1", dbId: 9, status: "online", ip: "192.168.2.50", cpuCode: "0531" },
-                        { id: "s2-iz2-pc2", dbId: 10, status: "online", ip: "192.168.2.51", cpuCode: "0534" },
-                        { id: "s2-iz2-pc3", dbId: 11, status: "online", ip: "192.168.2.52", cpuCode: "0537" },
-                        { id: "s2-iz2-pc4", dbId: 12, status: "online", ip: "192.168.2.53", cpuCode: "0564" }
-                    ],
-                    derecha: [
-                        { id: "s2-der2-pc1", dbId: 13, status: "online", ip: "192.168.2.60", cpuCode: "0589" },
-                        { id: "s2-der2-pc2", dbId: 14, status: "online", ip: "192.168.2.61", cpuCode: "0592" },
-                        { id: "s2-der2-pc3", dbId: 15, status: "online", ip: "192.168.2.62", cpuCode: "0518" },
-                        { id: "s2-der2-pc4", dbId: 16, status: "online", ip: "192.168.2.63", cpuCode: "0598" }
-                    ]
-                },
-                {
-                    izquierda: [
-                        { id: "s2-iz3-pc1", dbId: 17, status: "online", ip: "192.168.2.70", cpuCode: "0528" },
-                        { id: "s2-iz3-pc2", dbId: 18, status: "online", ip: "192.168.2.71", cpuCode: "0525" },
-                        { id: "s2-iz3-pc3", dbId: 19, status: "online", ip: "192.168.2.72", cpuCode: "0522" },
-                        { id: "s2-iz3-pc4", dbId: 20, status: "online", ip: "192.168.2.73", cpuCode: "0540" }
-                    ],
-                    derecha: [
-                        { id: "s2-der3-pc1", dbId: 21, status: "online", ip: "192.168.2.80", cpuCode: "0610" },
-                        { id: "s2-der3-pc2", dbId: 22, status: "online", ip: "192.168.2.81", cpuCode: "0616" },
-                        { id: "s2-der3-pc3", dbId: 23, status: "online", ip: "192.168.2.82", cpuCode: "0604" },
-                        { id: "s2-der3-pc4", dbId: 24, status: "online", ip: "192.168.2.83", cpuCode: "0601" }
-                    ]
-                },
-                {
-                    izquierda: [
-                        { id: "s2-iz4-pc1", dbId: 25, status: "online", ip: "192.168.2.90", cpuCode: "0558" },
-                        { id: "s2-iz4-pc2", dbId: 26, status: "online", ip: "192.168.2.91", cpuCode: "0561" },
-                        { id: "s2-iz4-pc3", dbId: 27, status: "online", ip: "192.168.2.92", cpuCode: "0555" },
-                        { id: "s2-iz4-pc4", dbId: 28, status: "online", ip: "192.168.2.93", cpuCode: "0480" }
-                    ],
-                    derecha: [
-                        { id: "s2-der4-pc1", dbId: 29, status: "online", ip: "192.168.2.100", cpuCode: "0566" },
-                        { id: "s2-der4-pc2", dbId: 30, status: "online", ip: "192.168.2.101", cpuCode: "0576" },
-                        { id: "s2-der4-pc3", dbId: 31, status: "online", ip: "192.168.2.102", cpuCode: "0572" },
-                        { id: "s2-der4-pc4", dbId: 32, status: "online", ip: "192.168.2.103", cpuCode: "0569" }
-                    ]
-                }
-            ]
-        },
-        salaAdicional2: {
-            nombre: "workshop - Piso 2",
-            stats: { total: 16, online: 16, power: "1.6kW" },
-            layout: [
-                {
-                    col: 1,
-                    pcs: [
-                        { id: "sa2-col1-pc1", dbId: 1, status: "online", ip: "192.168.5.10", cpuCode: "0670" },
-                        { id: "sa2-col1-pc2", dbId: 2, status: "online", ip: "192.168.5.11", cpuCode: "0671" },
-                        { id: "sa2-col1-pc3", dbId: 3, status: "online", ip: "192.168.5.12", cpuCode: "0672" },
-                        { id: "sa2-col1-pc4", dbId: 4, status: "online", ip: "192.168.5.13", cpuCode: "0673" }
-                    ]
-                },
-                {
-                    col: 2,
-                    pcs: [
-                        { id: "sa2-col2-pc1", dbId: 5, status: "online", ip: "192.168.5.20", cpuCode: "0674" },
-                        { id: "sa2-col2-pc2", dbId: 6, status: "online", ip: "192.168.5.21", cpuCode: "0675" },
-                        { id: "sa2-col2-pc3", dbId: 7, status: "online", ip: "192.168.5.22", cpuCode: "0676" },
-                        { id: "sa2-col2-pc4", dbId: 8, status: "online", ip: "192.168.5.23", cpuCode: "0677" }
-                    ]
-                },
-                {
-                    col: 3,
-                    pcs: [
-                        { id: "sa2-col3-pc1", dbId: 9, status: "online", ip: "192.168.5.30", cpuCode: "0678" },
-                        { id: "sa2-col3-pc2", dbId: 10, status: "online", ip: "192.168.5.31", cpuCode: "0679" },
-                        { id: "sa2-col3-pc3", dbId: 11, status: "online", ip: "192.168.5.32", cpuCode: "0680" },
-                        { id: "sa2-col3-pc4", dbId: 12, status: "online", ip: "192.168.5.33", cpuCode: "0681" }
-                    ]
-                },
-                {
-                    col: 4,
-                    pcs: [
-                        { id: "sa2-col4-pc1", dbId: 13, status: "online", ip: "192.168.5.40", cpuCode: "0682" },
-                        { id: "sa2-col4-pc2", dbId: 14, status: "online", ip: "192.168.5.41", cpuCode: "0683" },
-                        { id: "sa2-col4-pc3", dbId: 15, status: "online", ip: "192.168.5.42", cpuCode: "0684" },
-                        { id: "sa2-col4-pc4", dbId: 16, status: "online", ip: "192.168.5.43", cpuCode: "0685" }
-                    ]
-                }
-            ]
-        },
-        sala3: {
-            nombre: "Sala 3",
-            stats: { total: 38, online: 36, power: "3.2kW" },
-            layout: [
-                {
-                    izquierda: [
-                        { id: "s3-iz-pc1", dbId: 1, status: "online", ip: "192.168.1.30", cpuCode: "0821" },
-                        { id: "s3-iz-pc2", dbId: 2, status: "online", ip: "192.168.1.31", cpuCode: "0824" },
-                        { id: "s3-iz-pc3", dbId: 3, status: "online", ip: "192.168.1.32", cpuCode: "0827" },
-                        { id: "s3-iz-pc4", dbId: 4, status: "online", ip: "192.168.1.33", cpuCode: "0830" }
-                    ],
-                    derecha: [
-                        { id: "s3-der-pc1", dbId: 5, status: "online", ip: "192.168.1.40", cpuCode: "0769" },
-                        { id: "s3-der-pc2", dbId: 6, status: "online", ip: "192.168.1.41", cpuCode: "0465" },
-                        { id: "s3-der-pc3", dbId: 7, status: "online", ip: "192.168.1.42", cpuCode: "0833" },
-                        { id: "s3-der-pc4", dbId: 8, status: "online", ip: "192.168.1.43", cpuCode: "0715" }
-                    ]
-                },
-                {
-                    izquierda: [
-                        { id: "s3-iz2-pc1", dbId: 9, status: "online", ip: "192.168.1.50", cpuCode: "0775" },
-                        { id: "s3-iz2-pc2", dbId: 10, status: "online", ip: "192.168.1.51", cpuCode: "0778" },
-                        { id: "s3-iz2-pc3", dbId: 11, status: "online", ip: "192.168.1.52", cpuCode: "0781" },
-                        { id: "s3-iz2-pc4", dbId: 12, status: "online", ip: "192.168.1.53", cpuCode: "0784" }
-                    ],
-                    derecha: [
-                        { id: "s3-der2-pc1", dbId: 13, status: "online", ip: "192.168.1.60", cpuCode: "0712" },
-                        { id: "s3-der2-pc2", dbId: 14, status: "online", ip: "192.168.1.61", cpuCode: "0790" },
-                        { id: "s3-der2-pc3", dbId: 15, status: "online", ip: "192.168.1.62", cpuCode: "0793" },
-                        { id: "s3-der2-pc4", dbId: 16, status: "online", ip: "192.168.1.63", cpuCode: "0772" }
-                    ]
-                },
-                {
-                    izquierda: [
-                        { id: "s3-iz3-pc1", dbId: 17, status: "online", ip: "192.168.1.70", cpuCode: "0806" },
-                        { id: "s3-iz3-pc2", dbId: 18, status: "online", ip: "192.168.1.71", cpuCode: "0803" },
-                        { id: "s3-iz3-pc3", dbId: 19, status: "online", ip: "192.168.1.72", cpuCode: "0800" },
-                        { id: "s3-iz3-pc4", dbId: 20, status: "online", ip: "192.168.1.73", cpuCode: "0796" }
-                    ],
-                    derecha: [
-                        { id: "s3-der3-pc1", dbId: 21, status: "online", ip: "192.168.1.80", cpuCode: "0812" },
-                        { id: "s3-der3-pc2", dbId: 22, status: "online", ip: "192.168.1.81", cpuCode: "0815" },
-                        { id: "s3-der3-pc3", dbId: 23, status: "online", ip: "192.168.1.82", cpuCode: "0818" },
-                        { id: "s3-der3-pc4", dbId: 24, status: "online", ip: "192.168.1.83", cpuCode: "0809" }
-                    ]
-                },
-                {
-                    izquierda: [
-                        { id: "s3-iz4-pc1", dbId: 25, status: "online", ip: "192.168.1.90", cpuCode: "0763" },
-                        { id: "s3-iz4-pc2", dbId: 26, status: "online", ip: "192.168.1.91", cpuCode: "0766" },
-                        { id: "s3-iz4-pc3", dbId: 27, status: "online", ip: "192.168.1.92", cpuCode: "0759" },
-                        { id: "s3-iz4-pc4", dbId: 28, status: "online", ip: "192.168.1.93", cpuCode: "0787" }
-                    ],
-                    derecha: [
-                        { id: "s3-der4-pc1", dbId: 29, status: "online", ip: "192.168.1.100", cpuCode: "0996" },
-                        { id: "s3-der4-pc2", dbId: 30, status: "online", ip: "192.168.1.101", cpuCode: "0993" },
-                        { id: "s3-der4-pc3", dbId: 31, status: "online", ip: "192.168.1.102", cpuCode: "0990" },
-                        { id: "s3-der4-pc4", dbId: 32, status: "online", ip: "192.168.1.103", cpuCode: "0787" }
-                    ]
-                },
-                {
-                    izquierda: [
-                        { id: "s3-iz5-pc1", dbId: 33, status: "online", ip: "192.168.1.110", cpuCode: "0860" },
-                        { id: "s3-iz5-pc2", dbId: 34, status: "online", ip: "192.168.1.111", cpuCode: "0718" },
-                        { id: "s3-iz5-pc3", dbId: 35, status: "online", ip: "192.168.1.112", cpuCode: "0766" }
-                    ],
-                    derecha: [
-                        { id: "s3-der5-pc1", dbId: 36, status: "online", ip: "192.168.1.120", cpuCode: "0934" },
-                        { id: "s3-der5-pc2", dbId: 37, status: "online", ip: "192.168.1.121", cpuCode: "0931" },
-                        { id: "s3-der5-pc3", dbId: 38, status: "online", ip: "192.168.1.122", cpuCode: "0928" }
-                    ]
-                }
-            ]
-        },
-        sala4: {
-            nombre: "Sala 4",
-            stats: { total: 32, online: 31, power: "3.2kW" },
-            layout: [
-                {
-                    izquierda: [
-                        { id: "s4-iz-pc1", dbId: 1, name: "PC 1", status: "online", ip: "10.0.120.10", cpuCode: "0697" },
-                        { id: "s4-iz-pc2", dbId: 2, name: "PC 2", status: "online", ip: "10.0.120.11", cpuCode: "0700" },
-                        { id: "s4-iz-pc3", dbId: 3, name: "PC 3", status: "online", ip: "10.0.120.28", cpuCode: "0703" },
-                        { id: "s4-iz-pc4", dbId: 4, name: "PC 4", status: "online", ip: "10.0.120.19", cpuCode: "0706" }
-                    ],
-                    derecha: [
-                        { id: "s4-der-pc1", dbId: 5, name: "PC 1", status: "online", ip: "10.0.120.27", cpuCode: "0622" },
-                        { id: "s4-der-pc2", dbId: 6, name: "PC 2", status: "online", ip: "10.0.120.25", cpuCode: "0619" },
-                        { id: "s4-der-pc3", dbId: 7, name: "PC 3", status: "online", ip: "10.0.120.24", cpuCode: "0616" },
-                        { id: "s4-der-pc4", dbId: 8, name: "PC 4", status: "online", ip: "10.0.120.21", cpuCode: "0613" }
-                    ]
-                },
-                {
-                    izquierda: [
-                        { id: "s4-iz2-pc1", dbId: 9, name: "PC 1", status: "online", ip: "10.0.120.4", cpuCode: "0694" },
-                        { id: "s4-iz2-pc2", dbId: 10, name: "PC 2", status: "online", ip: "10.0.120.30", cpuCode: "0691" },
-                        { id: "s4-iz2-pc3", dbId: 11, name: "PC 3", status: "online", ip: "10.0.120.32", cpuCode: "0688" },
-                        { id: "s4-iz2-pc4", dbId: 12, name: "PC 4", status: "online", ip: "10.0.120.34", cpuCode: "0685" }
-                    ],
-                    derecha: [
-                        { id: "s4-der2-pc1", dbId: 13, name: "PC 1", status: "online", ip: "10.0.120.35", cpuCode: "0625" },
-                        { id: "s4-der2-pc2", dbId: 14, name: "PC 2", status: "no_internet", ip: "10.0.120.36", cpuCode: "0628" },
-                        { id: "s4-der2-pc3", dbId: 15, name: "PC 3", status: "online", ip: "10.0.120.12", cpuCode: "0631" },
-                        { id: "s4-der2-pc4", dbId: 16, name: "PC 4", status: "online", ip: "10.0.120.37", cpuCode: "0634" }
-                    ]
-                },
-                {
-                    izquierda: [
-                        { id: "s4-iz3-pc1", dbId: 17, name: "PC 1", status: "online", ip: "10.0.120.5", cpuCode: "0673" },
-                        { id: "s4-iz3-pc2", dbId: 18, name: "PC 2", status: "online", ip: "10.0.120.29", cpuCode: "0676" },
-                        { id: "s4-iz3-pc3", dbId: 19, name: "PC 3", status: "online", ip: "10.0.120.38", cpuCode: "0679" },
-                        { id: "s4-iz3-pc4", dbId: 20, name: "PC 4", status: "online", ip: "10.0.120.39", cpuCode: "0682" }
-                    ],
-                    derecha: [
-                        { id: "s4-der3-pc1", dbId: 21, name: "PC 1", status: "offline", ip: "10.0.120.2", cpuCode: "0646" },
-                        { id: "s4-der3-pc2", dbId: 22, name: "PC 2", status: "online", ip: "10.0.120.26", cpuCode: "0643" },
-                        { id: "s4-der3-pc3", dbId: 23, name: "PC 3", status: "online", ip: "10.0.120.18", cpuCode: "0640" },
-                        { id: "s4-der3-pc4", dbId: 24, name: "PC 4", status: "online", ip: "10.0.120.3", cpuCode: "0637" }
-                    ]
-                },
-                {
-                    izquierda: [
-                        { id: "s4-iz4-pc1", dbId: 25, name: "PC 1", status: "online", ip: "10.0.120.33", cpuCode: "0670" },
-                        { id: "s4-iz4-pc2", dbId: 26, name: "PC 2", status: "online", ip: "10.0.120.40", cpuCode: "0667" },
-                        { id: "s4-iz4-pc3", dbId: 27, name: "PC 3", status: "online", ip: "10.0.120.17", cpuCode: "0664" },
-                        { id: "s4-iz4-pc4", dbId: 28, name: "PC 4", status: "offline", ip: "10.0.120.20", cpuCode: "0661" }
-                    ],
-                    derecha: [
-                        { id: "s4-der4-pc1", dbId: 29, name: "PC 1", status: "online", ip: "10.0.120.9", cpuCode: "0492" },
-                        { id: "s4-der4-pc2", dbId: 30, name: "PC 2", status: "online", ip: "10.0.120.8", cpuCode: "0450" },
-                        { id: "s4-der4-pc3", dbId: 31, name: "PC 3", status: "online", ip: "10.0.120.30", cpuCode: "0655" },
-                        { id: "s4-der4-pc4", dbId: 32, name: "PC 4", status: "online", ip: "10.0.120.11", cpuCode: "0658" }
-                    ]
-                }
-            ]
-        }
-    };
+    // Configuración de Salas - DATOS COMPLETOS (Importados de utils)
+
 
     const handleReportSubmit = async (reportData) => {
         const location = getLocationFromPC(reportData.device, reportData.sala);
@@ -939,43 +562,25 @@ const ComputerMonitoringSection = ({ showDeployModal, setShowDeployModal, deploy
                     label: "CON NOVEDAD"
                 };
             }
-            if (effectiveStatus === "online") return { bg: "bg-green-500", border: "border-green-500/20", hover: "hover:border-green-500/50 hover:bg-green-500/10 hover:shadow-[0_0_15px_rgba(34,197,94,0.2)]", dotColor: "bg-green-500" };
-            if (effectiveStatus === "no_internet") return { bg: "bg-yellow-500", border: "border-yellow-500/20", hover: "hover:border-yellow-500/50 hover:bg-yellow-500/10 hover:shadow-[0_0_15px_rgba(234,179,8,0.2)]", dotColor: "bg-yellow-500" };
-            return { bg: "bg-red-500", border: "border-red-500/20", hover: "hover:border-red-500/50 hover:bg-red-500/10 hover:shadow-[0_0_15px_rgba(239,68,68,0.2)]", dotColor: "bg-red-500" };
+            // Ensure background opacity starts at 0 (handled by class assignment) or matches user style
+            if (effectiveStatus === "online") return { bg: "bg-green-500/0", border: "border-green-500/20", hover: "hover:border-green-500/50 hover:bg-green-500/10 hover:shadow-[0_0_15px_rgba(34,197,94,0.2)]", dotColor: "bg-green-500" };
+            if (effectiveStatus === "no_internet") return { bg: "bg-yellow-500/0", border: "border-yellow-500/20", hover: "hover:border-yellow-500/50 hover:bg-yellow-500/10 hover:shadow-[0_0_15px_rgba(234,179,8,0.2)]", dotColor: "bg-yellow-500" };
+            return { bg: "bg-red-500/0", border: "border-red-500/20", hover: "hover:border-red-500/50 hover:bg-red-500/10 hover:shadow-[0_0_15px_rgba(239,68,68,0.2)]", dotColor: "bg-red-500" };
         };
 
         const statusStyle = getStatusColor();
         const isOnline = effectiveStatus === "online";
         const isSelected = Array.from(selectedList).some(s => s.id === pc.id);
+        const pcScreenData = screens[pc.id]; // Datos de pantalla si existen
+
         return (
-            <motion.div
-                layout
-                whileHover={{ scale: 1.05, y: -2 }}
-                onClick={(e) => {
-                    if (e.shiftKey || e.ctrlKey || e.metaKey) {
-                        // selección múltiple
-                        const salaNum = getSalaNumber(selectedSala);
-                        setSelectedList(prev => {
-                            const next = new Set(prev);
-                            const exists = Array.from(next).some(s => s.id === pc.id);
-                            if (exists) {
-                                next.forEach(s => { if (s.id === pc.id) next.delete(s); });
-                            } else {
-                                next.add({ id: pc.id, ip: pc.ip, dbId: pc.dbId, salaNumber: salaNum });
-                            }
-                            return next;
-                        });
-                    } else {
-                        setSelectedPC({ ...pc, status: effectiveStatus });
-                    }
-                }}
-                className={`group relative p-3 rounded-lg border cursor-pointer transition-all flex-shrink-0 backdrop-blur-sm min-w-[120px] ${statusStyle.border} ${statusStyle.hover} ${statusStyle.bg}/5 ${isSelected ? "ring-2 ring-cyan-400/60" : ""}`}
-            >
-                {/* Checkbox en esquina superior derecha */}
-                <div className="absolute top-2 right-2 z-20">
-                    <button
-                        onClick={(e) => {
-                            e.stopPropagation();
+            <div className="flex flex-col items-center gap-2">
+                <motion.div
+                    layout
+                    whileHover={{ scale: 1.05, y: -2 }}
+                    onClick={(e) => {
+                        if (e.shiftKey || e.ctrlKey || e.metaKey) {
+                            // selección múltiple
                             const salaNum = getSalaNumber(selectedSala);
                             setSelectedList(prev => {
                                 const next = new Set(prev);
@@ -987,95 +592,87 @@ const ComputerMonitoringSection = ({ showDeployModal, setShowDeployModal, deploy
                                 }
                                 return next;
                             });
-                        }}
-                        className={`w-4 h-4 rounded border transition-all flex items-center justify-center ${isSelected
-                            ? 'bg-cyan-500/80 border-cyan-400 shadow-[0_0_8px_rgba(6,182,212,0.4)]'
-                            : 'border-gray-400/40 hover:border-cyan-400/60'
-                            }`}
-                    >
-                        {isSelected && <div className="w-2 h-2 bg-white rounded-[2px]" />}
-                    </button>
-                </div>
-
-                <div className="flex items-center gap-2 mb-2">
-                    <div className="relative">
-                        <div className={`w-2 h-2 rounded-full ${statusStyle.dotColor} z-10 relative`} />
-                        <div className={`absolute inset-0 w-2 h-2 rounded-full ${statusStyle.dotColor} ${effectiveStatus !== "offline" || hasIncident ? "animate-ping" : ""}`} />
+                        } else {
+                            setSelectedPC({ ...pc, status: effectiveStatus });
+                        }
+                    }}
+                    className={`group relative p-3 rounded-lg border cursor-pointer transition-all flex-shrink-0 backdrop-blur-sm min-w-[120px] ${statusStyle.border} ${statusStyle.hover} ${pcScreenData ? 'shadow-[0_0_15px_rgba(168,85,247,0.25)] border-purple-500/40' : statusStyle.bg + '/5'
+                        } ${isSelected ? "ring-2 ring-cyan-400/60" : ""}`}
+                >
+                    {/* Checkbox en esquina superior derecha */}
+                    <div className="absolute top-2 right-2 z-20">
+                        <button
+                            onClick={(e) => {
+                                e.stopPropagation();
+                                const salaNum = getSalaNumber(selectedSala);
+                                setSelectedList(prev => {
+                                    const next = new Set(prev);
+                                    const exists = Array.from(next).some(s => s.id === pc.id);
+                                    if (exists) {
+                                        next.forEach(s => { if (s.id === pc.id) next.delete(s); });
+                                    } else {
+                                        next.add({ id: pc.id, ip: pc.ip, dbId: pc.dbId, salaNumber: salaNum });
+                                    }
+                                    return next;
+                                });
+                            }}
+                            className={`w-4 h-4 rounded border transition-all flex items-center justify-center ${isSelected
+                                ? 'bg-cyan-500/80 border-cyan-400 shadow-[0_0_8px_rgba(6,182,212,0.4)]'
+                                : 'border-gray-500/30 hover:border-gray-400/60'
+                                }`}
+                        >
+                            {isSelected && <div className="w-2 h-2 bg-white rounded-[2px]" />}
+                        </button>
                     </div>
-                    <span className="text-xs font-mono text-gray-200 font-bold tracking-tight">{pc.id.split('-').pop().toUpperCase()}</span>
-                    {hasIncident && (
-                        <span className="text-[8px] font-bold text-orange-400 bg-orange-500/20 px-1.5 py-0.5 rounded-full border border-orange-500/30 animate-pulse">⚠️</span>
-                    )}
-                </div>
-                {pc.cpuCode && (
-                    <div className="text-[10px] font-mono text-gray-400">{pc.cpuCode}</div>
+
+                    {/* Header: Dot + Name */}
+                    <div className="flex items-center gap-2 mb-1.5 mt-1">
+                        <div className="relative flex-shrink-0">
+                            <div className={`w-2.5 h-2.5 rounded-full ${statusStyle.dotColor} z-10 relative shadow-sm`} />
+                            <div className={`absolute inset-0 w-2.5 h-2.5 rounded-full ${statusStyle.dotColor} ${effectiveStatus !== "offline" || hasIncident ? "animate-ping opacity-75" : "hidden"}`} />
+                        </div>
+                        <span className="text-sm font-bold text-white tracking-tight">{pc.id.split('-').pop().toUpperCase()}</span>
+                        {hasIncident && (
+                            <span className="text-[8px] font-bold text-orange-400 bg-orange-500/20 px-1.5 py-0.5 rounded-full border border-orange-500/30 animate-pulse ml-1">⚠️</span>
+                        )}
+                    </div>
+
+                    {/* Body Info */}
+                    <div className="flex flex-col items-start gap-0.5 pl-0.5">
+                        {pc.cpuCode && (
+                            <div className="text-[10px] font-mono text-gray-500">{pc.cpuCode}</div>
+                        )}
+                        <div className="text-[11px] text-cyan-200/90 font-mono tracking-tight">{pc.ip}</div>
+                    </div>
+                </motion.div>
+
+                {/* Botón Ver Pantalla (MOVIDO FUERA DEL CARD) */}
+                {isMonitoringActive && (
+                    <button
+                        onClick={(e) => {
+                            e.stopPropagation();
+                            // Abrir modal SIEMPRE
+                            setSelectedScreenPC({
+                                ...pc,
+                                initialScreenData: screens[pc.id] || screens[pc.ip] || Object.values(screens).find(s => s.ip === pc.ip)
+                            });
+                        }}
+                        className={`flex items-center gap-1.5 px-3 py-0.5 rounded-full text-[9px] font-bold transition-all border shadow-lg ${(screens[pc.id] || screens[pc.ip])
+                            ? 'bg-purple-600 border-purple-400 text-white hover:bg-purple-500 hover:scale-110 shadow-[0_0_10px_rgba(168,85,247,0.5)]'
+                            : 'bg-gray-800/90 border-gray-600 text-gray-400 hover:border-gray-500 hover:text-gray-200'
+                            }`}
+                        title={`Ver Pantalla (${pc.id})`}
+                    >
+                        <Eye size={10} />
+                        <span>VER</span>
+                    </button>
                 )}
-                <div className="text-[10px] text-gray-500 font-mono group-hover:text-cyan-400 transition-colors">{pc.ip}</div>
-                {/* Latencia desactivada */}
-            </motion.div>
+            </div>
         );
     };
 
-    // Función para obtener la ubicación completa del PC basándose en los mapas de las salas
-    const getLocationFromPC = (pcId, sala) => {
-        const salaData = salas[sala];
-        if (!salaData) return { sector: 'Desconocido', ubicacion: 'No disponible' };
+    // Función getLocationFromPC (Importada de utils)
 
-        // Buscar en el layout de la sala
-        for (const section of salaData.layout) {
-            // Caso 1: Estructura con "pcs" (sala1, sala2, sala3, salaAdicional, etc.)
-            if (section.pcs && Array.isArray(section.pcs)) {
-                for (const pc of section.pcs) {
-                    if (pc.id === pcId) {
-                        let sectorName = '';
-                        if (section.col) {
-                            const colLetters = ['A', 'B', 'C', 'D', 'E', 'F'];
-                            sectorName = `Columna ${colLetters[section.col - 1] || section.col}`;
-                        } else if (section.row) {
-                            sectorName = `Fila ${section.row}`;
-                        }
-
-                        const posInSector = section.pcs.indexOf(pc) + 1;
-
-                        return {
-                            sector: sectorName,
-                            posicion: posInSector,
-                            ubicacion: `${sectorName} - Posición ${posInSector}`
-                        };
-                    }
-                }
-            }
-
-            // Caso 2: Estructura con "izquierda" y "derecha" (sala4)
-            if (section.izquierda && Array.isArray(section.izquierda)) {
-                for (const pc of section.izquierda) {
-                    if (pc.id === pcId) {
-                        const posInSector = section.izquierda.indexOf(pc) + 1;
-                        return {
-                            sector: 'Lado Izquierdo',
-                            posicion: posInSector,
-                            ubicacion: `Lado Izquierdo - Posición ${posInSector}`
-                        };
-                    }
-                }
-            }
-
-            if (section.derecha && Array.isArray(section.derecha)) {
-                for (const pc of section.derecha) {
-                    if (pc.id === pcId) {
-                        const posInSector = section.derecha.indexOf(pc) + 1;
-                        return {
-                            sector: 'Lado Derecho',
-                            posicion: posInSector,
-                            ubicacion: `Lado Derecho - Posición ${posInSector}`
-                        };
-                    }
-                }
-            }
-        }
-
-        return { sector: 'Desconocido', ubicacion: 'No disponible' };
-    };
 
     const currentRoom = salas[selectedSala] || salas.sala1;
 
@@ -1197,6 +794,37 @@ const ComputerMonitoringSection = ({ showDeployModal, setShowDeployModal, deploy
                             </button>
                         )}
                     </div>
+                </div>
+
+                {/* CONTROLES DE VIGILANCIA - NUEVO */}
+                <div className="flex items-center gap-2 ml-4 border-l border-white/10 pl-4">
+                    <div className="flex items-center gap-1.5 mr-2">
+                        <div className={`w-2 h-2 rounded-full ${isScreenConnected ? 'bg-green-500' : 'bg-red-500'}`} />
+                        {isMonitoringActive && <span className="text-[10px] text-green-400 animate-pulse font-bold">VIGILANDO</span>}
+                    </div>
+                    {!isMonitoringActive ? (
+                        <button
+                            onClick={() => {
+                                sendControl('START').then(res => setToast({ type: res.success ? 'success' : 'error', msg: res.message }));
+                            }}
+                            disabled={isMonitorLoading}
+                            className="flex items-center gap-2 px-3 py-1.5 bg-green-500/10 hover:bg-green-500/20 text-green-400 border border-green-500/30 rounded-md text-xs font-bold transition-all"
+                        >
+                            {isMonitorLoading ? <RotateCw size={12} className="animate-spin" /> : <Monitor size={12} />}
+                            INICIAR CLASE
+                        </button>
+                    ) : (
+                        <button
+                            onClick={() => {
+                                sendControl('STOP').then(res => setToast({ type: res.success ? 'success' : 'error', msg: res.message }));
+                            }}
+                            disabled={isMonitorLoading}
+                            className="flex items-center gap-2 px-3 py-1.5 bg-red-500/10 hover:bg-red-500/20 text-red-400 border border-red-500/30 rounded-md text-xs font-bold transition-all"
+                        >
+                            {isMonitorLoading ? <RotateCw size={12} className="animate-spin" /> : <Monitor size={12} />}
+                            TERMINAR CLASE
+                        </button>
+                    )}
                 </div>
 
                 {/* Filters */}
@@ -1714,6 +1342,162 @@ const ComputerMonitoringSection = ({ showDeployModal, setShowDeployModal, deploy
                 selectedSala={selectedSala}
                 onSubmit={handleReportSubmit}
             />
+
+            {/* MODAL DE VIGILANCIA DE PANTALLA INDIVIDUAL */}
+            {/* MODAL DE VIGILANCIA DE PANTALLA INDIVIDUAL */}
+            <AnimatePresence>
+                {selectedScreenPC && (
+                    <motion.div
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        exit={{ opacity: 0 }}
+                        className="fixed inset-0 bg-black/95 backdrop-blur-sm flex items-center justify-center z-[200] p-4"
+                        onClick={() => setSelectedScreenPC(null)}
+                    >
+                        <motion.div
+                            initial={{ scale: 0.9 }}
+                            animate={{ scale: 1 }}
+                            exit={{ scale: 0.9 }}
+                            className="relative w-full max-w-5xl rounded-xl overflow-hidden border border-purple-500/30 shadow-2xl flex flex-col bg-gray-900"
+                            onClick={(e) => e.stopPropagation()}
+                        >
+                            {/* Close Button */}
+                            <button
+                                onClick={() => setSelectedScreenPC(null)}
+                                className="absolute top-4 right-4 z-50 p-2 bg-black/60 hover:bg-black/80 rounded-lg border border-white/10 text-gray-300 hover:text-white transition-colors"
+                            >
+                                <X size={20} />
+                            </button>
+
+                            {/* Logic to resolve live screen data */}
+                            {(() => {
+                                // Safe access to ID and IP
+                                const currentId = selectedScreenPC.id || selectedScreenPC.pcId || 'UNKNOWN_ID';
+                                const currentIp = selectedScreenPC.ip || 'UNKNOWN_IP';
+                                const currentCpuCode = selectedScreenPC.cpuCode;
+
+                                // 0. Override Manual (Forzado)
+                                // 1. ID exacto
+                                // 2. IP exacta
+                                // 3. Coincidencia parcial de CPU Code (ej: "0655" en "P5M10-0655")
+                                const liveData = (selectedScreenPC.forcedId ? screens[selectedScreenPC.forcedId] : null)
+                                    || screens[currentId]
+                                    || screens[currentIp]
+                                    || (currentCpuCode ? Object.values(screens).find(s => s.originalId && s.originalId.includes(currentCpuCode)) : null)
+                                    || selectedScreenPC.initialScreenData;
+
+                                // DEBUG: Obtener IDs disponibles para mostrar al usuario si falla
+                                const availableIds = Object.keys(screens);
+
+                                return (
+                                    <>
+                                        {/* Image Area */}
+                                        <div className="relative w-full aspect-video bg-black flex items-center justify-center overflow-hidden">
+                                            {liveData?.image ? (
+                                                <img
+                                                    src={`data:image/jpeg;base64,${liveData.image}`}
+                                                    alt={currentId}
+                                                    className="w-full h-full object-contain"
+                                                />
+                                            ) : (
+                                                <div className="flex flex-col items-center justify-center text-gray-500 space-y-4 w-full">
+                                                    <div className="relative">
+                                                        <Loader size={48} className="animate-spin text-purple-500" />
+                                                        <div className="absolute inset-0 flex items-center justify-center">
+                                                            <Eye size={16} className="text-purple-300 animate-pulse" />
+                                                        </div>
+                                                    </div>
+                                                    <div className="text-center max-w-lg px-4">
+                                                        <h3 className="text-lg font-bold text-gray-300 mb-2">Esperando señal de video...</h3>
+                                                        <div className="text-sm text-gray-500 font-mono bg-black/40 p-4 rounded border border-white/5 text-left">
+                                                            <p className="mb-2 border-b border-gray-700 pb-2">BUSCANDO SEÑAL PARA:</p>
+                                                            <div className="grid grid-cols-2 gap-x-4 gap-y-1 mb-4">
+                                                                <span className="text-gray-600">ID Configuración:</span>
+                                                                <span className="text-cyan-400">{currentId}</span>
+                                                                <span className="text-gray-600">IP Esperada:</span>
+                                                                <span className="text-orange-400">{currentIp}</span>
+                                                                <span className="text-gray-600">Código CPU:</span>
+                                                                <span className="text-purple-400">{currentCpuCode || 'N/A'}</span>
+                                                            </div>
+
+                                                            <div className="flex items-center justify-between mb-2 border-b border-gray-700 pb-2">
+                                                                <p className="uppercase">SEÑALES ACTIVAS ({availableIds.length}):</p>
+                                                                {availableIds.length > 0 && <span className="text-[10px] animate-pulse text-green-500">RECIBIENDO...</span>}
+                                                            </div>
+
+                                                            <div className="max-h-40 overflow-y-auto pr-2 custom-scrollbar">
+                                                                {availableIds.length > 0 ? (
+                                                                    <div className="space-y-2">
+                                                                        <p className="text-[10px] text-gray-400 mb-2 italic">Si el PC está encendido pero no aparece, verifica que el agente esté conectado.</p>
+                                                                        {availableIds.map(id => (
+                                                                            <div key={id} className="flex items-center justify-between p-2 rounded bg-white/5 hover:bg-white/10 border border-transparent hover:border-white/10 group transition-all">
+                                                                                <div className="flex flex-col">
+                                                                                    <span className="text-green-400 font-bold">{id}</span>
+                                                                                    <span className="text-[10px] text-gray-500">{screens[id].ip || 'IP Privada/Oculta'}</span>
+                                                                                </div>
+                                                                                <button
+                                                                                    onClick={(e) => {
+                                                                                        e.stopPropagation();
+                                                                                        // Forzar esta señal para este PC temporalmente
+                                                                                        setSelectedScreenPC(prev => ({
+                                                                                            ...prev,
+                                                                                            forcedId: id
+                                                                                        }));
+                                                                                    }}
+                                                                                    className="px-2 py-1 rounded-md bg-purple-500/20 text-purple-400 border border-purple-500/30 text-[10px] hover:bg-purple-500 hover:text-white transition-all opacity-0 group-hover:opacity-100 uppercase font-bold"
+                                                                                >
+                                                                                    VINCULAR
+                                                                                </button>
+                                                                            </div>
+                                                                        ))}
+                                                                    </div>
+                                                                ) : (
+                                                                    <div className="py-4 text-center">
+                                                                        <p className="text-red-400/60 italic mb-1">Sin señales entrantes.</p>
+                                                                        <p className="text-[10px] text-gray-600">Asegúrate de haber iniciado el monitoreo.</p>
+                                                                    </div>
+                                                                )}
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            )}
+                                        </div>
+
+                                        {/* Footer Info */}
+                                        <div className="bg-black/80 border-t border-white/10 p-4 flex justify-between items-center z-20">
+                                            <div>
+                                                <h3 className="text-white font-bold font-mono text-lg flex items-center gap-2">
+                                                    {liveData ? <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse" /> : <div className="w-2 h-2 rounded-full bg-yellow-500 animate-pulse" />}
+                                                    {currentId.toUpperCase()}
+                                                </h3>
+                                                <p className="text-xs text-gray-400 mt-1 flex items-center gap-2">
+                                                    <span className="bg-white/10 px-1.5 py-0.5 rounded">{currentIp}</span>
+                                                    {liveData && <span>Última actualización: {new Date(liveData.lastUpdate).toLocaleTimeString()}</span>}
+                                                </p>
+                                            </div>
+
+                                            {liveData && (
+                                                <div className="flex items-center gap-3">
+                                                    <motion.button
+                                                        whileHover={{ scale: 1.05 }}
+                                                        whileTap={{ scale: 0.95 }}
+                                                        onClick={() => downloadEvidence(currentId)}
+                                                        className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white rounded-lg font-bold text-sm transition-all"
+                                                    >
+                                                        <Download size={16} />
+                                                        EVIDENCIA
+                                                    </motion.button>
+                                                </div>
+                                            )}
+                                        </div>
+                                    </>
+                                );
+                            })()}
+                        </motion.div>
+                    </motion.div>
+                )}
+            </AnimatePresence>
         </div>
     );
 };

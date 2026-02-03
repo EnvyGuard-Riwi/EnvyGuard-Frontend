@@ -1,7 +1,5 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Client } from '@stomp/stompjs';
-import SockJS from 'sockjs-client';
 import {
     Eye,
     Monitor,
@@ -17,132 +15,32 @@ import {
     AlertCircle
 } from 'lucide-react';
 
-import { controlService } from '../../../services';
+import { findPCAndLocation } from '../../../utils/monitorUtils';
+import { useScreenMonitoring } from '../../../hooks/useScreenMonitoring';
 
 const ScreenMonitoringSection = () => {
-    const [screens, setScreens] = useState({});
-    const [isConnected, setIsConnected] = useState(false);
+    // Usar el hook compartido
+    const { screens, isConnected, isMonitoringActive, isLoading, error, sendControl, downloadEvidence } = useScreenMonitoring();
+
+    // Estados locales para validación visual (toast)
     const [selectedScreen, setSelectedScreen] = useState(null);
     const [showFullscreen, setShowFullscreen] = useState(false);
-    const [isLoading, setIsLoading] = useState(false);
-    const [isMonitoringActive, setIsMonitoringActive] = useState(() => localStorage.getItem('monitoring_active') === 'true');
     const [toast, setToast] = useState(null);
 
-    const clientRef = useRef(null);
-    const historyRef = useRef({});
-    const MAX_HISTORY_SIZE = 100;
-    const BACKEND_URL = process.env.REACT_APP_WS_URL || 'https://api.andrescortes.dev';
-
-    // CONTROL DE MONITOREO DE EXÁMENES - Usando endpoint /control/{action}
-    const sendControl = async (action) => {
-        setIsLoading(true);
-        try {
-            console.log('🎮 Enviando control de monitoreo:', action);
-
-            if (action === 'START') {
-                // Actualizar estado INMEDIATAMENTE (Optimistic UI) para persistencia
-                setIsMonitoringActive(true);
-                localStorage.setItem('monitoring_active', 'true');
-
-                await controlService.startExamMonitoring();
-                setToast({ type: 'success', msg: 'Monitoreo de pantallas INICIADO' });
-            } else if (action === 'STOP') {
-                setIsMonitoringActive(false);
-                localStorage.removeItem('monitoring_active');
-
-                await controlService.stopExamMonitoring();
-                setToast({ type: 'success', msg: 'Monitoreo de pantallas DETENIDO' });
-            }
-
-            console.log(`✅ Comando ${action} enviado correctamente a todos los agentes.`);
-        } catch (e) {
-            console.error('❌ Error:', e);
-            setToast({ type: 'error', msg: e.message || 'Error al enviar comando' });
-        } finally {
-            setIsLoading(false);
-            setTimeout(() => setToast(null), 3000);
-        }
-    };
-
-    const downloadEvidence = (pcId) => {
-        const history = historyRef.current[pcId];
-        if (!history || history.length === 0) {
-            alert("Aún no hay historial suficiente para descargar.");
-            return;
-        }
-        const blob = new Blob([JSON.stringify(history, null, 2)], { type: "application/json" });
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = `EVIDENCIA_${pcId}_${new Date().toISOString()}.json`;
-        a.click();
-        URL.revokeObjectURL(url);
-    };
-
-    useEffect(() => {
-        if (clientRef.current) return;
-
-        const client = new Client({
-            webSocketFactory: () => new SockJS(`${BACKEND_URL}/ws-spy`),
-            debug: () => { },
-            reconnectDelay: 5000,
-            heartbeatIncoming: 4000,
-            heartbeatOutgoing: 4000,
+    // Efecto para sincronizar mensajes de error/éxito del hook si fuera necesario, 
+    // pero por ahora manejamos el toast localmente en los handlers
+    const handleControl = async (action) => {
+        const result = await sendControl(action);
+        setToast({
+            type: result.success ? 'success' : 'error',
+            msg: result.message
         });
-
-        client.onConnect = () => {
-            console.log("✅ Conectado al sistema de vigilancia remoto");
-            setIsConnected(true);
-
-            client.subscribe('/topic/screens', (msg) => {
-                try {
-                    const data = JSON.parse(msg.body);
-                    console.log("🔥 LLEGÓ UN MENSAJE:", data);
-                    const pcId = data.PcId || data.pcId;
-                    const img = data.ImageBase64 || data.image;
-
-                    if (pcId && img) {
-                        setScreens(prev => ({
-                            ...prev,
-                            [pcId]: {
-                                image: img,
-                                timestamp: data.Timestamp || new Date().toISOString(),
-                                lastUpdate: new Date()
-                            }
-                        }));
-
-                        if (!historyRef.current[pcId]) historyRef.current[pcId] = [];
-                        historyRef.current[pcId].push({ timestamp: data.Timestamp, image: img });
-                        if (historyRef.current[pcId].length > MAX_HISTORY_SIZE) historyRef.current[pcId].shift();
-                    }
-                } catch (e) {
-                    console.error("Error procesando datos:", e);
-                }
-            });
-        };
-
-        client.onStompError = (frame) => {
-            console.error("Error STOMP:", frame.headers['message']);
-            setIsConnected(false);
-        };
-
-        client.onWebSocketClose = () => {
-            console.log("🔌 WebSocket desconectado");
-            setIsConnected(false);
-        };
-
-        client.activate();
-        clientRef.current = client;
-
-        return () => {
-            if (clientRef.current) {
-                clientRef.current.deactivate();
-                clientRef.current = null;
-            }
-        };
-    }, []);
+        setTimeout(() => setToast(null), 3000);
+    };
 
     const screenEntries = Object.entries(screens);
+    const MAX_HISTORY_SIZE = 100; // Constante visual
+    // BACKEND_URL se maneja internamente en el hook
 
     return (
         <div className="flex flex-col h-full space-y-6">
@@ -188,7 +86,7 @@ const ScreenMonitoringSection = () => {
                         <motion.button
                             whileHover={{ scale: 1.02 }}
                             whileTap={{ scale: 0.98 }}
-                            onClick={() => sendControl('START')}
+                            onClick={() => handleControl('START')}
                             disabled={isLoading || isMonitoringActive}
                             className={`group flex items-center gap-2.5 px-5 py-2.5 bg-transparent border rounded-lg font-medium text-sm transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed ${isMonitoringActive
                                 ? 'border-green-500/20 text-green-500/50'
@@ -203,7 +101,7 @@ const ScreenMonitoringSection = () => {
                         <motion.button
                             whileHover={{ scale: 1.02 }}
                             whileTap={{ scale: 0.98 }}
-                            onClick={() => sendControl('STOP')}
+                            onClick={() => handleControl('STOP')}
                             disabled={isLoading || !isMonitoringActive}
                             className={`group flex items-center gap-2.5 px-5 py-2.5 bg-transparent border rounded-lg font-medium text-sm transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed ${!isMonitoringActive
                                 ? 'border-red-500/20 text-red-500/50'
@@ -221,18 +119,18 @@ const ScreenMonitoringSection = () => {
 
             {/* Toast Notification */}
             <AnimatePresence>
-                {toast && (
+                {(toast || error) && (
                     <motion.div
                         initial={{ opacity: 0, y: -20 }}
                         animate={{ opacity: 1, y: 0 }}
                         exit={{ opacity: 0, y: -20 }}
-                        className={`fixed top-4 right-4 z-[200] flex items-center gap-2 px-4 py-3 rounded-lg shadow-lg ${toast.type === 'success' ? 'bg-green-500/20 border border-green-500/30 text-green-400' :
-                            toast.type === 'error' ? 'bg-red-500/20 border border-red-500/30 text-red-400' :
+                        className={`fixed top-4 right-4 z-[200] flex items-center gap-2 px-4 py-3 rounded-lg shadow-lg ${(toast?.type === 'success') ? 'bg-green-500/20 border border-green-500/30 text-green-400' :
+                            (toast?.type === 'error' || error) ? 'bg-red-500/20 border border-red-500/30 text-red-400' :
                                 'bg-yellow-500/20 border border-yellow-500/30 text-yellow-400'
                             }`}
                     >
-                        {toast.type === 'success' ? <CheckCircle size={18} /> : <AlertCircle size={18} />}
-                        <span className="text-sm font-medium">{toast.msg}</span>
+                        {(toast?.type === 'success') ? <CheckCircle size={18} /> : <AlertCircle size={18} />}
+                        <span className="text-sm font-medium">{toast?.msg || error}</span>
                     </motion.div>
                 )}
             </AnimatePresence>
@@ -267,7 +165,7 @@ const ScreenMonitoringSection = () => {
                         <Monitor size={48} className="mb-4 opacity-30" />
                         <h3 className="text-lg font-bold mb-2">Esperando señal de video...</h3>
                         <p className="text-sm text-gray-600">Presiona "INICIAR CLASE" para despertar a los agentes.</p>
-                        <p className="text-xs text-gray-700 mt-2">Servidor: {BACKEND_URL}</p>
+                        <p className="text-xs text-gray-700 mt-2">Servidor: {process.env.REACT_APP_WS_URL || 'https://api.andrescortes.dev'}</p>
                     </div>
                 ) : (
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
@@ -392,5 +290,4 @@ const ScreenMonitoringSection = () => {
         </div>
     );
 };
-
 export default ScreenMonitoringSection;

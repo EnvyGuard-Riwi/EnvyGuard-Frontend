@@ -90,13 +90,13 @@ const OverviewSection = ({ problemReports = [] }) => {
                         <h2 className="text-2xl md:text-3xl font-bold text-white mb-2">Bienvenido, Agente.</h2>
                         {/* ... */}
 
-                        <p className="text-cyan-400/80 font-mono text-sm flex items-center gap-2">
+                        <div className="text-cyan-400/80 font-mono text-sm flex items-center gap-2">
                             <div className="relative w-2 h-2">
                                 <span className="absolute inset-0 rounded-full bg-green-500 z-10" />
                                 <span className="absolute inset-0 rounded-full bg-green-500 animate-ping" />
                             </div>
                             SISTEMA OPERATIVO Y SEGURO.
-                        </p>
+                        </div>
                     </div>
                     <div className="text-right hidden sm:block">
                         <p className="text-4xl font-mono text-white/10 font-bold">{formattedTime}</p>
@@ -112,7 +112,7 @@ const OverviewSection = ({ problemReports = [] }) => {
             >
                 {[
                     { label: "Total Computadores", value: pcStats.total.toString().padStart(2, '0'), icon: Monitor, color: "text-cyan-400", bg: "from-cyan-500/10 to-transparent", border: "border-cyan-500/20" },
-                    { label: "Prendidos", value: pcStats.online.toString().padStart(2, '0'), icon: Power, color: "text-green-400", bg: "from-green-500/10 to-transparent", border: "border-green-500/20" },
+                    { label: "Encendidos", value: pcStats.online.toString().padStart(2, '0'), icon: Power, color: "text-green-400", bg: "from-green-500/10 to-transparent", border: "border-green-500/20" },
                     { label: "Novedades", value: problemReports.filter(r => r.status === "open").length.toString().padStart(2, '0'), icon: AlertTriangle, color: "text-orange-400", bg: "from-orange-500/10 to-transparent", border: "border-orange-500/20" },
                     { label: "Sitios Bloqueados", value: blockedSitesCount.toString(), icon: Globe, color: "text-red-400", bg: "from-red-500/10 to-transparent", border: "border-red-500/20" },
                 ].map((stat, idx) => (
